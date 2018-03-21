@@ -1,5 +1,3 @@
-"use strict";
-
 angular.module("app", []).controller("Ctrl", function () {
   var _this4 = this;
 
