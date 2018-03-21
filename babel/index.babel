@@ -1,6 +1,26 @@
 angular.module("app", []).controller("Ctrl", function() {
   this.modal = '';
-  
+  this.radius = 1;
+  this.modulusc = [0, 0, 0];
+  this.modulus = [2, 2, 2];
+  this.modulusm = [1, 0, 0, 0, 1, 0, 0, 0, 1];
+  this.scale = 2;
+  this.iterations = 13;
+  this.rotationA = 0.1;
+  this.rotationB = -0.2;
+  this.center = [0.6, 1.25 * 0.6, 0.6];
+  this.tolerance = 0.00025;
+  this.maxSteps = 100;
+  this.normalDiff = 0.0125;
+  this.camera = [1.0, -3.0, 1.5];
+  this.focus = [-0.25, 1.0, -0.5];
+  this.lightP = [2.2, -1.3, 2.5];
+  this.lightC = [0.75, 0.5, 1.0, 20.0];
+  this.ambient = [1.0, 0.75, 0.75, 1.0];
+  this.ss = 1.0;
+  this.shine = 1.0;
+  this.albedo = [0.2, 0.5, 1.0];
+
   const FLOAT32 = 2;
 
   function initShaderProgram(gl, vsSource, fsSource) {
@@ -19,7 +39,7 @@ angular.module("app", []).controller("Ctrl", function() {
     if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
       alert(
         "Unable to initialize the shader program: " +
-          gl.getProgramInfoLog(shaderProgram)
+        gl.getProgramInfoLog(shaderProgram)
       );
       return null;
     }
@@ -43,7 +63,7 @@ angular.module("app", []).controller("Ctrl", function() {
     if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
       alert(
         "An error occurred compiling the shaders: " +
-          gl.getShaderInfoLog(shader)
+        gl.getShaderInfoLog(shader)
       );
       gl.deleteShader(shader);
       return null;
@@ -85,7 +105,8 @@ angular.module("app", []).controller("Ctrl", function() {
           canvas = v;
           if (!canvas) {
             gl = canvas.getContext("webgl");
-          } else {
+          }
+          else {
             gl = null;
           }
         }
@@ -313,15 +334,16 @@ angular.module("app", []).controller("Ctrl", function() {
       cameraVarying: "vCam",
       cameraUniform: "uCam",
       precision: "highp",
+      repeatName: "repeat",
       deFuncName: "DE",
       marchFuncName: "march",
       maxSteps: 10,
       toleranceVarName: "tolerance",
       normalDiff: "0.0125"
     };
-    var config = paramConfig
-      ? Object.assign({}, defaultConfig, paramConfig)
-      : Object.assign({}, defaultConfig);
+    var config = paramConfig ?
+      Object.assign({}, defaultConfig, paramConfig) :
+      Object.assign({}, defaultConfig);
     this.vertexShader = () => {
       let {
         positionAttribute,
@@ -345,6 +367,9 @@ uniform vec3 ${cameraUniform}Y;
 uniform vec3 ${cameraUniform}Z;
 uniform vec2 ${cameraUniform}V;
 uniform float ${toleranceVarName};
+uniform vec3 repeatBase;
+uniform mat3 repeatDir;
+uniform vec3 repeatSpace;
 uniform vec3 lightP;
 uniform vec4 lightC;
 uniform vec4 ambientC;
@@ -352,6 +377,20 @@ uniform float softness;
 uniform float ss;
 uniform float shine;
 uniform vec3 albedo;`;
+    };
+    this.repeatDec = () => {
+      let { repeatName } = config;
+      return `vec3 ${repeatName}(vec3 p, vec3 b, vec3 d, float s);`;
+    };
+    this.repeatDef = () => {
+      let {
+        repeatName
+      } = config;
+      return `vec3 ${repeatName}(vec3 p, vec3 b, vec3 d, float s) {
+  d = normalize(d);
+  float fa = dot(p - b, d);
+  return p - fa * d + mod(fa, s) * d;
+}`;
     };
     this.deDec = () => {
       let { deFuncName } = config;
@@ -362,15 +401,21 @@ uniform vec3 albedo;`;
     };
     this.marchDec = () => {
       let { marchFuncName } = config;
-      return `vec4 ${marchFuncName}(vec3 start, vec3 dir, float tolerance);`;
+      return `vec4 ${marchFuncName}(vec3 start, vec3 dir, float tolerance, vec3 rb, mat3 rd, vec3 rs);`;
     };
     this.marchDef = () => {
-      let { deFuncName, marchFuncName, maxSteps } = config;
-      return `vec4 ${marchFuncName}(vec3 start, vec3 dir, float tolerance) {
+      let { deFuncName, marchFuncName, maxSteps, repeatName } = config;
+      return `vec4 ${marchFuncName}(vec3 start, vec3 dir, float tolerance, vec3 r, mat3 rd, vec3 rs) {
   float dis = 0.0;
   int steps = -1;
   for(int i = 0; i < ${maxSteps}; i++) {
     vec3 p = start + dis * dir;
+    if(rs.x > 0.001)
+      p = ${repeatName}(p, rb, rd[0], rs.x);
+    if(rs.y > 0.001)
+      p = ${repeatName}(p, rb, rd[1], rs.y);
+    if(rs.z > 0.001)
+      p = ${repeatName}(p, rb, rd[2], rs.z);
     float d = ${deFuncName}(p, dir);
     dis += d;
     if(steps < 0 && d < tolerance) {
@@ -387,6 +432,7 @@ uniform vec3 albedo;`;
       return `#define PI 3.1415926535897932384626433832795
 precision ${precision} float;
 ${this.uniforms()}
+${this.repeatDec()}
 ${this.deDec()}
 ${this.marchDec()}
 varying vec2 ${cameraVarying};`;
@@ -406,7 +452,7 @@ varying vec2 ${cameraVarying};`;
   vec2 fov = sin(${cameraUniform}V / 2.0);
   fov = vec2(0.25, 0.25);
   cp += fov.x * ${cameraVarying}.x * cx + fov.y * ${cameraVarying}.y * cz;
-  vec4 m = ${marchFuncName}(${cameraUniform}, normalize(cp - ${cameraUniform}), ${toleranceVarName});`;
+  vec4 m = ${marchFuncName}(${cameraUniform}, normalize(cp - ${cameraUniform}), ${toleranceVarName}, repeatDir, repeatSpace);`;
     };
     this.normal = () => {
       let { normalDiff } = config;
@@ -519,7 +565,8 @@ void main() {
   gl_FragColor = vec4(m.w, m.w, m.w, 1.0);
 }
 ${this.deDef()}
-${this.marchDef()}`;
+${this.marchDef()}
+${this.repeatDef()}`;
     };
     this.positionsShader = () => {
       return `${this.declarations()}
@@ -537,7 +584,8 @@ void main() {
     gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
 }
 ${this.deDef()}
-${this.marchDef()}`;
+${this.marchDef()}
+${this.repeatDef()}`;
     };
     this.normalShader = () => {
       return `${this.declarations()}
@@ -555,10 +603,10 @@ void main() {
     gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
 }
 ${this.deDef()}
-${this.marchDef()}`;
+${this.marchDef()}
+${this.repeatDef()}`;
     };
     this.lightpathShader = () => {
-      let { fragVar } = config;
       return `${this.declarations()}
 void main() {
   ${this.position()}
@@ -574,10 +622,10 @@ void main() {
     gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
 }
 ${this.deDef()}
-${this.marchDef()}`;
+${this.marchDef()}
+${this.repeatDef()}`;
     };
     this.fragmentShader = () => {
-      let { fragVar } = config;
       return `${this.declarations()}
 void main() {
   ${this.position()}
@@ -595,14 +643,15 @@ void main() {
     gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
 }
 ${this.deDef()}
-${this.marchDef()}`;
+${this.marchDef()}
+${this.repeatDef()}`;
     };
     Object.defineProperty(this, "config", {
       get: () => config,
       set: v => {
-        config = paramConfig
-          ? Object.assign({}, defaultConfig, paramConfig)
-          : Object.assign({}, defaultConfig);
+        config = paramConfig ?
+          Object.assign({}, defaultConfig, paramConfig) :
+          Object.assign({}, defaultConfig);
       }
     });
     Object.keys(defaultConfig).forEach(prop => {
@@ -615,38 +664,9 @@ ${this.marchDef()}`;
     });
   }
 
-  if (false) {
-    const sphereDE = (i, R) => {
-      var funcs = [
-        `float DE(vec3 p) {
-  return max(0.0, length(p) - ${R});
-}`,
-        `float DE(vec3 p) {
+  const sphereDE = (i, R) => {
+    return `float DE(vec3 p) {
   return length(p) - ${R};
-}`,
-        `float DE(vec3 p) {
-  return abs(length(p) - ${R});
-}`
-      ];
-      return funcs[i];
-    };
-    const combSphereDE = (i, R) => {
-      var funcs = [
-        `float DE(vec3 p) {
-  return min( length(p)-1.0 , length(p-vec3(2.0,0.0,0.0))-1.0 );
-}`,
-        `float DE(vec3 p) {
-  return max( length(p)-1.0 , length(p-vec3(1.0,0.0,0.0))-1.0 );
-}`
-      ];
-      return funcs[i];
-    };
-  }
-  const infSphereDE = (R, S) => {
-    return `float DE(vec3 z, vec3 d)
-{
-  z.xy = mod(z.xy,${S})-vec2(${S} / 2.0); // instance on xy-plane
-  return length(z)-${R};
 }`;
   };
   const recursiveTetrahedral = (Scale, Iterations, Ra, Rb, c) => {
@@ -667,34 +687,6 @@ ${this.marchDef()}`;
   );
   for(int n = 0; n < ${Iterations}; n++) {
     z = Ra * z;
-    z -= 2.0 * min(0.0, dot(z, n1)) * n1;
-    z -= 2.0 * min(0.0, dot(z, n2)) * n2;
-    z -= 2.0 * min(0.0, dot(z, n3)) * n3;
-    z = Rb * z;
-    z = ${Scale} * (z - ${c});
-  }
-  return length(z) * pow(${Scale}, -${Iterations}.0);
-}`;
-  };
-  const recursiveTetrahedralB = (Scale, Iterations, Ra, Rb, c) => {
-    return `float DE(vec3 z, vec3 d)
-{
-  vec3 n1 = normalize(vec3(1.0,1.0,0.0));
-  vec3 n2 = normalize(vec3(0.0,1.0,1.0));
-  vec3 n3 = normalize(vec3(1.0,0.0,1.0));
-  mat3 Ra = mat3(
-    cos(${Ra}), sin(${Ra}), 0.0,
-    -sin(${Ra}), cos(${Ra}), 0.0,
-    0.0, 0.0, 1.0
-  );
-  mat3 Rb = mat3(
-    cos(${Rb}), sin(${Rb}), 0.0,
-    -sin(${Rb}), cos(${Rb}), 0.0,
-    0.0, 0.0, 1.0
-  );
-  for(int n = 0; n < ${Iterations}; n++) {
-    z = Ra * z;
-    z = abs(z);
     z -= 2.0 * min(0.0, dot(z, n1)) * n1;
     z -= 2.0 * min(0.0, dot(z, n2)) * n2;
     z -= 2.0 * min(0.0, dot(z, n3)) * n3;
@@ -725,40 +717,6 @@ ${this.marchDef()}`;
   );
   for(int n = 0; n < ${Iterations}; n++) {
     z = Ra * z;
-    z -= 2.0 * min(0.0, dot(z, n1)) * n1;
-    z -= 2.0 * min(0.0, dot(z, n2)) * n2;
-    z -= 2.0 * min(0.0, dot(z, n3)) * n3;
-    z -= 2.0 * min(0.0, dot(z, n4)) * n4;
-    z -= 2.0 * min(0.0, dot(z, n5)) * n5;
-    z -= 2.0 * min(0.0, dot(z, n6)) * n6;
-    z = Rb * z;
-    z = ${Scale} * (z - ${c});
-  }
-  return length(z) * pow(${Scale}, -${Iterations}.0);
-}`;
-  };
-  const recursiveOctahedralB = (Scale, Iterations, Ra, Rb, c) => {
-    return `float DE(vec3 z, vec3 d)
-{
-  vec3 n1 = normalize(vec3(1.0,1.0,0.0));
-  vec3 n2 = normalize(vec3(0.0,1.0,1.0));
-  vec3 n3 = normalize(vec3(1.0,0.0,1.0));
-  vec3 n4 = normalize(vec3(-1.0,1.0,0.0));
-  vec3 n5 = normalize(vec3(0.0,-1.0,1.0));
-  vec3 n6 = normalize(vec3(1.0,0.0,-1.0));
-  mat3 Ra = mat3(
-    cos(${Ra}), sin(${Ra}), 0.0,
-    -sin(${Ra}), cos(${Ra}), 0.0,
-    0.0, 0.0, 1.0
-  );
-  mat3 Rb = mat3(
-    cos(${Rb}), sin(${Rb}), 0.0,
-    -sin(${Rb}), cos(${Rb}), 0.0,
-    0.0, 0.0, 1.0
-  );
-  for(int n = 0; n < ${Iterations}; n++) {
-    z = Ra * z;
-    z = abs(z);
     z -= 2.0 * min(0.0, dot(z, n1)) * n1;
     z -= 2.0 * min(0.0, dot(z, n2)) * n2;
     z -= 2.0 * min(0.0, dot(z, n3)) * n3;
@@ -866,120 +824,144 @@ ${this.marchDef()}`;
   //var lightP = [2.5, -1.5, 2.0];
   //var lightP = [0.5, -5.0, 1.0];
 
-  function FractalCanvas(
-    DE,
-    tolerance,
-    maxSteps,
-    normalDiff,
-    camera,
-    focus,
-    lightP,
-    lightC,
-    ambient,
-    softness,
-    ss,
-    shine,
-    albedo
-  ) {
-    var fractal = new Fractal(
-      {
-        maxSteps,
-        normalDiff
-      },
-      DE
-    );
-    if (true) {
-      console.log(
-        fractal
-          .fragmentShader()
-          .split(/\n/g)
-          .map((line, i) => ("00" + (i + 1)).substr(-2, 2) + ": " + line)
-          .join("\n")
-      );
+  var attributes = {
+    positions: {
+      name: "aVertexPosition"
+    },
+    camera: {
+      name: "aCam"
     }
+  };
+  var uniforms = {
+    camera: {
+      name: "uCam"
+    },
+    cameraLength: {
+      name: "uCamL"
+    },
+    cameraY: {
+      name: "uCamY"
+    },
+    cameraZ: {
+      name: "uCamZ"
+    },
+    cameraFOV: {
+      name: "uCamV"
+    },
+    tolerance: {
+      name: "tolerance"
+    },
+    lightP: {
+      name: "lightP"
+    },
+    lightC: {
+      name: "lightC"
+    },
+    ambientC: {
+      name: "ambientC"
+    },
+    softness: {
+      name: "softness"
+    },
+    ss: {
+      name: "ss"
+    },
+    shine: {
+      name: "shine"
+    },
+    albedo: {
+      name: "albedo"
+    },
+    repeatBase: {
+      name: "repeatBase"
+    },
+    repeatDir: {
+      name: "repeatDir"
+    },
+    repeatSpace: {
+      name: "repeatSpace"
+    }
+  };
+  var buffers = {
+    positions: {
+      data: [1.0, 1.0, -1.0, 1.0, 1.0, -1.0, -1.0, -1.0],
+      datatype: FLOAT32,
+      target: "ARRAY_BUFFER",
+      usage: "STATIC_DRAW",
+      attribute: "positions",
+      numComponents: 2,
+      type: "FLOAT",
+      normalize: false,
+      stride: 0,
+      offset: 0
+    },
+    camera: {
+      data: [1.0, 1.0, -1.0, 1.0, 1.0, -1.0, -1.0, -1.0],
+      datatype: FLOAT32,
+      target: "ARRAY_BUFFER",
+      usage: "STATIC_DRAW",
+      attribute: "camera",
+      numComponents: 2,
+      type: "FLOAT",
+      normalize: false,
+      stride: 0,
+      offset: 0
+    }
+  };
+  var fragments = {
+    fractal: 'fragmentShader',
+    iterations: 'iterationsShader',
+    positions: 'positionsShader',
+    normal: 'normalShader',
+    lightpath: 'lightpathShader'
+  };
 
-    var attributes = {
-      positions: {
-        name: "aVertexPosition"
+  function FractalCanvas(Ctrl) {
+    switch (Ctrl.de) {
+      case 'spheres':
+        this.DE = sphereDE(
+          this.radius.toFixed(3)
+        );
+        break;
+      case 'recursiveTetrahedral':
+        this.DE = recursiveTetrahedral(
+          this.scale.toFixed(2),
+          this.iterations,
+          this.rotationA.toFixed(3),
+          this.rotationB.toFixed(3),
+          'vec3(' + this.center.map(c => c.toFixed(3)).join(',') + ')'
+        );
+        break;
+      case 'recursiveOctahedral':
+        this.DE = recursiveOctahedral(
+          this.scale.toFixed(2),
+          this.iterations,
+          this.rotationA.toFixed(3),
+          this.rotationB.toFixed(3),
+          'vec3(' + this.center.map(c => c.toFixed(3)).join(',') + ')'
+        );
+        break;
+      case 'recursiveIcoscahedral':
+        this.DE = recursiveIcoscahedral(
+          this.scale.toFixed(2),
+          this.iterations,
+          this.rotationA.toFixed(3),
+          this.rotationB.toFixed(3),
+          'vec3(' + this.center.map(c => c.toFixed(3)).join(',') + ')'
+        );
+        break;
+      case 'icoscahedral':
+        this.DE = icoscahedral(
+          this.radius.toFixed(3)
+        );
+        break;
+    }
+    var fractal = new Fractal({
+        maxSteps: Ctrl.maxSteps,
+        normalDiff: Ctrl.normalDiff
       },
-      camera: {
-        name: "aCam"
-      }
-    };
-    var uniforms = {
-      camera: {
-        name: "uCam"
-      },
-      cameraLength: {
-        name: "uCamL"
-      },
-      cameraY: {
-        name: "uCamY"
-      },
-      cameraZ: {
-        name: "uCamZ"
-      },
-      cameraFOV: {
-        name: "uCamV"
-      },
-      tolerance: {
-        name: "tolerance"
-      },
-      lightP: {
-        name: "lightP"
-      },
-      lightC: {
-        name: "lightC"
-      },
-      ambientC: {
-        name: "ambientC"
-      },
-      softness: {
-        name: "softness"
-      },
-      ss: {
-        name: "ss"
-      },
-      shine: {
-        name: "shine"
-      },
-      albedo: {
-        name: "albedo"
-      }
-    };
-    var buffers = {
-      positions: {
-        data: [1.0, 1.0, -1.0, 1.0, 1.0, -1.0, -1.0, -1.0],
-        datatype: FLOAT32,
-        target: "ARRAY_BUFFER",
-        usage: "STATIC_DRAW",
-        attribute: "positions",
-        numComponents: 2,
-        type: "FLOAT",
-        normalize: false,
-        stride: 0,
-        offset: 0
-      },
-      camera: {
-        data: [1.0, 1.0, -1.0, 1.0, 1.0, -1.0, -1.0, -1.0],
-        datatype: FLOAT32,
-        target: "ARRAY_BUFFER",
-        usage: "STATIC_DRAW",
-        attribute: "camera",
-        numComponents: 2,
-        type: "FLOAT",
-        normalize: false,
-        stride: 0,
-        offset: 0
-      }
-    };
-    var fragments = {
-      fractal: fractal.fragmentShader(),
-      iterations: fractal.iterationsShader(),
-      positions: fractal.positionsShader(),
-      normal: fractal.normalShader(),
-      lightpath: fractal.lightpathShader()
-    };
+      this.DE
+    );
     var draw = function(gl) {
       gl.clearColor(0.0, 0.0, 0.0, 1.0);
       gl.clearDepth(1.0);
@@ -993,22 +975,25 @@ ${this.marchDef()}`;
 
       gl.useProgram(this.program);
 
-      gl.uniform3fv(this.uCamera, new Float32Array(camera));
+      gl.uniform3fv(this.uCamera, new Float32Array(Ctrl.camera));
       gl.uniform1f(this.uCameraL, 1.0);
-      gl.uniform3fv(this.uCameraY, new Float32Array(focus));
+      gl.uniform3fv(this.uCameraY, new Float32Array(Ctrl.focus));
       gl.uniform3fv(this.uCameraZ, new Float32Array([0.0, 0.0, 1.0]));
       gl.uniform2fv(
         this.uCameraV,
         new Float32Array([Math.PI / 2, Math.PI / 2])
       );
-      gl.uniform1f(this.uTolerance, tolerance);
-      gl.uniform3fv(this.uLightP, new Float32Array(lightP));
-      gl.uniform4fv(this.uLightC, new Float32Array(lightC));
-      gl.uniform4fv(this.uAmbientC, new Float32Array(ambient));
-      gl.uniform1f(this.uSoftness, softness);
-      gl.uniform1f(this.uSs, ss);
-      gl.uniform1f(this.uShine, shine);
-      gl.uniform3fv(this.uAlbedo, new Float32Array(albedo));
+      gl.uniform1f(this.uTolerance, Ctrl.tolerance);
+      gl.uniform3fv(this.uLightP, new Float32Array(Ctrl.lightP));
+      gl.uniform4fv(this.uLightC, new Float32Array(Ctrl.lightC));
+      gl.uniform4fv(this.uAmbientC, new Float32Array(Ctrl.ambient));
+      gl.uniform1f(this.uSoftness, Ctrl.softness);
+      gl.uniform1f(this.uSs, Ctrl.ss);
+      gl.uniform1f(this.uShine, Ctrl.shine);
+      gl.uniform3fv(this.uAlbedo, new Float32Array(Ctrl.albedo));
+      gl.uniform3fv(this.uRepeatBase, new Float32Array(Ctrl.modulusc));
+      gl.uniformMatrix3fv(this.repeatDir, false, Float32Array(Ctrl.modulusm));
+      gl.uniform3fv(this.uRepeatSpace, new Float32Array(Ctrl.modulus));
 
       {
         const offset = 0;
@@ -1022,15 +1007,24 @@ ${this.marchDef()}`;
         width: 1 << 10,
         height: 1 << 10
       });
+      var fragment = fractal[fragments[key]]();
+      if (true) {
+        console.log(key);
+        console.log(
+          fragment
+          .split(/\n/g)
+          .map((line, i) => ("00" + (i + 1)).substr(-2, 2) + ": " + line)
+          .join("\n")
+        );
+      }
       cw.registerProgram(
         "main",
         new Program(
           fractal.vertexShader(),
-          fragments[key],
+          fragment,
           attributes,
           uniforms,
-          buffers,
-          {},
+          buffers, {},
           draw
         )
       );
@@ -1042,113 +1036,113 @@ ${this.marchDef()}`;
   }
   this.softness = 0.0;
   this.preset = f => {
-  if (f == 0) {
-    this.de = 'recursiveIcoscahedral';
-    this.scale = 2;
-    this.iterations = 13;
-    this.rotationA = 0.1;
-    this.rotationB = -0.2;
-    this.center = [0.6, 1.25 * 0.6, 0.6];
-    this.tolerance = 0.00025;
-    this.maxSteps = 100;
-    this.normalDiff = 0.0125;
-    this.camera = [1.0, -3.0, 1.5];
-    this.focus = [-0.25, 1.0, -0.5];
-    this.lightP = [2.2, -1.3, 2.5];
-    this.lightC = [0.75, 0.5, 1.0, 20.0];
-    this.ambient = [1.0, 0.75, 0.75, 1.0];
-    this.ss = 1.0;
-    this.shine = 1.0;
-    this.albedo = [0.2, 0.5, 1.0];
-  }
-  else if (f == 1) {
-    this.de = 'recursiveOctahedral';
-    this.scale = 2;
-    this.iterations = 13;
-    this.rotationA = -0.5;
-    this.rotationB = 0.6;
-    this.center = [0.75, 0.5, 0.5];
-    this.tolerance = 0.00025;
-    this.maxSteps = 100;
-    this.normalDiff = 0.005;
-    this.camera = [1.0, -2.0, 1.0];
-    this.focus = [-0.5, 1.0, -0.5];
-    this.lightP = [5.0, -2.0, 2.5];
-    this.lightC = [0.75, 0.5, 1.0, 50.0];
-    this.ambient = [1.0, 0.75, 0.75, 1.0];
-    this.ss = 1.0;
-    this.shine = 1.0;
-    this.albedo = [0.2, 0.5, 1.0];
-  }
-  else if (f == 2) {
-    this.de = 'recursiveOctahedral';
-    this.scale = 2;
-    this.iterations = 13;
-    this.rotationA = -0.5;
-    this.rotationB = 0.3;
-    this.center = [0.5, 0.5, 0.5];
-    this.tolerance = 0.00025;
-    this.maxSteps = 100;
-    this.normalDiff = 0.0125;
-    this.camera = [1.0, -2.0, 0.0];
-    this.focus = [-0.5, 1.0, 0.0];
-    this.lightP = [2.2, -1.3, 2.5];
-    this.lightC = [0.75, 0.5, 1.0, 20.0];
-    this.ambient = [1.0, 1.0, 1.0, 1.0];
-    this.ss = 1.0;
-    this.shine = 1.0;
-    this.albedo = [1.0, 0.0, 0.0];
-  }
-  else if (f == 3) {
-    this.de = 'spheres';
-    this.radius = 1;
-    this.modulus = 2.5;
-    this.tolerance = 0.0025;
-    this.maxSteps = 100;
-    this.normalDiff = 0.0125;
-    this.camera = [0.0, 0.0, 5.0];
-    this.focus = [1.0, 1.0, -1.0];
-    this.lightP = [5, 7, 5];
-    this.lightC = [0.75, 0.5, 1.0, 50.0];
-    this.ambient = [1.0, 0.75, 0.75, 1.0];
-    this.ss = 1.0;
-    this.shine = 5;
-    this.albedo = [0.2, 0.5, 1.0];
-  }
-  else if (f == 4) {
-    this.de = 'recursiveOctahedral';
-    this.scale = 2;
-    this.iterations = 13;
-    this.rotationA = 0.3;
-    this.rotationB = 0.8;
-    this.center = [0.5, 0.5, 0.25];
-    this.tolerance = 0.00025;
-    this.maxSteps = 100;
-    this.normalDiff = 0.005;
-    this.camera = [1.0, -2.0, 1.0];
-    this.focus = [-0.5, 1.0, -0.5];
-    this.lightP = [5.0, -2.0, 2.5];
-    this.lightC = [0.75, 0.5, 1.0, 50.0];
-    this.ambient = [1.0, 1.0, 1.0, 1.0];
-    this.ss = 1.0;
-    this.shine = 1.0;
-    this.albedo = [1.0, 0.0, 0.0];
-  }
-  else if (f == 5) {
-    this.de = 'icoscahedral';
-    this.radius = 1;
-    this.tolerance = 0.00025;
-    this.maxSteps = 100;
-    this.normalDiff = 0.0125;
-    this.camera = [1.0, -3.0, 1.5];
-    this.focus = [-0.25, 1.0, -0.5];
-    this.lightP = [2.2, -1.3, 2.5];
-    this.lightC = [0.75, 0.5, 1.0, 20.0];
-    this.ambient = [1.0, 0.75, 0.75, 1.0];
-    this.ss = 1.0;
-    this.shine = 1.0;
-    this.albedo = [0.2, 0.5, 1.0];
-  }
+    if (f == 0) {
+      this.de = 'recursiveIcoscahedral';
+      this.scale = 2;
+      this.iterations = 13;
+      this.rotationA = 0.1;
+      this.rotationB = -0.2;
+      this.center = [0.6, 1.25 * 0.6, 0.6];
+      this.tolerance = 0.00025;
+      this.maxSteps = 100;
+      this.normalDiff = 0.0125;
+      this.camera = [1.0, -3.0, 1.5];
+      this.focus = [-0.25, 1.0, -0.5];
+      this.lightP = [2.2, -1.3, 2.5];
+      this.lightC = [0.75, 0.5, 1.0, 20.0];
+      this.ambient = [1.0, 0.75, 0.75, 1.0];
+      this.ss = 1.0;
+      this.shine = 1.0;
+      this.albedo = [0.2, 0.5, 1.0];
+    }
+    else if (f == 1) {
+      this.de = 'recursiveOctahedral';
+      this.scale = 2;
+      this.iterations = 13;
+      this.rotationA = -0.5;
+      this.rotationB = 0.6;
+      this.center = [0.75, 0.5, 0.5];
+      this.tolerance = 0.00025;
+      this.maxSteps = 100;
+      this.normalDiff = 0.005;
+      this.camera = [1.0, -2.0, 1.0];
+      this.focus = [-0.5, 1.0, -0.5];
+      this.lightP = [5.0, -2.0, 2.5];
+      this.lightC = [0.75, 0.5, 1.0, 50.0];
+      this.ambient = [1.0, 0.75, 0.75, 1.0];
+      this.ss = 1.0;
+      this.shine = 1.0;
+      this.albedo = [0.2, 0.5, 1.0];
+    }
+    else if (f == 2) {
+      this.de = 'recursiveOctahedral';
+      this.scale = 2;
+      this.iterations = 13;
+      this.rotationA = -0.5;
+      this.rotationB = 0.3;
+      this.center = [0.5, 0.5, 0.5];
+      this.tolerance = 0.00025;
+      this.maxSteps = 100;
+      this.normalDiff = 0.0125;
+      this.camera = [1.0, -2.0, 0.0];
+      this.focus = [-0.5, 1.0, 0.0];
+      this.lightP = [2.2, -1.3, 2.5];
+      this.lightC = [0.75, 0.5, 1.0, 20.0];
+      this.ambient = [1.0, 1.0, 1.0, 1.0];
+      this.ss = 1.0;
+      this.shine = 1.0;
+      this.albedo = [1.0, 0.0, 0.0];
+    }
+    else if (f == 3) {
+      this.de = 'spheres';
+      this.radius = 1;
+      this.modulus = 2.5;
+      this.tolerance = 0.0025;
+      this.maxSteps = 100;
+      this.normalDiff = 0.0125;
+      this.camera = [0.0, 0.0, 5.0];
+      this.focus = [1.0, 1.0, -1.0];
+      this.lightP = [5, 7, 5];
+      this.lightC = [0.75, 0.5, 1.0, 50.0];
+      this.ambient = [1.0, 0.75, 0.75, 1.0];
+      this.ss = 1.0;
+      this.shine = 5;
+      this.albedo = [0.2, 0.5, 1.0];
+    }
+    else if (f == 4) {
+      this.de = 'recursiveOctahedral';
+      this.scale = 2;
+      this.iterations = 13;
+      this.rotationA = 0.3;
+      this.rotationB = 0.8;
+      this.center = [0.5, 0.5, 0.25];
+      this.tolerance = 0.00025;
+      this.maxSteps = 100;
+      this.normalDiff = 0.005;
+      this.camera = [1.0, -2.0, 1.0];
+      this.focus = [-0.5, 1.0, -0.5];
+      this.lightP = [5.0, -2.0, 2.5];
+      this.lightC = [0.75, 0.5, 1.0, 50.0];
+      this.ambient = [1.0, 1.0, 1.0, 1.0];
+      this.ss = 1.0;
+      this.shine = 1.0;
+      this.albedo = [1.0, 0.0, 0.0];
+    }
+    else if (f == 5) {
+      this.de = 'icoscahedral';
+      this.radius = 1;
+      this.tolerance = 0.00025;
+      this.maxSteps = 100;
+      this.normalDiff = 0.0125;
+      this.camera = [1.0, -3.0, 1.5];
+      this.focus = [-0.25, 1.0, -0.5];
+      this.lightP = [2.2, -1.3, 2.5];
+      this.lightC = [0.75, 0.5, 1.0, 20.0];
+      this.ambient = [1.0, 0.75, 0.75, 1.0];
+      this.ss = 1.0;
+      this.shine = 1.0;
+      this.albedo = [0.2, 0.5, 1.0];
+    }
   };
   this.preset(0);
   this.presets = [
@@ -1160,38 +1154,7 @@ ${this.marchDef()}`;
     'Icosahedron'
   ];
   this.render = () => {
-    switch(this.de) {
-      case 'spheres':
-        this.DE = infSphereDE(this.radius.toFixed(3), this.modulus.toFixed(3));
-        break;
-      case 'recursiveTetrahedral':
-        this.DE = recursiveTetrahedral(this.scale.toFixed(2), this.iterations, this.rotationA.toFixed(3), this.rotationB.toFixed(3), 'vec3(' + this.center.map(c => c.toFixed(3)).join(',') + ')');
-        break;
-      case 'recursiveOctahedral':
-        this.DE = recursiveOctahedral(this.scale.toFixed(2), this.iterations, this.rotationA.toFixed(3), this.rotationB.toFixed(3), 'vec3(' + this.center.map(c => c.toFixed(3)).join(',') + ')');
-        break;
-      case 'recursiveIcoscahedral':
-        this.DE = recursiveIcoscahedral(this.scale.toFixed(2), this.iterations, this.rotationA.toFixed(3), this.rotationB.toFixed(3), 'vec3(' + this.center.map(c => c.toFixed(3)).join(',') + ')');
-        break;
-      case 'icoscahedral':
-        this.DE = icoscahedral(this.radius.toFixed(3));
-        break;
-    }
-    FractalCanvas(
-      this.DE,
-      this.tolerance,
-      this.maxSteps,
-      this.normalDiff.toFixed(5),
-      this.camera,
-      this.focus,
-      this.lightP,
-      this.lightC,
-      this.ambient,
-      this.softness.toFixed(3),
-      this.ss.toFixed(3),
-      this.shine.toFixed(3),
-      this.albedo
-    );
+    FractalCanvas(this);
   };
   this.render();
   this.setActive = key => {

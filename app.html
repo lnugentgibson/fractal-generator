@@ -133,10 +133,6 @@ Vector to Light
 <label for='input-radius'>Radius</label>
 <input id='input-radius' ng-max='9.999' ng-min='0.001' ng-model='c.radius' step='0.001' type='number'>
 </div>
-<div class='parameter' id='param-modulus' ng-if='c.de === &quot;spheres&quot;'>
-<label for='input-modulus'>Spacing</label>
-<input id='input-modulus' ng-max='99.999' ng-min='0.001' ng-model='c.modulus' step='0.001' type='number'>
-</div>
 <div class='parameter' id='param-scale' ng-if='c.de === &quot;recursiveTetrahedral&quot; || c.de === &quot;recursiveOctahedral&quot; || c.de === &quot;recursiveIcoscahedral&quot;'>
 <label for='input-scale'>Scale</label>
 <input id='input-scale' ng-max='99.99' ng-min='0.01' ng-model='c.scale' step='0.01' type='number'>
@@ -156,12 +152,73 @@ Vector to Light
 <div class='parameter multi vec3' id='param-center' ng-if='c.de === &quot;recursiveTetrahedral&quot; || c.de === &quot;recursiveOctahedral&quot; || c.de === &quot;recursiveIcoscahedral&quot;'>
 <label>Center</label>
 <div class='components'>
-<label class='vec3 component' for='input-center0'>x</label>
-<input class='vec3 component' id='input-center0' ng-max='9.999' ng-min='-9.999' ng-model='c.center[0]' step='0.001' type='number'>
-<label class='vec3 component' for='input-center1'>y</label>
-<input class='vec3 component' id='input-center1' ng-max='9.999' ng-min='-9.999' ng-model='c.center[1]' step='0.001' type='number'>
-<label class='vec3 component' for='input-center2'>z</label>
-<input class='vec3 component' id='input-center2' ng-max='9.999' ng-min='-9.999' ng-model='c.center[2]' step='0.001' type='number'>
+<label class='multi vec3 component' for='input-center0'>x</label>
+<input class='multi vec3 component' id='input-center0' ng-max='9.999' ng-min='-9.999' ng-model='c.center[0]' step='0.001' type='number'>
+<label class='multi vec3 component' for='input-center1'>y</label>
+<input class='multi vec3 component' id='input-center1' ng-max='9.999' ng-min='-9.999' ng-model='c.center[1]' step='0.001' type='number'>
+<label class='multi vec3 component' for='input-center2'>z</label>
+<input class='multi vec3 component' id='input-center2' ng-max='9.999' ng-min='-9.999' ng-model='c.center[2]' step='0.001' type='number'>
+</div>
+</div>
+<div class='parameter multi vec3' id='param-modulusc'>
+<label>Repeat Center</label>
+<div class='components'>
+<label class='multi vec3 component' for='input-modulusc0'>x</label>
+<input class='multi vec3 component' id='input-modulusc0' ng-max='999.999' ng-min='-999.999' ng-model='c.modulusC[0]' step='0.001' type='number'>
+<label class='multi vec3 component' for='input-modulusc1'>y</label>
+<input class='multi vec3 component' id='input-modulusc1' ng-max='999.999' ng-min='-999.999' ng-model='c.modulusC[1]' step='0.001' type='number'>
+<label class='multi vec3 component' for='input-modulusc2'>z</label>
+<input class='multi vec3 component' id='input-modulusc2' ng-max='999.999' ng-min='-999.999' ng-model='c.modulusC[2]' step='0.001' type='number'>
+</div>
+</div>
+<div class='parameter multi arr3' id='param-modulus'>
+<label>Repeat Spacing</label>
+<div class='components arr3'>
+<p>
+<label class='multi arr3 component' for='input-modulus0'>1</label>
+<input class='multi arr3 component' id='input-modulus0' ng-max='99.999' ng-min='0' ng-model='c.modulus[0]' step='0.001' type='number'>
+</p>
+<p>
+<label class='multi arr3 component' for='input-modulus1'>2</label>
+<input class='multi arr3 component' id='input-modulus1' ng-max='99.999' ng-min='0' ng-model='c.modulus[1]' step='0.001' type='number'>
+</p>
+<p>
+<label class='multi arr3 component' for='input-modulus2'>3</label>
+<input class='multi arr3 component' id='input-modulus2' ng-max='99.999' ng-min='0' ng-model='c.modulus[2]' step='0.001' type='number'>
+</p>
+</div>
+</div>
+<div class='parameter multi vec3' id='param-modulus0' ng-if='c.modulus[0] &gt; 0.0001'>
+<label>Repeat Direction 1</label>
+<div class='components'>
+<label class='vec3 component' for='input-modulus0'>x</label>
+<input class='vec3 component' id='input-modulus0' ng-max='99.999' ng-min='0' ng-model='c.modulusm[0]' step='0.001' type='number'>
+<label class='vec3 component' for='input-modulus1'>y</label>
+<input class='vec3 component' id='input-modulus1' ng-max='99.999' ng-min='0' ng-model='c.modulusm[1]' step='0.001' type='number'>
+<label class='vec3 component' for='input-modulus2'>z</label>
+<input class='vec3 component' id='input-modulus2' ng-max='99.999' ng-min='0' ng-model='c.modulusm[2]' step='0.001' type='number'>
+</div>
+</div>
+<div class='parameter multi vec3' id='param-modulus1' ng-if='c.modulus[1] &gt; 0.0001'>
+<label>Repeat Direction 2</label>
+<div class='components'>
+<label class='vec3 component' for='input-modulus3'>x</label>
+<input class='vec3 component' id='input-modulus3' ng-max='99.999' ng-min='0' ng-model='c.modulusm[3]' step='0.001' type='number'>
+<label class='vec3 component' for='input-modulus4'>y</label>
+<input class='vec3 component' id='input-modulus4' ng-max='99.999' ng-min='0' ng-model='c.modulusm[4]' step='0.001' type='number'>
+<label class='vec3 component' for='input-modulus5'>z</label>
+<input class='vec3 component' id='input-modulus5' ng-max='99.999' ng-min='0' ng-model='c.modulusm[5]' step='0.001' type='number'>
+</div>
+</div>
+<div class='parameter multi vec3' id='param-modulus2' ng-if='c.modulus[2] &gt; 0.0001'>
+<label>Repeat Direction 3</label>
+<div class='components'>
+<label class='vec3 component' for='input-modulus6'>x</label>
+<input class='vec3 component' id='input-modulus6' ng-max='99.999' ng-min='0' ng-model='c.modulusm[6]' step='0.001' type='number'>
+<label class='vec3 component' for='input-modulus7'>y</label>
+<input class='vec3 component' id='input-modulus7' ng-max='99.999' ng-min='0' ng-model='c.modulusm[7]' step='0.001' type='number'>
+<label class='vec3 component' for='input-modulus8'>z</label>
+<input class='vec3 component' id='input-modulus8' ng-max='99.999' ng-min='0' ng-model='c.modulusm[8]' step='0.001' type='number'>
 </div>
 </div>
 </div>

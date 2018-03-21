@@ -93,9 +93,6 @@
         .parameter#param-radius{'ng-if': 'c.de === "spheres" || c.de === "icoscahedral"'}
           %label{for: 'input-radius'} Radius
           %input#input-radius{type: 'number', 'ng-model': 'c.radius', 'ng-min': '0.001', 'ng-max': '9.999', 'step': '0.001'}
-        .parameter#param-modulus{'ng-if': 'c.de === "spheres"'}
-          %label{for: 'input-modulus'} Spacing
-          %input#input-modulus{type: 'number', 'ng-model': 'c.modulus', 'ng-min': '0.001', 'ng-max': '99.999', 'step': '0.001'}
         .parameter#param-scale{'ng-if': 'c.de === "recursiveTetrahedral" || c.de === "recursiveOctahedral" || c.de === "recursiveIcoscahedral"'}
           %label{for: 'input-scale'} Scale
           %input#input-scale{type: 'number', 'ng-model': 'c.scale', 'ng-min': '0.01', 'ng-max': '99.99', 'step': '0.01'}
@@ -112,8 +109,28 @@
           %label Center
           .components
             - (0..2).each do |c|
-              %label.vec3.component{for: "input-center#{c}"}= vec3labels[c]
-              %input.vec3.component{id: "input-center#{c}", type: 'number', 'ng-model': "c.center[#{c}]", 'ng-min': '-9.999', 'ng-max': '9.999', 'step': '0.001'}
+              %label.multi.vec3.component{for: "input-center#{c}"}= vec3labels[c]
+              %input.multi.vec3.component{id: "input-center#{c}", type: 'number', 'ng-model': "c.center[#{c}]", 'ng-min': '-9.999', 'ng-max': '9.999', 'step': '0.001'}
+        .parameter#param-modulusc.multi.vec3
+          %label Repeat Center
+          .components
+            - (0..2).each do |c|
+              %label.multi.vec3.component{for: "input-modulusc#{c}"}= vec3labels[c]
+              %input.multi.vec3.component{id: "input-modulusc#{c}", type: 'number', 'ng-model': "c.modulusC[#{c}]", 'ng-min': '-999.999', 'ng-max': '999.999', 'step': '0.001'}
+        .parameter#param-modulus.multi.arr3
+          %label Repeat Spacing
+          .components.arr3
+            - (0..2).each do |c|
+              %p
+                %label.multi.arr3.component{for: "input-modulus#{c}"}= c + 1
+                %input.multi.arr3.component{id: "input-modulus#{c}", type: 'number', 'ng-model': "c.modulus[#{c}]", 'ng-min': '0', 'ng-max': '99.999', 'step': '0.001'}
+        - (0..2).each do |m|
+          .parameter.multi.vec3{id: "param-modulus#{m}", 'ng-if': "c.modulus[#{m}] > 0.0001"}
+            %label Repeat Direction #{m + 1}
+            .components
+              - (0..2).each do |c|
+                %label.vec3.component{for: "input-modulus#{3 * m + c}"}= vec3labels[c]
+                %input.vec3.component{id: "input-modulus#{3 * m + c}", type: 'number', 'ng-model': "c.modulusm[#{3 * m + c}]", 'ng-min': '0', 'ng-max': '99.999', 'step': '0.001'}
       .parameters
         .parameter#param-tolerance
           %label{for: 'input-tolerance'} Tolerance
