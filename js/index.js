@@ -381,7 +381,7 @@ angular.module("app", []).controller("Ctrl", function () {
           maxSteps = _config7.maxSteps,
           repeatName = _config7.repeatName;
 
-      return "vec4 " + marchFuncName + "(vec3 start, vec3 dir, float tolerance, vec3 r, mat3 rd, vec3 rs) {\n  float dis = 0.0;\n  int steps = -1;\n  for(int i = 0; i < " + maxSteps + "; i++) {\n    vec3 p = start + dis * dir;\n    if(rs.x > 0.001)\n      p = " + repeatName + "(p, rb, rd[0], rs.x);\n    if(rs.y > 0.001)\n      p = " + repeatName + "(p, rb, rd[1], rs.y);\n    if(rs.z > 0.001)\n      p = " + repeatName + "(p, rb, rd[2], rs.z);\n    float d = " + deFuncName + "(p, dir);\n    dis += d;\n    if(steps < 0 && d < tolerance) {\n      steps = i;\n    }\n  }\n  if(steps < 0)\n    return vec4(0.0, 0.0, 0.0, 0.0);\n  return vec4(start + dis * dir, 1.0 - float(steps) / " + maxSteps + ".0);\n}";
+      return "vec4 " + marchFuncName + "(vec3 start, vec3 dir, float tolerance, vec3 rb, mat3 rd, vec3 rs) {\n  float dis = 0.0;\n  int steps = -1;\n  for(int i = 0; i < " + maxSteps + "; i++) {\n    vec3 p = start + dis * dir;\n    if(rs.x > 0.001)\n      p = " + repeatName + "(p, rb, rd[0], rs.x);\n    if(rs.y > 0.001)\n      p = " + repeatName + "(p, rb, rd[1], rs.y);\n    if(rs.z > 0.001)\n      p = " + repeatName + "(p, rb, rd[2], rs.z);\n    float d = " + deFuncName + "(p, dir);\n    dis += d;\n    if(steps < 0 && d < tolerance) {\n      steps = i;\n    }\n  }\n  if(steps < 0)\n    return vec4(0.0, 0.0, 0.0, 0.0);\n  return vec4(start + dis * dir, 1.0 - float(steps) / " + maxSteps + ".0);\n}";
     };
     this.declarations = function () {
       var _config8 = config,
@@ -397,7 +397,7 @@ angular.module("app", []).controller("Ctrl", function () {
           marchFuncName = _config9.marchFuncName,
           toleranceVarName = _config9.toleranceVarName;
 
-      return "vec3 cy = normalize(" + cameraUniform + "Y);\n  vec3 cx = normalize(cross(cy, " + cameraUniform + "Z));\n  vec3 cz = normalize(cross(cx, cy));\n  vec3 cp = " + cameraUniform + " + " + cameraUniform + "L * cy;\n  cp = " + cameraUniform + " + 0.25 * cy;\n  vec2 fov = sin(" + cameraUniform + "V / 2.0);\n  fov = vec2(0.25, 0.25);\n  cp += fov.x * " + cameraVarying + ".x * cx + fov.y * " + cameraVarying + ".y * cz;\n  vec4 m = " + marchFuncName + "(" + cameraUniform + ", normalize(cp - " + cameraUniform + "), " + toleranceVarName + ", repeatDir, repeatSpace);";
+      return "vec3 cy = normalize(" + cameraUniform + "Y);\n  vec3 cx = normalize(cross(cy, " + cameraUniform + "Z));\n  vec3 cz = normalize(cross(cx, cy));\n  vec3 cp = " + cameraUniform + " + " + cameraUniform + "L * cy;\n  cp = " + cameraUniform + " + 0.25 * cy;\n  vec2 fov = sin(" + cameraUniform + "V / 2.0);\n  fov = vec2(0.25, 0.25);\n  cp += fov.x * " + cameraVarying + ".x * cx + fov.y * " + cameraVarying + ".y * cz;\n  vec4 m = " + marchFuncName + "(" + cameraUniform + ", normalize(cp - " + cameraUniform + "), " + toleranceVarName + ", repeatBase, repeatDir, repeatSpace);";
     };
     this.normal = function () {
       var _config10 = config,
@@ -416,7 +416,7 @@ angular.module("app", []).controller("Ctrl", function () {
           toleranceVarName = _config12.toleranceVarName,
           marchFuncName = _config12.marchFuncName;
 
-      return "float s = 1.0;\n    /*float t = 0.01;\n    for(int i = 0; i < 100; i++)\n    {\n      float h = DE(m.xyz + lp.xyz*t, lp.xyz);\n      if( h<" + toleranceVarName + " )\n        s = 0.0;\n      else\n        s = min( s, softness*h/t );\n      t += h;\n    }*/\n    vec4 lm = " + marchFuncName + "(m.xyz + 0.01 * lp.xyz, lp.xyz, " + toleranceVarName + ");\n    if(lm.a > 0.0) s = 0.0;";
+      return "float s = 1.0;\n    /*float t = 0.01;\n    for(int i = 0; i < 100; i++)\n    {\n      float h = DE(m.xyz + lp.xyz*t, lp.xyz);\n      if( h<" + toleranceVarName + " )\n        s = 0.0;\n      else\n        s = min( s, softness*h/t );\n      t += h;\n    }*/\n    vec4 lm = " + marchFuncName + "(m.xyz + 0.01 * lp.xyz, lp.xyz, " + toleranceVarName + ", vec3(0.0), mat3(0.0), vec3(0.0));\n    if(lm.a > 0.0) s = 0.0;";
     };
     this.energy = function () {
       return "float e = lightC.a * s / (PI * pow(lp.w, 2.0));";
@@ -583,41 +583,41 @@ angular.module("app", []).controller("Ctrl", function () {
     }
   };
   var fragments = {
-    fractal: 'fragmentShader',
-    iterations: 'iterationsShader',
-    positions: 'positionsShader',
-    normal: 'normalShader',
-    lightpath: 'lightpathShader'
+    fractal: 'fragmentShader'
+    //iterations: 'iterationsShader',
+    //positions: 'positionsShader',
+    //normal: 'normalShader',
+    //lightpath: 'lightpathShader'
   };
 
   function FractalCanvas(Ctrl) {
     switch (Ctrl.de) {
       case 'spheres':
-        this.DE = sphereDE(this.radius.toFixed(3));
+        Ctrl.DE = sphereDE(Ctrl.radius.toFixed(3));
         break;
       case 'recursiveTetrahedral':
-        this.DE = recursiveTetrahedral(this.scale.toFixed(2), this.iterations, this.rotationA.toFixed(3), this.rotationB.toFixed(3), 'vec3(' + this.center.map(function (c) {
+        Ctrl.DE = recursiveTetrahedral(Ctrl.scale.toFixed(2), Ctrl.iterations, Ctrl.rotationA.toFixed(3), Ctrl.rotationB.toFixed(3), 'vec3(' + this.center.map(function (c) {
           return c.toFixed(3);
         }).join(',') + ')');
         break;
       case 'recursiveOctahedral':
-        this.DE = recursiveOctahedral(this.scale.toFixed(2), this.iterations, this.rotationA.toFixed(3), this.rotationB.toFixed(3), 'vec3(' + this.center.map(function (c) {
+        Ctrl.DE = recursiveOctahedral(Ctrl.scale.toFixed(2), Ctrl.iterations, Ctrl.rotationA.toFixed(3), Ctrl.rotationB.toFixed(3), 'vec3(' + Ctrl.center.map(function (c) {
           return c.toFixed(3);
         }).join(',') + ')');
         break;
       case 'recursiveIcoscahedral':
-        this.DE = recursiveIcoscahedral(this.scale.toFixed(2), this.iterations, this.rotationA.toFixed(3), this.rotationB.toFixed(3), 'vec3(' + this.center.map(function (c) {
+        Ctrl.DE = recursiveIcoscahedral(Ctrl.scale.toFixed(2), Ctrl.iterations, Ctrl.rotationA.toFixed(3), Ctrl.rotationB.toFixed(3), 'vec3(' + Ctrl.center.map(function (c) {
           return c.toFixed(3);
         }).join(',') + ')');
         break;
       case 'icoscahedral':
-        this.DE = icoscahedral(this.radius.toFixed(3));
+        Ctrl.DE = icoscahedral(Ctrl.radius.toFixed(3));
         break;
     }
     var fractal = new Fractal({
       maxSteps: Ctrl.maxSteps,
       normalDiff: Ctrl.normalDiff
-    }, this.DE);
+    }, Ctrl.DE);
     var draw = function draw(gl) {
       gl.clearColor(0.0, 0.0, 0.0, 1.0);
       gl.clearDepth(1.0);
@@ -645,7 +645,7 @@ angular.module("app", []).controller("Ctrl", function () {
       gl.uniform1f(this.uShine, Ctrl.shine);
       gl.uniform3fv(this.uAlbedo, new Float32Array(Ctrl.albedo));
       gl.uniform3fv(this.uRepeatBase, new Float32Array(Ctrl.modulusc));
-      gl.uniformMatrix3fv(this.repeatDir, false, Float32Array(Ctrl.modulusm));
+      gl.uniformMatrix3fv(this.repeatDir, false, new Float32Array(Ctrl.modulusm));
       gl.uniform3fv(this.uRepeatSpace, new Float32Array(Ctrl.modulus));
 
       {
@@ -664,7 +664,7 @@ angular.module("app", []).controller("Ctrl", function () {
       if (true) {
         console.log(key);
         console.log(fragment.split(/\n/g).map(function (line, i) {
-          return ("00" + (i + 1)).substr(-2, 2) + ": " + line;
+          return ("000" + (i + 1)).substr(-3, 3) + ": " + line;
         }).join("\n"));
       }
       cw.registerProgram("main", new Program(fractal.vertexShader(), fragment, attributes, uniforms, buffers, {}, draw));

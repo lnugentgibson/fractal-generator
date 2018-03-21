@@ -405,7 +405,7 @@ uniform vec3 albedo;`;
     };
     this.marchDef = () => {
       let { deFuncName, marchFuncName, maxSteps, repeatName } = config;
-      return `vec4 ${marchFuncName}(vec3 start, vec3 dir, float tolerance, vec3 r, mat3 rd, vec3 rs) {
+      return `vec4 ${marchFuncName}(vec3 start, vec3 dir, float tolerance, vec3 rb, mat3 rd, vec3 rs) {
   float dis = 0.0;
   int steps = -1;
   for(int i = 0; i < ${maxSteps}; i++) {
@@ -452,7 +452,7 @@ varying vec2 ${cameraVarying};`;
   vec2 fov = sin(${cameraUniform}V / 2.0);
   fov = vec2(0.25, 0.25);
   cp += fov.x * ${cameraVarying}.x * cx + fov.y * ${cameraVarying}.y * cz;
-  vec4 m = ${marchFuncName}(${cameraUniform}, normalize(cp - ${cameraUniform}), ${toleranceVarName}, repeatDir, repeatSpace);`;
+  vec4 m = ${marchFuncName}(${cameraUniform}, normalize(cp - ${cameraUniform}), ${toleranceVarName}, repeatBase, repeatDir, repeatSpace);`;
     };
     this.normal = () => {
       let { normalDiff } = config;
@@ -490,7 +490,7 @@ varying vec2 ${cameraVarying};`;
         s = min( s, softness*h/t );
       t += h;
     }*/
-    vec4 lm = ${marchFuncName}(m.xyz + 0.01 * lp.xyz, lp.xyz, ${toleranceVarName});
+    vec4 lm = ${marchFuncName}(m.xyz + 0.01 * lp.xyz, lp.xyz, ${toleranceVarName}, vec3(0.0), mat3(0.0), vec3(0.0));
     if(lm.a > 0.0) s = 0.0;`;
     };
     this.energy = () => {
@@ -910,49 +910,49 @@ ${this.repeatDef()}`;
   };
   var fragments = {
     fractal: 'fragmentShader',
-    iterations: 'iterationsShader',
-    positions: 'positionsShader',
-    normal: 'normalShader',
-    lightpath: 'lightpathShader'
+    //iterations: 'iterationsShader',
+    //positions: 'positionsShader',
+    //normal: 'normalShader',
+    //lightpath: 'lightpathShader'
   };
 
   function FractalCanvas(Ctrl) {
     switch (Ctrl.de) {
       case 'spheres':
-        this.DE = sphereDE(
-          this.radius.toFixed(3)
+        Ctrl.DE = sphereDE(
+          Ctrl.radius.toFixed(3)
         );
         break;
       case 'recursiveTetrahedral':
-        this.DE = recursiveTetrahedral(
-          this.scale.toFixed(2),
-          this.iterations,
-          this.rotationA.toFixed(3),
-          this.rotationB.toFixed(3),
+        Ctrl.DE = recursiveTetrahedral(
+          Ctrl.scale.toFixed(2),
+          Ctrl.iterations,
+          Ctrl.rotationA.toFixed(3),
+          Ctrl.rotationB.toFixed(3),
           'vec3(' + this.center.map(c => c.toFixed(3)).join(',') + ')'
         );
         break;
       case 'recursiveOctahedral':
-        this.DE = recursiveOctahedral(
-          this.scale.toFixed(2),
-          this.iterations,
-          this.rotationA.toFixed(3),
-          this.rotationB.toFixed(3),
-          'vec3(' + this.center.map(c => c.toFixed(3)).join(',') + ')'
+        Ctrl.DE = recursiveOctahedral(
+          Ctrl.scale.toFixed(2),
+          Ctrl.iterations,
+          Ctrl.rotationA.toFixed(3),
+          Ctrl.rotationB.toFixed(3),
+          'vec3(' + Ctrl.center.map(c => c.toFixed(3)).join(',') + ')'
         );
         break;
       case 'recursiveIcoscahedral':
-        this.DE = recursiveIcoscahedral(
-          this.scale.toFixed(2),
-          this.iterations,
-          this.rotationA.toFixed(3),
-          this.rotationB.toFixed(3),
-          'vec3(' + this.center.map(c => c.toFixed(3)).join(',') + ')'
+        Ctrl.DE = recursiveIcoscahedral(
+          Ctrl.scale.toFixed(2),
+          Ctrl.iterations,
+          Ctrl.rotationA.toFixed(3),
+          Ctrl.rotationB.toFixed(3),
+          'vec3(' + Ctrl.center.map(c => c.toFixed(3)).join(',') + ')'
         );
         break;
       case 'icoscahedral':
-        this.DE = icoscahedral(
-          this.radius.toFixed(3)
+        Ctrl.DE = icoscahedral(
+          Ctrl.radius.toFixed(3)
         );
         break;
     }
@@ -960,7 +960,7 @@ ${this.repeatDef()}`;
         maxSteps: Ctrl.maxSteps,
         normalDiff: Ctrl.normalDiff
       },
-      this.DE
+      Ctrl.DE
     );
     var draw = function(gl) {
       gl.clearColor(0.0, 0.0, 0.0, 1.0);
@@ -992,7 +992,7 @@ ${this.repeatDef()}`;
       gl.uniform1f(this.uShine, Ctrl.shine);
       gl.uniform3fv(this.uAlbedo, new Float32Array(Ctrl.albedo));
       gl.uniform3fv(this.uRepeatBase, new Float32Array(Ctrl.modulusc));
-      gl.uniformMatrix3fv(this.repeatDir, false, Float32Array(Ctrl.modulusm));
+      gl.uniformMatrix3fv(this.repeatDir, false, new Float32Array(Ctrl.modulusm));
       gl.uniform3fv(this.uRepeatSpace, new Float32Array(Ctrl.modulus));
 
       {
@@ -1013,7 +1013,7 @@ ${this.repeatDef()}`;
         console.log(
           fragment
           .split(/\n/g)
-          .map((line, i) => ("00" + (i + 1)).substr(-2, 2) + ": " + line)
+          .map((line, i) => ("000" + (i + 1)).substr(-3, 3) + ": " + line)
           .join("\n")
         );
       }
