@@ -1,0 +1,371 @@
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  -webkit-box-sizing: border-box;
+          box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  background: black;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: stretch;
+      -ms-flex-align: stretch;
+          align-items: stretch;
+}
+
+#app {
+  -webkit-box-flex: 1;
+      -ms-flex-positive: 1;
+          flex-grow: 1;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: horizontal;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: row;
+          flex-direction: row;
+  -webkit-box-align: stretch;
+      -ms-flex-align: stretch;
+          align-items: stretch;
+  width: 100%;
+  height: 100%;
+}
+#app main {
+  width: 1px;
+  -webkit-box-flex: 1;
+      -ms-flex-positive: 1;
+          flex-grow: 1;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: column;
+          flex-direction: column;
+  -webkit-box-align: stretch;
+      -ms-flex-align: stretch;
+          align-items: stretch;
+}
+#app main nav {
+  -ms-flex-negative: 0;
+      flex-shrink: 0;
+  height: 144px;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: horizontal;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: row;
+          flex-direction: row;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  -webkit-box-pack: start;
+      -ms-flex-pack: start;
+          justify-content: flex-start;
+  overflow: auto;
+}
+#app main nav img {
+  display: none;
+  width: 128px;
+  height: 128px;
+}
+#app main nav img.active {
+  display: block;
+}
+#app main section#canvases {
+  width: 100%;
+  -webkit-box-flex: 1;
+      -ms-flex-positive: 1;
+          flex-grow: 1;
+  -ms-flex-negative: 1;
+      flex-shrink: 1;
+  overflow: auto;
+}
+#app main section#canvases canvas {
+  width: 1024px;
+  height: 1024px;
+  display: none;
+}
+#app main section#canvases canvas.active {
+  display: block;
+}
+#app aside {
+  -ms-flex-negative: 0;
+      flex-shrink: 0;
+  width: 384px;
+  background: #333;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: stretch;
+      -ms-flex-align: stretch;
+          align-items: stretch;
+  -webkit-box-pack: space-arround;
+      -ms-flex-pack: space-arround;
+          justify-content: space-arround;
+}
+#app aside form {
+  -webkit-box-flex: 1;
+      -ms-flex-positive: 1;
+          flex-grow: 1;
+  margin: 8px;
+  border: 4px inset #555;
+  overflow: auto;
+}
+#app aside form .de, #app aside form .parameters {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: column;
+          flex-direction: column;
+  -webkit-box-align: stretch;
+      -ms-flex-align: stretch;
+          align-items: stretch;
+}
+#app aside form .parameter {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: horizontal;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: row;
+          flex-direction: row;
+  margin: 4px;
+}
+#app aside form .parameter label {
+  display: block;
+  color: white;
+  font-weight: bold;
+  white-space: nowrap;
+  width: 200px;
+}
+#app aside form .parameter label.component {
+  width: 16px;
+}
+#app aside form .parameter label.component.arr3 {
+  width: 80px;
+}
+#app aside form .parameter input[type=number] {
+  margin-left: 4px;
+  margin-right: 4px;
+  -webkit-box-flex: 1;
+      -ms-flex-positive: 1;
+          flex-grow: 1;
+  -ms-flex-negative: 1;
+      flex-shrink: 1;
+}
+#app aside form .parameter input[type=number].component {
+  -webkit-box-flex: 0;
+      -ms-flex-positive: 0;
+          flex-grow: 0;
+  width: 48px;
+}
+#app aside form .parameter input[type=number].component.arr3 {
+  width: 100px;
+}
+#app aside form .parameter input[type=number].ng-invalid {
+  background: #f88;
+}
+#app aside form .parameter.multi {
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: column;
+          flex-direction: column;
+  -webkit-box-align: start;
+      -ms-flex-align: start;
+          align-items: flex-start;
+}
+#app aside form .parameter.multi .components {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: horizontal;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: row;
+          flex-direction: row;
+  -webkit-box-align: stretch;
+      -ms-flex-align: stretch;
+          align-items: stretch;
+  margin-left: 32px;
+}
+#app aside form .parameter.multi .components p {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: horizontal;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: row;
+          flex-direction: row;
+}
+#app aside form .parameter.multi .components.arr3 {
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: column;
+          flex-direction: column;
+}
+#app aside form #presets {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: column;
+          flex-direction: column;
+  -webkit-box-align: start;
+      -ms-flex-align: start;
+          align-items: flex-start;
+}
+#app aside form button, #app aside form a.button {
+  border-width: 1px;
+  border-style: outset;
+  border-radius: 0;
+  font-weight: bold;
+  margin: 4px;
+}
+#app aside form button.preset, #app aside form a.button.preset {
+  margin-left: 20px;
+  background: black;
+  border-color: #555;
+  color: white;
+}
+#app aside form button.preset:hover, #app aside form a.button.preset:hover {
+  background: gray;
+}
+#app aside form button.preset:active, #app aside form a.button.preset:active {
+  background: #555;
+}
+#app aside form button#render, #app aside form a.button#render {
+  background: #bbb;
+  border-color: #ddd;
+  color: black;
+}
+#app aside form button#render:hover, #app aside form a.button#render:hover {
+  background: white;
+}
+#app aside form button#render:active, #app aside form a.button#render:active {
+  background: #555;
+}
+#app aside form button#download, #app aside form a.button#download {
+  background: #d11;
+  border-color: #ddd;
+  color: black;
+}
+#app aside form button#download:hover, #app aside form a.button#download:hover {
+  background: white;
+}
+#app aside form button#download:active, #app aside form a.button#download:active {
+  background: #555;
+}
+#app header.bar, #app nav.bar {
+  background: #333;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: horizontal;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: row;
+          flex-direction: row;
+  -ms-flex-item-align: stretch;
+      align-self: stretch;
+}
+#app header.bar.vertical, #app nav.bar.vertical {
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: column;
+          flex-direction: column;
+}
+#app .link-text {
+  cursor: pointer;
+}
+#app p.center {
+  width: 100%;
+  text-align: center;
+}
+#app .tooltip-owner {
+  position: relative;
+}
+#app .tooltip-owner:hover .tooltip {
+  visibility: visible;
+}
+#app .tooltip {
+  visibility: hidden;
+  background: black;
+  border-radius: 4px;
+  color: white;
+  border: 1px solid #bbb;
+  position: absolute;
+  z-index: 100;
+}
+#app .tooltip::after {
+  content: " ";
+  position: absolute;
+  border-width: 4px;
+  border-style: solid;
+}
+#app .tooltip.tooltip-right {
+  top: 10%;
+  left: 90%;
+}
+#app .tooltip.tooltip-right::after {
+  top: 4px;
+  right: 100%;
+  margin-top: -4px;
+  border-color: transparent #bbb transparent transparent;
+}
+#app .tooltip.preview-tooltip {
+  width: 96px;
+  height: 96px;
+}
+#app #modal {
+  display: none;
+  position: fixed;
+  z-index: 200;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  overflow: auto;
+}
+#app #modal.visible {
+  display: block;
+}
+#app #modal.visible .modal-content {
+  top: 15%;
+}
+#app #modal .modal-content {
+  position: absolute;
+  background: #ddd;
+  left: 10%;
+  top: -100%;
+  width: 80%;
+  padding: 16px;
+  -webkit-transition: top 2s ease;
+  transition: top 2s ease;
+}
+#app #modal .modal-content #modal-close-button {
+  float: right;
+}
+#app #modal .modal-content #modal-close-button .fa-square {
+  color: #333;
+}
+#app #modal .modal-content #modal-close-button .fa-square:hover {
+  color: black;
+}
+#app #modal .modal-content #modal-close-button .fa-times {
+  color: #ddd;
+}
+#app #modal .modal-content #modal-close-button .fa-times:hover {
+  color: white;
+}
