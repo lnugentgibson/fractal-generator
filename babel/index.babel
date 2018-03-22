@@ -2,7 +2,7 @@ angular.module("app", []).controller("Ctrl", function() {
   this.modal = '';
   this.radius = 1;
   this.modulusc = [0, 0, 0];
-  this.modulus = [2, 2, 2];
+  this.modulus = [0, 0, 0];
   this.modulusm = [1, 0, 0, 0, 1, 0, 0, 0, 1];
   this.scale = 2;
   this.iterations = 13;
@@ -388,8 +388,9 @@ uniform vec3 albedo;`;
       } = config;
       return `vec3 ${repeatName}(vec3 p, vec3 b, vec3 d, float s) {
   d = normalize(d);
-  float fa = dot(p - b, d);
-  return p - fa * d + mod(fa, s) * d;
+  vec3 r = p - b;
+  float fa = dot(r, d);
+  return r + (mod(fa, s) - fa) * d + b;
 }`;
     };
     this.deDec = () => {
@@ -664,8 +665,8 @@ ${this.repeatDef()}`;
     });
   }
 
-  const sphereDE = (i, R) => {
-    return `float DE(vec3 p) {
+  const sphereDE = R => {
+    return `float DE(vec3 p, vec3 d) {
   return length(p) - ${R};
 }`;
   };
@@ -910,10 +911,10 @@ ${this.repeatDef()}`;
   };
   var fragments = {
     fractal: 'fragmentShader',
-    //iterations: 'iterationsShader',
-    //positions: 'positionsShader',
-    //normal: 'normalShader',
-    //lightpath: 'lightpathShader'
+    iterations: 'iterationsShader',
+    positions: 'positionsShader',
+    normal: 'normalShader',
+    lightpath: 'lightpathShader'
   };
 
   function FractalCanvas(Ctrl) {
@@ -1038,6 +1039,9 @@ ${this.repeatDef()}`;
   this.preset = f => {
     if (f == 0) {
       this.de = 'recursiveIcoscahedral';
+      this.modulusc = [0, 0, 0];
+      this.modulus = [0, 0, 0];
+      this.modulusm = [1, 0, 0, 0, 1, 0, 0, 0, 1];
       this.scale = 2;
       this.iterations = 13;
       this.rotationA = 0.1;
@@ -1057,6 +1061,9 @@ ${this.repeatDef()}`;
     }
     else if (f == 1) {
       this.de = 'recursiveOctahedral';
+      this.modulusc = [0, 0, 0];
+      this.modulus = [0, 0, 0];
+      this.modulusm = [1, 0, 0, 0, 1, 0, 0, 0, 1];
       this.scale = 2;
       this.iterations = 13;
       this.rotationA = -0.5;
@@ -1068,14 +1075,17 @@ ${this.repeatDef()}`;
       this.camera = [1.0, -2.0, 1.0];
       this.focus = [-0.5, 1.0, -0.5];
       this.lightP = [5.0, -2.0, 2.5];
-      this.lightC = [0.75, 0.5, 1.0, 50.0];
+      this.lightC = [0.85, 0.6, 0.3, 99.999];
       this.ambient = [1.0, 0.75, 0.75, 1.0];
       this.ss = 1.0;
-      this.shine = 1.0;
-      this.albedo = [0.2, 0.5, 1.0];
+      this.shine = 50.0;
+      this.albedo = [0.01, 1, 1];
     }
     else if (f == 2) {
       this.de = 'recursiveOctahedral';
+      this.modulusc = [0, 0, 0];
+      this.modulus = [0, 0, 0];
+      this.modulusm = [1, 0, 0, 0, 1, 0, 0, 0, 1];
       this.scale = 2;
       this.iterations = 13;
       this.rotationA = -0.5;
@@ -1095,8 +1105,10 @@ ${this.repeatDef()}`;
     }
     else if (f == 3) {
       this.de = 'spheres';
+      this.modulusc = [0, 0, 0];
+      this.modulus = [2.5,2.5,2.5];
+      this.modulusm = [1, 0, 0, 0, 1, 0, 0, 0, 1];
       this.radius = 1;
-      this.modulus = 2.5;
       this.tolerance = 0.0025;
       this.maxSteps = 100;
       this.normalDiff = 0.0125;
@@ -1111,6 +1123,9 @@ ${this.repeatDef()}`;
     }
     else if (f == 4) {
       this.de = 'recursiveOctahedral';
+      this.modulusc = [0, 0, 0];
+      this.modulus = [0, 0, 0];
+      this.modulusm = [1, 0, 0, 0, 1, 0, 0, 0, 1];
       this.scale = 2;
       this.iterations = 13;
       this.rotationA = 0.3;
@@ -1130,6 +1145,9 @@ ${this.repeatDef()}`;
     }
     else if (f == 5) {
       this.de = 'icoscahedral';
+      this.modulusc = [0, 0, 0];
+      this.modulus = [2.5,2.5,2.5];
+      this.modulusm = [1, 0, 0, 0, 1, 0, 0, 0, 1];
       this.radius = 1;
       this.tolerance = 0.00025;
       this.maxSteps = 100;

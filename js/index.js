@@ -6,7 +6,7 @@ angular.module("app", []).controller("Ctrl", function () {
   this.modal = '';
   this.radius = 1;
   this.modulusc = [0, 0, 0];
-  this.modulus = [2, 2, 2];
+  this.modulus = [0, 0, 0];
   this.modulusm = [1, 0, 0, 0, 1, 0, 0, 0, 1];
   this.scale = 2;
   this.iterations = 13;
@@ -357,7 +357,7 @@ angular.module("app", []).controller("Ctrl", function () {
       var _config4 = config,
           repeatName = _config4.repeatName;
 
-      return "vec3 " + repeatName + "(vec3 p, vec3 b, vec3 d, float s) {\n  d = normalize(d);\n  float fa = dot(p - b, d);\n  return p - fa * d + mod(fa, s) * d;\n}";
+      return "vec3 " + repeatName + "(vec3 p, vec3 b, vec3 d, float s) {\n  d = normalize(d);\n  vec3 r = p - b;\n  float fa = dot(r, d);\n  return r + (mod(fa, s) - fa) * d + b;\n}";
     };
     this.deDec = function () {
       var _config5 = config,
@@ -477,8 +477,8 @@ angular.module("app", []).controller("Ctrl", function () {
     });
   }
 
-  var sphereDE = function sphereDE(i, R) {
-    return "float DE(vec3 p) {\n  return length(p) - " + R + ";\n}";
+  var sphereDE = function sphereDE(R) {
+    return "float DE(vec3 p, vec3 d) {\n  return length(p) - " + R + ";\n}";
   };
   var recursiveTetrahedral = function recursiveTetrahedral(Scale, Iterations, Ra, Rb, c) {
     return "float DE(vec3 z, vec3 d)\n{\n  vec3 n1 = normalize(vec3(1.0,1.0,0.0));\n  vec3 n2 = normalize(vec3(0.0,1.0,1.0));\n  vec3 n3 = normalize(vec3(1.0,0.0,1.0));\n  mat3 Ra = mat3(\n    cos(" + Ra + "), sin(" + Ra + "), 0.0,\n    -sin(" + Ra + "), cos(" + Ra + "), 0.0,\n    0.0, 0.0, 1.0\n  );\n  mat3 Rb = mat3(\n    cos(" + Rb + "), sin(" + Rb + "), 0.0,\n    -sin(" + Rb + "), cos(" + Rb + "), 0.0,\n    0.0, 0.0, 1.0\n  );\n  for(int n = 0; n < " + Iterations + "; n++) {\n    z = Ra * z;\n    z -= 2.0 * min(0.0, dot(z, n1)) * n1;\n    z -= 2.0 * min(0.0, dot(z, n2)) * n2;\n    z -= 2.0 * min(0.0, dot(z, n3)) * n3;\n    z = Rb * z;\n    z = " + Scale + " * (z - " + c + ");\n  }\n  return length(z) * pow(" + Scale + ", -" + Iterations + ".0);\n}";
@@ -583,11 +583,11 @@ angular.module("app", []).controller("Ctrl", function () {
     }
   };
   var fragments = {
-    fractal: 'fragmentShader'
-    //iterations: 'iterationsShader',
-    //positions: 'positionsShader',
-    //normal: 'normalShader',
-    //lightpath: 'lightpathShader'
+    fractal: 'fragmentShader',
+    iterations: 'iterationsShader',
+    positions: 'positionsShader',
+    normal: 'normalShader',
+    lightpath: 'lightpathShader'
   };
 
   function FractalCanvas(Ctrl) {
@@ -678,6 +678,9 @@ angular.module("app", []).controller("Ctrl", function () {
   this.preset = function (f) {
     if (f == 0) {
       _this4.de = 'recursiveIcoscahedral';
+      _this4.modulusc = [0, 0, 0];
+      _this4.modulus = [0, 0, 0];
+      _this4.modulusm = [1, 0, 0, 0, 1, 0, 0, 0, 1];
       _this4.scale = 2;
       _this4.iterations = 13;
       _this4.rotationA = 0.1;
@@ -696,6 +699,9 @@ angular.module("app", []).controller("Ctrl", function () {
       _this4.albedo = [0.2, 0.5, 1.0];
     } else if (f == 1) {
       _this4.de = 'recursiveOctahedral';
+      _this4.modulusc = [0, 0, 0];
+      _this4.modulus = [0, 0, 0];
+      _this4.modulusm = [1, 0, 0, 0, 1, 0, 0, 0, 1];
       _this4.scale = 2;
       _this4.iterations = 13;
       _this4.rotationA = -0.5;
@@ -707,13 +713,16 @@ angular.module("app", []).controller("Ctrl", function () {
       _this4.camera = [1.0, -2.0, 1.0];
       _this4.focus = [-0.5, 1.0, -0.5];
       _this4.lightP = [5.0, -2.0, 2.5];
-      _this4.lightC = [0.75, 0.5, 1.0, 50.0];
+      _this4.lightC = [0.85, 0.6, 0.3, 99.999];
       _this4.ambient = [1.0, 0.75, 0.75, 1.0];
       _this4.ss = 1.0;
-      _this4.shine = 1.0;
-      _this4.albedo = [0.2, 0.5, 1.0];
+      _this4.shine = 50.0;
+      _this4.albedo = [0.01, 1, 1];
     } else if (f == 2) {
       _this4.de = 'recursiveOctahedral';
+      _this4.modulusc = [0, 0, 0];
+      _this4.modulus = [0, 0, 0];
+      _this4.modulusm = [1, 0, 0, 0, 1, 0, 0, 0, 1];
       _this4.scale = 2;
       _this4.iterations = 13;
       _this4.rotationA = -0.5;
@@ -732,8 +741,10 @@ angular.module("app", []).controller("Ctrl", function () {
       _this4.albedo = [1.0, 0.0, 0.0];
     } else if (f == 3) {
       _this4.de = 'spheres';
+      _this4.modulusc = [0, 0, 0];
+      _this4.modulus = [2.5, 2.5, 2.5];
+      _this4.modulusm = [1, 0, 0, 0, 1, 0, 0, 0, 1];
       _this4.radius = 1;
-      _this4.modulus = 2.5;
       _this4.tolerance = 0.0025;
       _this4.maxSteps = 100;
       _this4.normalDiff = 0.0125;
@@ -747,6 +758,9 @@ angular.module("app", []).controller("Ctrl", function () {
       _this4.albedo = [0.2, 0.5, 1.0];
     } else if (f == 4) {
       _this4.de = 'recursiveOctahedral';
+      _this4.modulusc = [0, 0, 0];
+      _this4.modulus = [0, 0, 0];
+      _this4.modulusm = [1, 0, 0, 0, 1, 0, 0, 0, 1];
       _this4.scale = 2;
       _this4.iterations = 13;
       _this4.rotationA = 0.3;
@@ -765,6 +779,9 @@ angular.module("app", []).controller("Ctrl", function () {
       _this4.albedo = [1.0, 0.0, 0.0];
     } else if (f == 5) {
       _this4.de = 'icoscahedral';
+      _this4.modulusc = [0, 0, 0];
+      _this4.modulus = [2.5, 2.5, 2.5];
+      _this4.modulusm = [1, 0, 0, 0, 1, 0, 0, 0, 1];
       _this4.radius = 1;
       _this4.tolerance = 0.00025;
       _this4.maxSteps = 100;
