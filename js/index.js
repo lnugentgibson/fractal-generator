@@ -1,29 +1,31 @@
 "use strict";
 
 angular.module("app", []).controller("Ctrl", function () {
-  var _this4 = this;
-
-  this.modal = '';
-  this.radius = 1;
-  this.modulusc = [0, 0, 0];
-  this.modulus = [0, 0, 0];
-  this.modulusm = [1, 0, 0, 0, 1, 0, 0, 0, 1];
-  this.scale = 2;
-  this.iterations = 13;
-  this.rotationA = 0.1;
-  this.rotationB = -0.2;
-  this.center = [0.6, 1.25 * 0.6, 0.6];
-  this.tolerance = 0.00025;
-  this.maxSteps = 100;
-  this.normalDiff = 0.0125;
-  this.camera = [1.0, -3.0, 1.5];
-  this.focus = [-0.25, 1.0, -0.5];
-  this.lightP = [2.2, -1.3, 2.5];
-  this.lightC = [0.75, 0.5, 1.0, 20.0];
-  this.ambient = [1.0, 0.75, 0.75, 1.0];
-  this.ss = 1.0;
-  this.shine = 1.0;
-  this.albedo = [0.2, 0.5, 1.0];
+  var Ctrl = this;
+  Ctrl.modal = '';
+  Ctrl.de = 'recursiveTetrahedral';
+  Ctrl.modulusc = [0, 0, 0];
+  Ctrl.modulus = [0, 0, 0];
+  Ctrl.modulusm = [1, 0, 0, 0, 1, 0, 0, 0, 1];
+  Ctrl.radius = 1;
+  Ctrl.scale = 2;
+  Ctrl.iterations = 13;
+  Ctrl.rotationA = 0;
+  Ctrl.rotationB = 0;
+  Ctrl.center = [0.5, 0.5, 0.5];
+  Ctrl.tolerance = 0.00025;
+  Ctrl.maxSteps = 100;
+  Ctrl.normalDiff = 0.0125;
+  Ctrl.camera = [1, -3.0, 1.5];
+  Ctrl.focusM = 'Direction';
+  Ctrl.focus = [-0.25, 1.0, -0.5];
+  Ctrl.lightP = [2.2, -1.3, 2.5];
+  Ctrl.lightC = [0.75, 0.5, 1, 20.0];
+  Ctrl.ambient = [1, 0.75, 0.75, 1];
+  Ctrl.softness = 0;
+  Ctrl.ss = 1;
+  Ctrl.shine = 1;
+  Ctrl.albedo = [0.2, 1, 1];
 
   var FLOAT32 = 2;
 
@@ -315,8 +317,7 @@ angular.module("app", []).controller("Ctrl", function () {
   }
 
   function Fractal(paramConfig, DE) {
-    var _this3 = this;
-
+    var F = this;
     var defaultConfig = {
       positionAttribute: "aVertexPosition",
       cameraAttribute: "aCam",
@@ -331,7 +332,7 @@ angular.module("app", []).controller("Ctrl", function () {
       normalDiff: "0.0125"
     };
     var config = paramConfig ? Object.assign({}, defaultConfig, paramConfig) : Object.assign({}, defaultConfig);
-    this.vertexShader = function () {
+    F.vertexShader = function () {
       var _config = config,
           positionAttribute = _config.positionAttribute,
           cameraAttribute = _config.cameraAttribute,
@@ -340,41 +341,41 @@ angular.module("app", []).controller("Ctrl", function () {
 
       return "attribute vec4 " + positionAttribute + ";\nattribute vec2 " + cameraAttribute + ";\nvarying " + precision + " vec2 " + cameraVarying + ";\nvoid main() {\n  gl_Position = " + positionAttribute + ";\n  " + cameraVarying + " = " + cameraAttribute + ";\n}";
     };
-    this.uniforms = function () {
+    F.uniforms = function () {
       var _config2 = config,
           cameraUniform = _config2.cameraUniform,
           toleranceVarName = _config2.toleranceVarName;
 
       return "uniform vec3 " + cameraUniform + ";\nuniform float " + cameraUniform + "L;\nuniform vec3 " + cameraUniform + "Y;\nuniform vec3 " + cameraUniform + "Z;\nuniform vec2 " + cameraUniform + "V;\nuniform float " + toleranceVarName + ";\nuniform vec3 repeatBase;\nuniform mat3 repeatDir;\nuniform vec3 repeatSpace;\nuniform vec3 lightP;\nuniform vec4 lightC;\nuniform vec4 ambientC;\nuniform float softness;\nuniform float ss;\nuniform float shine;\nuniform vec3 albedo;";
     };
-    this.repeatDec = function () {
+    F.repeatDec = function () {
       var _config3 = config,
           repeatName = _config3.repeatName;
 
       return "vec3 " + repeatName + "(vec3 p, vec3 b, vec3 d, float s);";
     };
-    this.repeatDef = function () {
+    F.repeatDef = function () {
       var _config4 = config,
           repeatName = _config4.repeatName;
 
       return "vec3 " + repeatName + "(vec3 p, vec3 b, vec3 d, float s) {\n  d = normalize(d);\n  vec3 r = p - b;\n  float fa = dot(r, d);\n  return r + (mod(fa, s) - fa) * d + b;\n}";
     };
-    this.deDec = function () {
+    F.deDec = function () {
       var _config5 = config,
           deFuncName = _config5.deFuncName;
 
       return "float " + deFuncName + "(vec3 p, vec3 d);";
     };
-    this.deDef = function () {
+    F.deDef = function () {
       return DE;
     };
-    this.marchDec = function () {
+    F.marchDec = function () {
       var _config6 = config,
           marchFuncName = _config6.marchFuncName;
 
       return "vec4 " + marchFuncName + "(vec3 start, vec3 dir, float tolerance, vec3 rb, mat3 rd, vec3 rs);";
     };
-    this.marchDef = function () {
+    F.marchDef = function () {
       var _config7 = config,
           deFuncName = _config7.deFuncName,
           marchFuncName = _config7.marchFuncName,
@@ -383,14 +384,14 @@ angular.module("app", []).controller("Ctrl", function () {
 
       return "vec4 " + marchFuncName + "(vec3 start, vec3 dir, float tolerance, vec3 rb, mat3 rd, vec3 rs) {\n  float dis = 0.0;\n  int steps = -1;\n  for(int i = 0; i < " + maxSteps + "; i++) {\n    vec3 p = start + dis * dir;\n    if(rs.x > 0.001)\n      p = " + repeatName + "(p, rb, rd[0], rs.x);\n    if(rs.y > 0.001)\n      p = " + repeatName + "(p, rb, rd[1], rs.y);\n    if(rs.z > 0.001)\n      p = " + repeatName + "(p, rb, rd[2], rs.z);\n    float d = " + deFuncName + "(p, dir);\n    dis += d;\n    if(steps < 0 && d < tolerance) {\n      steps = i;\n    }\n  }\n  if(steps < 0)\n    return vec4(0.0, 0.0, 0.0, 0.0);\n  return vec4(start + dis * dir, 1.0 - float(steps) / " + maxSteps + ".0);\n}";
     };
-    this.declarations = function () {
+    F.declarations = function () {
       var _config8 = config,
           cameraVarying = _config8.cameraVarying,
           precision = _config8.precision;
 
-      return "#define PI 3.1415926535897932384626433832795\nprecision " + precision + " float;\n" + _this3.uniforms() + "\n" + _this3.repeatDec() + "\n" + _this3.deDec() + "\n" + _this3.marchDec() + "\nvarying vec2 " + cameraVarying + ";";
+      return "#define PI 3.1415926535897932384626433832795\nprecision " + precision + " float;\n" + F.uniforms() + "\n" + F.repeatDec() + "\n" + F.deDec() + "\n" + F.marchDec() + "\nvarying vec2 " + cameraVarying + ";";
     };
-    this.position = function () {
+    F.position = function () {
       var _config9 = config,
           cameraVarying = _config9.cameraVarying,
           cameraUniform = _config9.cameraUniform,
@@ -399,65 +400,65 @@ angular.module("app", []).controller("Ctrl", function () {
 
       return "vec3 cy = normalize(" + cameraUniform + "Y);\n  vec3 cx = normalize(cross(cy, " + cameraUniform + "Z));\n  vec3 cz = normalize(cross(cx, cy));\n  vec3 cp = " + cameraUniform + " + " + cameraUniform + "L * cy;\n  cp = " + cameraUniform + " + 0.25 * cy;\n  vec2 fov = sin(" + cameraUniform + "V / 2.0);\n  fov = vec2(0.25, 0.25);\n  cp += fov.x * " + cameraVarying + ".x * cx + fov.y * " + cameraVarying + ".y * cz;\n  vec4 m = " + marchFuncName + "(" + cameraUniform + ", normalize(cp - " + cameraUniform + "), " + toleranceVarName + ", repeatBase, repeatDir, repeatSpace);";
     };
-    this.normal = function () {
+    F.normal = function () {
       var _config10 = config,
           normalDiff = _config10.normalDiff;
 
       return "vec3 xDir = vec3(1.0, 0.0, 0.0);\n    vec3 yDir = vec3(0.0, 1.0, 0.0);\n    vec3 zDir = vec3(0.0, 0.0, 1.0);\n    vec3 origin = vec3(0.0, 0.0, 0.0);\n    float d = " + normalDiff + ";\n    vec3 n = normalize(vec3(DE(m.xyz + d * xDir, origin)-DE(m.xyz - d * xDir, origin), DE(m.xyz + d * yDir, origin)-DE(m.xyz - d * yDir, origin), DE(m.xyz + d * zDir, origin)-DE(m.xyz - d * zDir, origin)));\n    vec3 nt = cross(n, vec3(1.0, 0.0, 0.0));\n    if(length(nt) < 0.1) nt = cross(n, vec3(0.0, 1.0, 0.0));";
     };
-    this.lightpath = function () {
+    F.lightpath = function () {
       var _config11 = config,
           cameraUniform = _config11.cameraUniform;
 
       return "vec4 lp = vec4(lightP - m.xyz, 1.0);\n    lp.w = length(lp.xyz);\n    lp.xyz = normalize(lp.xyz);\n    vec2 incident = vec2(dot(n, lp.xyz), dot(lp.xyz - dot(n, lp.xyz) * n, nt));\n    vec3 reflected = 2.0 * incident.x * n - lp.xyz;\n    vec4 cp = vec4(" + cameraUniform + " - m.xyz, 1.0);\n    cp.w = length(cp.xyz);\n    cp.xyz = normalize(cp.xyz);\n    vec2 recieving = vec2(dot(n, cp.xyz), dot(cp.xyz - dot(n, cp.xyz) * n, nt));";
     };
-    this.shadow = function () {
+    F.shadow = function () {
       var _config12 = config,
           toleranceVarName = _config12.toleranceVarName,
           marchFuncName = _config12.marchFuncName;
 
       return "float s = 1.0;\n    /*float t = 0.01;\n    for(int i = 0; i < 100; i++)\n    {\n      float h = DE(m.xyz + lp.xyz*t, lp.xyz);\n      if( h<" + toleranceVarName + " )\n        s = 0.0;\n      else\n        s = min( s, softness*h/t );\n      t += h;\n    }*/\n    vec4 lm = " + marchFuncName + "(m.xyz + 0.01 * lp.xyz, lp.xyz, " + toleranceVarName + ", vec3(0.0), mat3(0.0), vec3(0.0));\n    if(lm.a > 0.0) s = 0.0;";
     };
-    this.energy = function () {
+    F.energy = function () {
       return "float e = lightC.a * s / (PI * pow(lp.w, 2.0));";
     };
-    this.lambert = function () {
+    F.lambert = function () {
       return "vec3 lambert = max(vec3(0.0, 0.0, 0.0), incident.x * lightC.rgb * e);";
     };
-    this.orennayar = function () {
+    F.orennayar = function () {
       return "vec2 greek = vec2(max(acos(incident.x), acos(recieving.x)), min(acos(incident.x), acos(recieving.x)));\n    vec2 latin = vec2(1.0 - 0.5 * ss / (ss + 0.33), 0.45 * ss / (ss + 0.09));\n    vec3 orennayar = max(vec3(0.0, 0.0, 0.0), e * lightC.rgb * incident.x * (latin.x + latin.y * max(0.0, cos(acos(incident.y) - acos(recieving.y))) * sin(greek.x) * tan(greek.y)));";
     };
-    this.phong = function () {
+    F.phong = function () {
       return "vec3 phong = max(vec3(0.0, 0.0, 0.0), pow(dot(reflected, cp.xyz), shine) * e * incident.x);";
     };
     var vectorColor = function vectorColor(vname, center, scale) {
       return "vec3((" + vname + ".x - " + center[0] + ") / " + scale[0] + " + 0.5, (" + vname + ".y - " + center[1] + ") / " + scale[1] + " + 0.5, (" + vname + ".z - " + center[2] + ") / " + scale[2] + " + 0.5)";
     };
-    this.debugShader = function () {
+    F.debugShader = function () {
       var _config13 = config,
           cameraVarying = _config13.cameraVarying,
           cameraUniform = _config13.cameraUniform,
           marchFuncName = _config13.marchFuncName,
           toleranceVarName = _config13.toleranceVarName;
 
-      return _this3.declarations() + "\nvoid main() {\n  vec3 cy = normalize(" + cameraUniform + "Y);\n  vec3 cx = normalize(cross(cy, " + cameraUniform + "Z));\n  vec3 cz = normalize(cross(cx, cy));\n  vec3 cp = " + cameraUniform + " + " + cameraUniform + "L * cy;\n  cp = " + cameraUniform + " + 0.25 * cy;\n  vec2 fov = 0.25 * tan(" + cameraUniform + "V / 2.0);\n  fov = vec2(0.25, 0.25);\n  cp += fov.x * " + cameraVarying + ".x * cx + fov.y * " + cameraVarying + ".y * cz;\n  vec3 dir = normalize(cp - " + cameraUniform + ");\n  //vec4 m = " + marchFuncName + "(" + cameraUniform + ", dir, " + toleranceVarName + ");\n  //gl_FragColor = vec4(" + vectorColor("cx", ["0.0", "0.0", "0.0"], ["2.0", "2.0", "2.0"]) + ", 1.0);\n  //gl_FragColor = vec4(" + vectorColor(cameraUniform, ["0.0", "0.0", "0.0"], ["2.0", "2.0", "2.0"]) + ", 1.0);\n  //gl_FragColor = vec4(" + vectorColor("cp", ["0.0", "0.0", "0.0"], ["2.0", "2.0", "2.0"]) + ", 1.0);\n  gl_FragColor = vec4(" + vectorColor("dir", ["0.0", "0.0", "0.0"], ["2.0", "2.0", "2.0"]) + ", 1.0);\n  //gl_FragColor = vec4(m.w, m.w, m.w, 1.0);\n}\n" + _this3.deDef() + "\n" + _this3.marchDef();
+      return F.declarations() + "\nvoid main() {\n  vec3 cy = normalize(" + cameraUniform + "Y);\n  vec3 cx = normalize(cross(cy, " + cameraUniform + "Z));\n  vec3 cz = normalize(cross(cx, cy));\n  vec3 cp = " + cameraUniform + " + " + cameraUniform + "L * cy;\n  cp = " + cameraUniform + " + 0.25 * cy;\n  vec2 fov = 0.25 * tan(" + cameraUniform + "V / 2.0);\n  fov = vec2(0.25, 0.25);\n  cp += fov.x * " + cameraVarying + ".x * cx + fov.y * " + cameraVarying + ".y * cz;\n  vec3 dir = normalize(cp - " + cameraUniform + ");\n  //vec4 m = " + marchFuncName + "(" + cameraUniform + ", dir, " + toleranceVarName + ");\n  //gl_FragColor = vec4(" + vectorColor("cx", ["0.0", "0.0", "0.0"], ["2.0", "2.0", "2.0"]) + ", 1.0);\n  //gl_FragColor = vec4(" + vectorColor(cameraUniform, ["0.0", "0.0", "0.0"], ["2.0", "2.0", "2.0"]) + ", 1.0);\n  //gl_FragColor = vec4(" + vectorColor("cp", ["0.0", "0.0", "0.0"], ["2.0", "2.0", "2.0"]) + ", 1.0);\n  gl_FragColor = vec4(" + vectorColor("dir", ["0.0", "0.0", "0.0"], ["2.0", "2.0", "2.0"]) + ", 1.0);\n  //gl_FragColor = vec4(m.w, m.w, m.w, 1.0);\n}\n" + F.deDef() + "\n" + F.marchDef();
     };
-    this.iterationsShader = function () {
-      return _this3.declarations() + "\nvoid main() {\n  " + _this3.position() + "\n  gl_FragColor = vec4(m.w, m.w, m.w, 1.0);\n}\n" + _this3.deDef() + "\n" + _this3.marchDef() + "\n" + _this3.repeatDef();
+    F.iterationsShader = function () {
+      return F.declarations() + "\nvoid main() {\n  " + F.position() + "\n  gl_FragColor = vec4(m.w, m.w, m.w, 1.0);\n}\n" + F.deDef() + "\n" + F.marchDef() + "\n" + F.repeatDef();
     };
-    this.positionsShader = function () {
-      return _this3.declarations() + "\nvoid main() {\n  " + _this3.position() + "\n  if(m.w > 0.001 && length(m.xyz) > 0.001) {\n    m = normalize(m);\n    gl_FragColor = vec4(" + vectorColor("m", ["0.0", "0.0", "0.0"], ["2.0", "2.0", "2.0"]) + " * m.w, 1.0);\n  }\n  else\n    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);\n}\n" + _this3.deDef() + "\n" + _this3.marchDef() + "\n" + _this3.repeatDef();
+    F.positionsShader = function () {
+      return F.declarations() + "\nvoid main() {\n  " + F.position() + "\n  if(m.w > 0.001 && length(m.xyz) > 0.001) {\n    m = normalize(m);\n    gl_FragColor = vec4(" + vectorColor("m", ["0.0", "0.0", "0.0"], ["2.0", "2.0", "2.0"]) + " * m.w, 1.0);\n  }\n  else\n    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);\n}\n" + F.deDef() + "\n" + F.marchDef() + "\n" + F.repeatDef();
     };
-    this.normalShader = function () {
-      return _this3.declarations() + "\nvoid main() {\n  " + _this3.position() + "\n  if(m.w > 0.001 && length(m.xyz) > 0.001) {\n    " + _this3.normal() + "\n    gl_FragColor = vec4(" + vectorColor("n", ["0.0", "0.0", "0.0"], ["2.0", "2.0", "2.0"]) + " * m.w, 1.0);\n  }\n  else\n    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);\n}\n" + _this3.deDef() + "\n" + _this3.marchDef() + "\n" + _this3.repeatDef();
+    F.normalShader = function () {
+      return F.declarations() + "\nvoid main() {\n  " + F.position() + "\n  if(m.w > 0.001 && length(m.xyz) > 0.001) {\n    " + F.normal() + "\n    gl_FragColor = vec4(" + vectorColor("n", ["0.0", "0.0", "0.0"], ["2.0", "2.0", "2.0"]) + " * m.w, 1.0);\n  }\n  else\n    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);\n}\n" + F.deDef() + "\n" + F.marchDef() + "\n" + F.repeatDef();
     };
-    this.lightpathShader = function () {
-      return _this3.declarations() + "\nvoid main() {\n  " + _this3.position() + "\n  if(m.w > 0.001 && length(m.xyz) > 0.001) {\n    vec3 lp = normalize(lightP - m.xyz);\n    gl_FragColor = vec4(" + vectorColor("lp", ["0.0", "0.0", "0.0"], ["2.0", "2.0", "2.0"]) + " * m.w, 1.0);\n  }\n  else\n    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);\n}\n" + _this3.deDef() + "\n" + _this3.marchDef() + "\n" + _this3.repeatDef();
+    F.lightpathShader = function () {
+      return F.declarations() + "\nvoid main() {\n  " + F.position() + "\n  if(m.w > 0.001 && length(m.xyz) > 0.001) {\n    vec3 lp = normalize(lightP - m.xyz);\n    gl_FragColor = vec4(" + vectorColor("lp", ["0.0", "0.0", "0.0"], ["2.0", "2.0", "2.0"]) + " * m.w, 1.0);\n  }\n  else\n    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);\n}\n" + F.deDef() + "\n" + F.marchDef() + "\n" + F.repeatDef();
     };
-    this.fragmentShader = function () {
-      return _this3.declarations() + "\nvoid main() {\n  " + _this3.position() + "\n  if(m.w > 0.001 && length(m.xyz) > 0.001) {\n    " + _this3.normal() + "\n    " + _this3.lightpath() + "\n    " + _this3.shadow() + "\n    " + _this3.energy() + "\n    " + _this3.lambert() + "\n    " + _this3.orennayar() + "\n    " + _this3.phong() + "\n    gl_FragColor = vec4((albedo.y * orennayar + albedo.z * phong + albedo.x * ambientC.rgb * ambientC.a) * m.w, 1.0);\n  }\n  else\n    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);\n}\n" + _this3.deDef() + "\n" + _this3.marchDef() + "\n" + _this3.repeatDef();
+    F.fragmentShader = function () {
+      return F.declarations() + "\nvoid main() {\n  " + F.position() + "\n  if(m.w > 0.001 && length(m.xyz) > 0.001) {\n    " + F.normal() + "\n    " + F.lightpath() + "\n    " + F.shadow() + "\n    " + F.energy() + "\n    " + F.lambert() + "\n    " + F.orennayar() + "\n    " + F.phong() + "\n    gl_FragColor = vec4((albedo.y * orennayar + albedo.z * phong + albedo.x * ambientC.rgb * ambientC.a) * m.w, 1.0);\n  }\n  else\n    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);\n}\n" + F.deDef() + "\n" + F.marchDef() + "\n" + F.repeatDef();
     };
-    Object.defineProperty(this, "config", {
+    Object.defineProperty(F, "config", {
       get: function get() {
         return config;
       },
@@ -466,7 +467,7 @@ angular.module("app", []).controller("Ctrl", function () {
       }
     });
     Object.keys(defaultConfig).forEach(function (prop) {
-      Object.defineProperty(_this3, prop, {
+      Object.defineProperty(F, prop, {
         get: function get() {
           return config[prop];
         },
@@ -596,7 +597,7 @@ angular.module("app", []).controller("Ctrl", function () {
         Ctrl.DE = sphereDE(Ctrl.radius.toFixed(3));
         break;
       case 'recursiveTetrahedral':
-        Ctrl.DE = recursiveTetrahedral(Ctrl.scale.toFixed(2), Ctrl.iterations, Ctrl.rotationA.toFixed(3), Ctrl.rotationB.toFixed(3), 'vec3(' + this.center.map(function (c) {
+        Ctrl.DE = recursiveTetrahedral(Ctrl.scale.toFixed(2), Ctrl.iterations, Ctrl.rotationA.toFixed(3), Ctrl.rotationB.toFixed(3), 'vec3(' + Ctrl.center.map(function (c) {
           return c.toFixed(3);
         }).join(',') + ')');
         break;
@@ -674,135 +675,134 @@ angular.module("app", []).controller("Ctrl", function () {
       $preview.addClass("active");
     });
   }
-  this.softness = 0.0;
-  this.preset = function (f) {
+  Ctrl.preset = function (f) {
     if (f == 0) {
-      _this4.de = 'recursiveIcoscahedral';
-      _this4.modulusc = [0, 0, 0];
-      _this4.modulus = [0, 0, 0];
-      _this4.modulusm = [1, 0, 0, 0, 1, 0, 0, 0, 1];
-      _this4.scale = 2;
-      _this4.iterations = 13;
-      _this4.rotationA = 0.1;
-      _this4.rotationB = -0.2;
-      _this4.center = [0.6, 1.25 * 0.6, 0.6];
-      _this4.tolerance = 0.00025;
-      _this4.maxSteps = 100;
-      _this4.normalDiff = 0.0125;
-      _this4.camera = [1.0, -3.0, 1.5];
-      _this4.focus = [-0.25, 1.0, -0.5];
-      _this4.lightP = [2.2, -1.3, 2.5];
-      _this4.lightC = [0.75, 0.5, 1.0, 20.0];
-      _this4.ambient = [1.0, 0.75, 0.75, 1.0];
-      _this4.ss = 1.0;
-      _this4.shine = 1.0;
-      _this4.albedo = [0.2, 0.5, 1.0];
+      Ctrl.de = 'recursiveIcoscahedral';
+      Ctrl.modulusc = [0, 0, 0];
+      Ctrl.modulus = [0, 0, 0];
+      Ctrl.modulusm = [1, 0, 0, 0, 1, 0, 0, 0, 1];
+      Ctrl.scale = 2;
+      Ctrl.iterations = 13;
+      Ctrl.rotationA = 0.1;
+      Ctrl.rotationB = -0.2;
+      Ctrl.center = [0.6, 1.25 * 0.6, 0.6];
+      Ctrl.tolerance = 0.00025;
+      Ctrl.maxSteps = 100;
+      Ctrl.normalDiff = 0.0125;
+      Ctrl.camera = [1.0, -3.0, 1.5];
+      Ctrl.focus = [-0.25, 1.0, -0.5];
+      Ctrl.lightP = [2.2, -1.3, 2.5];
+      Ctrl.lightC = [0.75, 0.5, 1.0, 20.0];
+      Ctrl.ambient = [1.0, 0.75, 0.75, 1.0];
+      Ctrl.ss = 1.0;
+      Ctrl.shine = 1.0;
+      Ctrl.albedo = [0.2, 0.5, 1.0];
     } else if (f == 1) {
-      _this4.de = 'recursiveOctahedral';
-      _this4.modulusc = [0, 0, 0];
-      _this4.modulus = [0, 0, 0];
-      _this4.modulusm = [1, 0, 0, 0, 1, 0, 0, 0, 1];
-      _this4.scale = 2;
-      _this4.iterations = 13;
-      _this4.rotationA = -0.5;
-      _this4.rotationB = 0.6;
-      _this4.center = [0.75, 0.5, 0.5];
-      _this4.tolerance = 0.00025;
-      _this4.maxSteps = 100;
-      _this4.normalDiff = 0.005;
-      _this4.camera = [1.0, -2.0, 1.0];
-      _this4.focus = [-0.5, 1.0, -0.5];
-      _this4.lightP = [5.0, -2.0, 2.5];
-      _this4.lightC = [0.85, 0.6, 0.3, 99.999];
-      _this4.ambient = [1.0, 0.75, 0.75, 1.0];
-      _this4.ss = 1.0;
-      _this4.shine = 50.0;
-      _this4.albedo = [0.01, 1, 1];
+      Ctrl.de = 'recursiveOctahedral';
+      Ctrl.modulusc = [0, 0, 0];
+      Ctrl.modulus = [0, 0, 0];
+      Ctrl.modulusm = [1, 0, 0, 0, 1, 0, 0, 0, 1];
+      Ctrl.scale = 2;
+      Ctrl.iterations = 13;
+      Ctrl.rotationA = -0.5;
+      Ctrl.rotationB = 0.6;
+      Ctrl.center = [0.75, 0.5, 0.5];
+      Ctrl.tolerance = 0.00025;
+      Ctrl.maxSteps = 100;
+      Ctrl.normalDiff = 0.005;
+      Ctrl.camera = [1.0, -2.0, 1.0];
+      Ctrl.focus = [-0.5, 1.0, -0.5];
+      Ctrl.lightP = [5.0, -2.0, 2.5];
+      Ctrl.lightC = [0.85, 0.6, 0.3, 99.999];
+      Ctrl.ambient = [1.0, 0.75, 0.75, 1.0];
+      Ctrl.ss = 1.0;
+      Ctrl.shine = 50.0;
+      Ctrl.albedo = [0.01, 1, 1];
     } else if (f == 2) {
-      _this4.de = 'recursiveOctahedral';
-      _this4.modulusc = [0, 0, 0];
-      _this4.modulus = [0, 0, 0];
-      _this4.modulusm = [1, 0, 0, 0, 1, 0, 0, 0, 1];
-      _this4.scale = 2;
-      _this4.iterations = 13;
-      _this4.rotationA = -0.5;
-      _this4.rotationB = 0.3;
-      _this4.center = [0.5, 0.5, 0.5];
-      _this4.tolerance = 0.00025;
-      _this4.maxSteps = 100;
-      _this4.normalDiff = 0.0125;
-      _this4.camera = [1.0, -2.0, 0.0];
-      _this4.focus = [-0.5, 1.0, 0.0];
-      _this4.lightP = [2.2, -1.3, 2.5];
-      _this4.lightC = [0.75, 0.5, 1.0, 20.0];
-      _this4.ambient = [1.0, 1.0, 1.0, 1.0];
-      _this4.ss = 1.0;
-      _this4.shine = 1.0;
-      _this4.albedo = [1.0, 0.0, 0.0];
+      Ctrl.de = 'recursiveOctahedral';
+      Ctrl.modulusc = [0, 0, 0];
+      Ctrl.modulus = [0, 0, 0];
+      Ctrl.modulusm = [1, 0, 0, 0, 1, 0, 0, 0, 1];
+      Ctrl.scale = 2;
+      Ctrl.iterations = 13;
+      Ctrl.rotationA = -0.5;
+      Ctrl.rotationB = 0.3;
+      Ctrl.center = [0.5, 0.5, 0.5];
+      Ctrl.tolerance = 0.00025;
+      Ctrl.maxSteps = 100;
+      Ctrl.normalDiff = 0.0125;
+      Ctrl.camera = [1.0, -2.0, 0.0];
+      Ctrl.focus = [-0.5, 1.0, 0.0];
+      Ctrl.lightP = [2.2, -1.3, 2.5];
+      Ctrl.lightC = [0.75, 0.5, 1.0, 20.0];
+      Ctrl.ambient = [1.0, 1.0, 1.0, 1.0];
+      Ctrl.ss = 1.0;
+      Ctrl.shine = 1.0;
+      Ctrl.albedo = [1.0, 0.0, 0.0];
     } else if (f == 3) {
-      _this4.de = 'spheres';
-      _this4.modulusc = [0, 0, 0];
-      _this4.modulus = [2.5, 2.5, 2.5];
-      _this4.modulusm = [1, 0, 0, 0, 1, 0, 0, 0, 1];
-      _this4.radius = 1;
-      _this4.tolerance = 0.0025;
-      _this4.maxSteps = 100;
-      _this4.normalDiff = 0.0125;
-      _this4.camera = [0.0, 0.0, 5.0];
-      _this4.focus = [1.0, 1.0, -1.0];
-      _this4.lightP = [5, 7, 5];
-      _this4.lightC = [0.75, 0.5, 1.0, 50.0];
-      _this4.ambient = [1.0, 0.75, 0.75, 1.0];
-      _this4.ss = 1.0;
-      _this4.shine = 5;
-      _this4.albedo = [0.2, 0.5, 1.0];
+      Ctrl.de = 'spheres';
+      Ctrl.modulusc = [0, 0, 0];
+      Ctrl.modulus = [2.5, 2.5, 2.5];
+      Ctrl.modulusm = [1, 0, 0, 0, 1, 0, 0, 0, 1];
+      Ctrl.radius = 1;
+      Ctrl.tolerance = 0.0025;
+      Ctrl.maxSteps = 100;
+      Ctrl.normalDiff = 0.0125;
+      Ctrl.camera = [0.0, 0.0, 5.0];
+      Ctrl.focus = [1.0, 1.0, -1.0];
+      Ctrl.lightP = [5, 7, 5];
+      Ctrl.lightC = [0.75, 0.5, 1.0, 50.0];
+      Ctrl.ambient = [1.0, 0.75, 0.75, 1.0];
+      Ctrl.ss = 1.0;
+      Ctrl.shine = 5;
+      Ctrl.albedo = [0.2, 0.5, 1.0];
     } else if (f == 4) {
-      _this4.de = 'recursiveOctahedral';
-      _this4.modulusc = [0, 0, 0];
-      _this4.modulus = [0, 0, 0];
-      _this4.modulusm = [1, 0, 0, 0, 1, 0, 0, 0, 1];
-      _this4.scale = 2;
-      _this4.iterations = 13;
-      _this4.rotationA = 0.3;
-      _this4.rotationB = 0.8;
-      _this4.center = [0.5, 0.5, 0.25];
-      _this4.tolerance = 0.00025;
-      _this4.maxSteps = 100;
-      _this4.normalDiff = 0.005;
-      _this4.camera = [1.0, -2.0, 1.0];
-      _this4.focus = [-0.5, 1.0, -0.5];
-      _this4.lightP = [5.0, -2.0, 2.5];
-      _this4.lightC = [0.75, 0.5, 1.0, 50.0];
-      _this4.ambient = [1.0, 1.0, 1.0, 1.0];
-      _this4.ss = 1.0;
-      _this4.shine = 1.0;
-      _this4.albedo = [1.0, 0.0, 0.0];
+      Ctrl.de = 'recursiveOctahedral';
+      Ctrl.modulusc = [0, 0, 0];
+      Ctrl.modulus = [0, 0, 0];
+      Ctrl.modulusm = [1, 0, 0, 0, 1, 0, 0, 0, 1];
+      Ctrl.scale = 2;
+      Ctrl.iterations = 13;
+      Ctrl.rotationA = 0.3;
+      Ctrl.rotationB = 0.8;
+      Ctrl.center = [0.5, 0.5, 0.25];
+      Ctrl.tolerance = 0.00025;
+      Ctrl.maxSteps = 100;
+      Ctrl.normalDiff = 0.005;
+      Ctrl.camera = [1.0, -2.0, 1.0];
+      Ctrl.focus = [-0.5, 1.0, -0.5];
+      Ctrl.lightP = [5.0, -2.0, 2.5];
+      Ctrl.lightC = [0.75, 0.5, 1.0, 50.0];
+      Ctrl.ambient = [1.0, 1.0, 1.0, 1.0];
+      Ctrl.ss = 1.0;
+      Ctrl.shine = 1.0;
+      Ctrl.albedo = [1.0, 0.0, 0.0];
     } else if (f == 5) {
-      _this4.de = 'icoscahedral';
-      _this4.modulusc = [0, 0, 0];
-      _this4.modulus = [2.5, 2.5, 2.5];
-      _this4.modulusm = [1, 0, 0, 0, 1, 0, 0, 0, 1];
-      _this4.radius = 1;
-      _this4.tolerance = 0.00025;
-      _this4.maxSteps = 100;
-      _this4.normalDiff = 0.0125;
-      _this4.camera = [1.0, -3.0, 1.5];
-      _this4.focus = [-0.25, 1.0, -0.5];
-      _this4.lightP = [2.2, -1.3, 2.5];
-      _this4.lightC = [0.75, 0.5, 1.0, 20.0];
-      _this4.ambient = [1.0, 0.75, 0.75, 1.0];
-      _this4.ss = 1.0;
-      _this4.shine = 1.0;
-      _this4.albedo = [0.2, 0.5, 1.0];
+      Ctrl.de = 'icoscahedral';
+      Ctrl.modulusc = [0, 0, 0];
+      Ctrl.modulus = [2.5, 2.5, 2.5];
+      Ctrl.modulusm = [1, 0, 0, 0, 1, 0, 0, 0, 1];
+      Ctrl.radius = 1;
+      Ctrl.tolerance = 0.00025;
+      Ctrl.maxSteps = 100;
+      Ctrl.normalDiff = 0.0125;
+      Ctrl.camera = [1.0, -3.0, 1.5];
+      Ctrl.focus = [-0.25, 1.0, -0.5];
+      Ctrl.lightP = [2.2, -1.3, 2.5];
+      Ctrl.lightC = [0.75, 0.5, 1.0, 20.0];
+      Ctrl.ambient = [1.0, 0.75, 0.75, 1.0];
+      Ctrl.ss = 1.0;
+      Ctrl.shine = 1.0;
+      Ctrl.albedo = [0.2, 0.5, 1.0];
     }
   };
-  this.preset(0);
-  this.presets = ['Arch', 'Aster', 'Orb', 'Spheres', 'Cloud', 'Icosahedron'];
-  this.render = function () {
-    FractalCanvas(_this4);
+  //Ctrl.preset(0);
+  Ctrl.presets = ['Arch', 'Aster', 'Orb', 'Spheres', 'Cloud', 'Icosahedron'];
+  Ctrl.render = function () {
+    FractalCanvas(Ctrl);
   };
-  this.render();
-  this.setActive = function (key) {
+  Ctrl.render();
+  Ctrl.setActive = function (key) {
     var $canvas = $("#" + key);
     $canvas.addClass("active");
     $('#download').attr("href", $canvas[0].toDataURL());
@@ -812,5 +812,5 @@ angular.module("app", []).controller("Ctrl", function () {
     }
     $canvases.attr("data-active-canvas", key);
   };
-  this.setActive("fractal");
+  Ctrl.setActive("fractal");
 });

@@ -216,16 +216,16 @@ body {
     &::after {
       content: " ";
       position: absolute;
-      border-width: 4px;
+      border-width: 8px;
       border-style: solid;
     }
     &.tooltip-right {
       top: 10%;
       left: 90%;
       &::after {
-        top: 4px;
+        top: 40%;
         right: 100%;
-        margin-top: -4px;
+        margin-top: -8px;
         border-color: transparent #bbb transparent transparent;
       }
     }

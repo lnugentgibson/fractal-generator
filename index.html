@@ -256,8 +256,15 @@ Vector to Light
 <input class='vec3 component' id='input-camera2' ng-max='999.999' ng-min='-999.999' ng-model='c.camera[2]' step='0.001' type='number'>
 </div>
 </div>
+<div class='parameter' id='param-mode'>
+<label for='input-mode'>Camera Mode</label>
+<select id='input-mode' ng-model='c.focusM'>
+<option value='Direction'>Direction</option>
+<option value='Target'>Target</option>
+</select>
+</div>
 <div class='parameter multi vec3' id='param-focus'>
-<label>Camera Direction</label>
+<label>Camera {{c.focusM}}</label>
 <div class='components'>
 <label class='vec3 component' for='input-focus0'>x</label>
 <input class='vec3 component' id='input-focus0' ng-max='999.999' ng-min='-999.999' ng-model='c.focus[0]' step='0.001' type='number'>
@@ -288,7 +295,7 @@ Vector to Light
 <label class='vec3 component' for='input-lightc2'>b</label>
 <input class='vec3 component' id='input-lightc2' ng-max='1' ng-min='0' ng-model='c.lightC[2]' step='0.001' type='number'>
 <label class='vec3 component' for='input-lightc3'>str</label>
-<input class='vec3 component' id='input-lightc3' ng-max='99.999' ng-min='0' ng-model='c.lightC[3]' step='0.001' type='number'>
+<input class='vec3 component' id='input-lightc3' ng-max='9999.999' ng-min='0' ng-model='c.lightC[3]' step='0.001' type='number'>
 </div>
 </div>
 <div class='parameter multi col4' id='param-ambient'>
@@ -301,7 +308,7 @@ Vector to Light
 <label class='vec3 component' for='input-ambient2'>b</label>
 <input class='vec3 component' id='input-ambient2' ng-max='1' ng-min='0' ng-model='c.ambient[2]' step='0.001' type='number'>
 <label class='vec3 component' for='input-ambient3'>str</label>
-<input class='vec3 component' id='input-ambient3' ng-max='99.999' ng-min='0' ng-model='c.ambient[3]' step='0.001' type='number'>
+<input class='vec3 component' id='input-ambient3' ng-max='9999.999' ng-min='0' ng-model='c.ambient[3]' step='0.001' type='number'>
 </div>
 </div>
 <div class='parameter' id='param-softness' ng-if='false'>
@@ -310,7 +317,7 @@ Vector to Light
 </div>
 <div class='parameter' id='param-ss'>
 <label for='input-ss'>Diffuse Roughness</label>
-<input id='input-ss' ng-max='9999' ng-min='0.001' ng-model='c.ss' step='0.001' type='number'>
+<input id='input-ss' ng-max='9999' ng-min='0' ng-model='c.ss' step='0.001' type='number'>
 </div>
 <div class='parameter' id='param-shine'>
 <label for='input-shine'>Shininess</label>
@@ -335,7 +342,9 @@ Vector to Light
 </div>
 </div>
 <div id='presets'>
+<h2>Fractal Presets</h2>
 <button class='preset' ng-click='c.preset($index)' ng-repeat='preset in c.presets'>{{preset}}</button>
+<h2 ng-if='false'>Material Presets</h2>
 </div>
 <button id='render' ng-click='c.render()'>Render</button>
 <a class='button' download='fractal' id='download'>Download</a>
@@ -343,6 +352,7 @@ Vector to Light
 </aside>
 </div>
 <script src='js/jquery.min.js'></script>
+<script src='js/jquery-ui.min.js'></script>
 <script src='js/angular.js'></script>
 <script src='js/index.js'></script>
 </body>
