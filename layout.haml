@@ -1,43 +1,16 @@
-#app{'ng-app': 'fractalGenerator', 'ng-controller': 'Ctrl as c'}
-  %header#app-header
-    %h1#title Fractal Generator
-  %section#app-row
-    %main#app-content
-      %nav#previews-container
-      %article#main-view
-    %aside#app-menu
-      %ol#app-menu-tab-headers
-        %li#app-menu-tab-header-de
-          %a{href: '#app-menu-tab-content-de'} Distance Function
-        %li#app-menu-tab-header-light
-          %a{href: '#app-menu-tab-content-light'} Lighting
-        %li#app-menu-tab-header-mat
-          %a{href: '#app-menu-tab-content-mat'} Matrial
-      %section#app-menu-tab-content-de.app-menu-accordion
-        %header#de-function-header Function
-        %section#de-function-content
-          .parameter
-            %label{for: 'input-distance-function'} Function Type
-            %select#input-distance-function{'ng-model': 'c.distanceFunctionIndex', 'ng-change': 'c.distanceFunction = c.distanceFunctions[c.distanceFunctionIndex]'}
-              %option{'ng-repeat': 'de in c.distanceFunctions', 'ng-value': '$index'} {{de.label}}
-          .parameter
-            %label{for: 'input-size-spinner'}
-              %span{'ng-if': 'c.distanceFunction.size'} {{c.distanceFunction.size}}
-              %span{'ng-if': 'c.distanceFunction.size == null'} Size
-            %input#input-size-spinner{type: 'spinner'}
-            #input-size-slider{type: 'slider'}
-          .parameter{'ng-show': 'c.distanceFunction.type === "sierpinski"'}
-            %label{for: 'input-scale-spinner'} Scale
-            %input#input-scale-spinner{type: 'spinner'}
-            #input-scale-slider{type: 'slider'}
-          .parameter{'ng-show': 'c.distanceFunction.type === "sierpinski"'}
-            %label{for: 'input-iterations-spinner'} Iterations
-            %input#input-iterations-spinner{type: 'spinner'}
-            #input-iterations-slider{type: 'slider'}
-        %header#de-modulus-header Repetition
-        %section#de-modulus-content
-      %section#app-menu-tab-content-light
-        %h3 Lighting
-      %section#app-menu-tab-content-mat
-        %h3 Material
-  %footer#app-footer
+!!! 5
+%html
+%head
+  %meta{charset: 'UTF-8'}
+  %title Fractal Generator
+  %script{src: 'js/fontawesome-all.js'}
+  %link{rel: 'stylesheet', href: 'css/normalize.min.css'}
+  %link{rel: 'stylesheet', href: 'css/jquery-ui.black-tie.min.css'}
+  %link{rel: 'stylesheet', href: 'css/layout.css'}
+%body
+  = "###marker###"
+  %script{src: 'js/jquery.min.js'}
+  %script{src: 'js/jquery-ui.min.js'}
+  %script{src: 'js/angular.js'}
+  %script{src: 'js/angular-messages.js'}
+  %script{src: 'js/layout.js'}

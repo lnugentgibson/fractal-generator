@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html></html>
+<head>
+<meta charset='UTF-8'>
+<title>Fractal Generator</title>
+<script src='js/fontawesome-all.js'></script>
+<link href='css/normalize.min.css' rel='stylesheet'>
+<link href='css/jquery-ui.black-tie.min.css' rel='stylesheet'>
+<link href='css/layout.css' rel='stylesheet'>
+</head>
+<body>
+<div id='app' ng-app='fractalGenerator' ng-controller='Ctrl as c'>
+<header id='app-header'>
+<h1 id='title'>Fractal Generator</h1>
+</header>
+<section id='app-row'>
+<main id='app-content'>
+<nav id='previews-container'></nav>
+<article id='main-view'></article>
+</main>
+<aside id='app-menu'>
+<ol id='app-menu-tab-headers'>
+<li id='app-menu-tab-header-de'>
+<a href='#app-menu-tab-content-de'>Distance Function</a>
+</li>
+<li id='app-menu-tab-header-light'>
+<a href='#app-menu-tab-content-light'>Lighting</a>
+</li>
+<li id='app-menu-tab-header-mat'>
+<a href='#app-menu-tab-content-mat'>Matrial</a>
+</li>
+</ol>
+<section class='app-menu-accordion' id='app-menu-tab-content-de'>
+<header id='de-function-header'>Function</header>
+<section id='de-function-content'>
+<div class='parameter'>
+<label for='input-distance-function'>Function Type</label>
+<select id='input-distance-function' ng-change='c.distanceFunction = c.distanceFunctions[c.distanceFunctionIndex]' ng-model='c.distanceFunctionIndex'>
+<option ng-repeat='de in c.distanceFunctions' ng-value='$index'>{{de.label}}</option>
+</select>
+</div>
+<div class='parameter'>
+<label for='input-size-spinner'>
+<span ng-if='c.distanceFunction.size'>{{c.distanceFunction.size}}</span>
+<span ng-if='c.distanceFunction.size == null'>Size</span>
+</label>
+<input id='input-size-spinner' type='spinner'>
+<div id='input-size-slider' type='slider'></div>
+</div>
+<div class='parameter' ng-show='c.distanceFunction.type === &quot;sierpinski&quot;'>
+<label for='input-scale-spinner'>Scale</label>
+<input id='input-scale-spinner' type='spinner'>
+<div id='input-scale-slider' type='slider'></div>
+</div>
+<div class='parameter' ng-show='c.distanceFunction.type === &quot;sierpinski&quot;'>
+<label for='input-iterations-spinner'>Iterations</label>
+<input id='input-iterations-spinner' type='spinner'>
+<div id='input-iterations-slider' type='slider'></div>
+</div>
+</section>
+<header id='de-modulus-header'>Repetition</header>
+<section id='de-modulus-content'></section>
+</section>
+<section id='app-menu-tab-content-light'>
+<h3>Lighting</h3>
+</section>
+<section id='app-menu-tab-content-mat'>
+<h3>Material</h3>
+</section>
+</aside>
+</section>
+<footer id='app-footer'></footer>
+</div>
+<script src='js/jquery.min.js'></script>
+<script src='js/jquery-ui.min.js'></script>
+<script src='js/angular.js'></script>
+<script src='js/angular-messages.js'></script>
+<script src='js/layout.js'></script>
+</body>

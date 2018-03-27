@@ -1,0 +1,63 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0; }
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden; }
+
+body {
+  background: black;
+  display: flex;
+  align-items: stretch; }
+
+#app {
+  background: #ddd;
+  flex-grow: 1;
+  flex-shrink: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch; }
+  #app #app-header {
+    background: #bbb;
+    flex-grow: 0;
+    flex-shrink: 0;
+    height: 64px; }
+  #app #app-row {
+    flex-grow: 1;
+    flex-shrink: 1;
+    display: flex;
+    flex-direction: row;
+    align-items: stretch; }
+    #app #app-row #app-content {
+      background: #333;
+      flex-grow: 1;
+      flex-shrink: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch; }
+      #app #app-row #app-content #previews-container {
+        background: white;
+        flex-grow: 0;
+        flex-shrink: 0;
+        height: 128px;
+        overflow-x: auto; }
+      #app #app-row #app-content #main-view {
+        background: black;
+        flex-grow: 1;
+        flex-shrink: 1;
+        overflow: auto; }
+    #app #app-row #app-menu {
+      background: #555;
+      flex-grow: 0;
+      flex-shrink: 0;
+      width: 384px; }
+  #app #app-footer {
+    background: #777;
+    flex-grow: 0;
+    flex-shrink: 0;
+    height: 32px; }
+
+/*# sourceMappingURL=layout.css.map */

@@ -1,0 +1,23 @@
+input.ng-invalid, .input-blender.ng-invalid input {
+  background: red; }
+
+.input-blender, .input-blender::before, .input-blender::after, .input-blender *, .input-blender *::before, .input-blender *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0; }
+.input-blender .ib-container {
+  width: 128px;
+  height: 24px;
+  position: relative; }
+  .input-blender .ib-container .ib-overlay {
+    position: relative;
+    top: -24px;
+    width: 128px;
+    height: 24px; }
+  .input-blender .ib-container .ib-input {
+    width: 128px;
+    height: 24px; }
+.input-blender.ib-edit-mode .ib-overlay {
+  display: none; }
+
+/*# sourceMappingURL=vector-picker.css.map */

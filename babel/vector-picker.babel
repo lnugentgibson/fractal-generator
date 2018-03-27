@@ -330,7 +330,8 @@ angular
         ngMin: '=?',
         ngMax: '=?',
         ngStep: '=?',
-        ngRequired: '=?'
+        ngRequired: '=?',
+        speed: '@'
       },
       controller: function() {
       },
@@ -375,6 +376,72 @@ angular
             if(valid != undefined)
               ângModelCtrl.$setValidity(key, valid);
           });
+        });
+        var $overlay = âelement.find(".ib-overlay");
+        var $input = âelement.find(".ib-input");
+        $overlay.click(event => {
+          if(âinputBlenderCtrl.state !== "drag" && âinputBlenderCtrl.state !== "fromdrag") {
+            âinputBlenderCtrl.state = "edit";
+            âelement.addClass("ib-edit-mode");
+            $input.select();
+            $input.focus();
+          }
+          if(âinputBlenderCtrl.state !== "fromdrag")
+            âinputBlenderCtrl.state = "none";
+        });
+        $overlay.mousedown(event => {
+          âinputBlenderCtrl.state = "down";
+          âinputBlenderCtrl.pageX = event.pageX;
+          âinputBlenderCtrl.pageY = event.pageY;
+        });
+        $overlay.mouseup(event => {
+          âinputBlenderCtrl.state = âinputBlenderCtrl.state === "drag" ? "fromdrag" : "";
+        });
+        $overlay.mousemove(event => {
+          var dx = event.pageX - âinputBlenderCtrl.pageX;
+          var dy = event.pageY - âinputBlenderCtrl.pageY;
+          âinputBlenderCtrl.pageX = event.pageX;
+          âinputBlenderCtrl.pageY = event.pageY;
+          if(âinputBlenderCtrl.state === "down")
+            âinputBlenderCtrl.state = "drag";
+          if(âinputBlenderCtrl.state === "drag") {
+            var ds = âscope.speed * dx * âinputBlenderCtrl.step;
+            var value = parseFloat(ângModelCtrl.$modelValue) + ds;
+            if(âinputBlenderCtrl.min != undefined && value < âinputBlenderCtrl.min)
+              value = âinputBlenderCtrl.min;
+            if(âinputBlenderCtrl.max != undefined && value > âinputBlenderCtrl.max)
+              value = âinputBlenderCtrl.max;
+            var basis;
+            if(âinputBlenderCtrl.min != undefined)
+              basis = âinputBlenderCtrl.min;
+            else if(âinputBlenderCtrl.max != undefined)
+              basis = âinputBlenderCtrl.max;
+            var nvalue;
+            if(basis != undefined)
+              nvalue = âinputBlenderCtrl.step * Math.round((value - basis) / âinputBlenderCtrl.step) + basis;
+            var valueStr = nvalue.toString();
+            âinputBlenderCtrl.value = valueStr;
+            ângModelCtrl.$setViewValue(valueStr);
+            if(false) {
+              console.log({
+                state: âinputBlenderCtrl.state,
+                pageX: event.pageX,
+                pageY: event.pageY,
+                dx,
+                dy,
+                ds,
+                modelValue: ângModelCtrl.$modelValue,
+                viewValue: ângModelCtrl.$viewValue,
+                ctrlValue: âinputBlenderCtrl.value,
+                value,
+                valueStr
+              });
+              console.log(ângModelCtrl);
+            }
+          }
+        });
+        $input.blur(event => {
+            âelement.removeClass("ib-edit-mode");
         });
       }
     };
@@ -493,3 +560,4 @@ angular
       this.rect1 = new Rect(2.5, 3.7);
     }
   ]);
+
