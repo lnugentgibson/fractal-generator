@@ -1,0 +1,23 @@
+%p.fa-2x
+  %i.fas.fa-question
+  %i.far.fa-question-circle
+  %i.fas.fa-question-circle
+  %span
+    %i.fa-fw.fas.fa-question{'data-fa-transform': 'shrink-6', 'data-fa-mask': 'fas fa-circle'}
+  %span.fa-layers
+    %i.far.fa-circle
+    %i.fas.fa-question{'data-fa-transform': 'shrink-6'}
+  %span.fa-layers
+    %i.fas.fa-circle
+    %i.fas.fa-question{'data-fa-transform': 'shrink-6', style: 'color: white;'}
+%p.fa-2x
+  - icons = ['question', 'info', 'arrows-alt', 'arrows-alt-h', 'arrows-alt-v', 'cart-arrow-down', 'download', 'upload', 'cloud-download-alt', 'cloud-upload-alt']
+  - icons.each do |icon|
+    %i.fas{class: "fa-#{icon}"}
+.fa-2x
+  - directions = ['down', 'left', 'right', 'up']
+  - icons = ['angle', 'angle-double', 'arrow', 'arrow-alt-circle', 'long-arrow-alt', 'caret', 'caret-square', 'chevron', 'chevron-circle', 'hand-point']
+  - icons.each do |icon|
+    %p
+      - directions.each do |d|
+        %i.fas{class: "fa-#{icon}-#{d}"}

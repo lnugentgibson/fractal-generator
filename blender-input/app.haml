@@ -1,0 +1,45 @@
+%form#app{'ng-app': 'oaBlenderInputTestApp', 'ng-controller': 'TestCtrl as c', 'ng-cloak': true, name: 'testForm'}
+  %script#oa-bnumber-template{type: 'text/ng-template'}
+    .oa-bnumber
+      %form.oa-bnumber-text{name: '{{ib.name + "-form"}}'}
+        %label.oa-bnumber-label{'ng-show': 'ib.label'} {{ib.label}}:
+        %input.oa-bnumber-field{'ng-model': 'ib.value', name: '{{ib.name + "-val"}}', 'oa-numeric': true, 'ng-attr-ng-basis': 'ib.basis', 'ng-attr-ng-min': 'ib.min', 'ng-attr-ng-max': 'ib.max', 'ng-attr-ng-step': 'ib.step', 'ng-required': 'ib.required'}
+      .oa-bnumber-overlay
+      %button.oa-bnumber-button.oa-decrement-button
+        %i.fas.fa-caret-left
+      %button.oa-bnumber-button.oa-increment-button
+        %i.fas.fa-caret-right
+  %script#oa-bnumbers-template{type: 'text/ng-template'}
+    .oa-bnumbers
+      .evars{'ng-repeat': 'element in ib.elements'}
+        %ul.vars
+          - vs = ['fieldname', 'label', 'required', 'basis', 'min', 'max', 'step', 'speed']
+          %li
+            %b index
+            {{$index}}
+          - vs.each do |v|
+            %li{'ng-if': "element.#{v}Spec"}
+              %b= v
+              {{element.#{v}}}
+      %form.oa-bnumbers-elements{name: '{{ib.name + "-form"}}'}
+        .oa-bnumbers-element{'ng-repeat': 'element in ib.elements', 'data-element-index': '{{$index}}'}
+          .oa-bnumber-text
+            %label.oa-bnumber-label{'ng-show': 'element.label'} {{element.label}}:
+            %input.oa-bnumber-field{'data-element-index': '{{$index}}', 'ng-model': 'element.value', name: '{{element.fieldname}}', 'oa-numeric': true, 'ng-attr-ng-basis': 'element.basis', 'ng-attr-ng-min': 'element.min', 'ng-attr-ng-max': 'element.max', 'ng-attr-ng-step': 'element.step', 'ng-required': 'element.required'}
+          .oa-bnumber-overlay
+          %button.oa-bnumber-button.oa-decrement-button{'data-element-index': '{{$index}}'}
+            %i.fas.fa-caret-left
+          %button.oa-bnumber-button.oa-increment-button{'data-element-index': '{{$index}}'}
+            %i.fas.fa-caret-right
+  .oa-bunumber-test
+    %oa:bnumber{'ng-model': 'c.num1', name: 'num1', label: 'N1', step: 0.005, basis: 0.002, min: -5, max: 20, speed: 5}
+    .error-messages{'ng-messages': 'testForm.num1.$error'}
+      .error-message{'ng-message': 'oaNumeric'} Value is not a number
+      .error-message{'ng-message': 'min'} Value is too low
+      .error-message{'ng-message': 'max'} Value is too high
+      .error-message{'ng-message': 'step'} Value is not valid
+    %p {{c.num1}}
+    %p {{testForm.num1.$$element.controller('oaBnumber').state}}
+  .oa-bunumber-test
+    %oa:bnumbers{'ng-model': 'c.nums', name: 'nums', length: 3, 'ng-fieldnames': 'c.names', 'ng-labels': 'c.labels', step: 0.003, basis: 0.001, min: 0, max: 1, speed: 1}
+    -#%oa:bnumbers{name: 'nums', length: 3, 'ng-fieldnames': 'c.names', 'ng-labels': 'c.labels', step: 0.003, basis: 0.001, min: 0, max: 1, speed: 1}

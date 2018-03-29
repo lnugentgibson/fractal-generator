@@ -1,0 +1,104 @@
+#app {
+  padding: 1em;
+}
+.oa-bnumbers {
+  position: relative;
+  display: inline-block;
+  .oa-bnumbers-elements {
+    display: flex;
+    flex-direction: column;
+  }
+  .oa-bnumbers-element {
+    border-radius: 0;
+    &:first-of-type {
+      border-top-left-radius: 12px;
+      border-top-right-radius: 12px;
+    }
+    &:last-of-type {
+      border-bottom-left-radius: 12px;
+      border-bottom-right-radius: 12px;
+    }
+  }
+}
+.oa-bnumber, .oa-bnumbers-element {
+  position: relative;
+  display: inline-block;
+  width: 128px + 64px + 2 * 24px;
+  height: 24px;
+  background: #bbb;
+  border: 1px solid #888;
+  box-shadow: inset 1px 1px 1px #888;
+  border-radius: 12px;
+  margin: 0;
+  &:hover {
+    background: #ddd;
+  }
+  .oa-bnumber-text {
+    position: absolute;
+    left: 24px;
+    top: 0;
+    right: 24px;
+    height: 100%;
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    //overflow: hidden;
+    //background: red;
+    .oa-bnumber-label {
+      line-height: 24px;
+    }
+    input.oa-bnumber-field {
+      flex-grow: 1;
+      flex-shrink: 1;
+      width: 1px;
+      padding: 0;
+      background: none;
+      //background: rgba(blue, 0.5);
+      border: none;
+      line-height: 24px;
+      text-align: right;
+      &:focus {
+        outline: none;
+      }
+    }
+  }
+  .oa-bnumber-overlay {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 24px;
+    //z-index: 1;
+  }
+  .oa-bnumber-button {
+    position: absolute;
+    top: 4px - 1px;
+    height: 16px + 2px;
+    width: 16px;
+    padding: 0;
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    font-size: 12px;
+    line-height: 16px;
+    color: #555;
+    //z-index: 2;
+    &:hover {
+      border-color: #555;
+    }
+    &.oa-decrement-button {
+      left: 4px - 1px;
+    }
+    &.oa-increment-button {
+      right: 4px - 1px;
+    }
+  }
+  &.oa-edit-mode {
+    .oa-bnumber-overlay {
+      display: none;
+    }
+  }
+}
+.ng-invalid {
+  background: rgba(red, 0.25);
+}

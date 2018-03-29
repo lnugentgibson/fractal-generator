@@ -1,0 +1,19 @@
+#tests{'ng-app': 'oaValidatorsTestApp'}
+  %form#numeric-test.test{'ng-controller': 'NumericTestCtrl as c', name: 'numeric'}
+    %section
+      %label{'ng-repeat-start': 'val in c.vals'} {{val.name}}
+      %input{type: 'text', 'ng-model': 'val.value', name: '{{val.name}}', 'oa-numeric': true, 'ng-min': 'c.vals2min', 'ng-max': 'c.vals3max', 'ng-step': 'c.vals4step'}
+      %p{'ng-messages': 'numeric[val.name].$error'}
+        %span{'ng-message': 'oaNumeric'} Value is not a number
+        %span{'ng-message': 'min'} Value must be greater than {{c.vals2min}}
+        %span{'ng-message': 'max'} Value must be less than {{c.vals3max}}
+        %span{'ng-message': 'step'}
+          Value must be a multiple of {{c.vals4step}}
+          %br
+          Closest valid value is {{numeric[val.name].$$element.controller('oa-numeric').closest}}
+          %br
+          Previous valid value is {{numeric[val.name].$$element.controller('oa-numeric').previous}}
+          %br
+          Next valid value is {{numeric[val.name].$$element.controller('oa-numeric').next}}
+      %span{'ng-repeat-end': true}
+    %p {{numeric}}
