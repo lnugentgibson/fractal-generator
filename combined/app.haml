@@ -1,0 +1,183 @@
+#app{'ng-app': 'testApp', 'ng-controller': 'TestCtrl as t', 'ng-cloak': true}
+  #templates{}
+    %script#oa-bnumberset-template{type: 'text/ng-template'}
+      .oa-bnumberset
+        %form.oa-bnumbers-elements{name: '{{name + "-form"}}'}
+          .oa-bnumbers-element{'ng-repeat': 'element in elements', 'data-element-index': '{{$index}}'}
+            .oa-bnumber-text
+              %label.oa-bnumber-label{'ng-show': 'element.label'} {{element.label}}:
+              -#%input.oa-bnumber-field{'data-element-index': '{{$index}}', 'xx-ng-model': 'element.value', name: '{{element.fieldname}}', 'xx-oa-numeric': true, 'xx-ng-attr-ng-basis': 'element.basis', 'xx-ng-attr-ng-min': 'element.min', 'xx-ng-attr-ng-max': 'element.max', 'xx-ng-attr-ng-step': 'element.step', 'xx-ng-required': 'element.required', 'xx-ng-blur': 'element.onBlur($event);', 'ng-value': 'element.value'}
+              %input.oa-bnumber-field{'ng-model': 'element.value', name: '{{element.fieldname}}', 'ng-blur': 'element.onBlur($event);'}
+            .oa-bnumber-overlay{'ng-click': 'element.onClick($event);', 'ng-mousedown': 'element.onDown($event);'}
+            %button.oa-bnumber-button.oa-decrement-button{'data-element-index': '{{$index}}', 'ng-click': 'element.onDecrement($event);'}
+              %i.fas.fa-caret-left
+            %button.oa-bnumber-button.oa-increment-button{'data-element-index': '{{$index}}', 'ng-click': 'element.onIncrement($event);'}
+              %i.fas.fa-caret-right
+    %script#oa-blender-view-3d-template{type: 'text/ng-template'}
+      %canvas.oa-blender-view
+    %script#vector-rect-template{type: 'text/ng-template'}
+      .vector-picker.vec2.vector-rect.none
+        %canvas.vector-interaction.vec2-interaction.rect-interaction{'ng-if': 'false'}
+        %p.vector-view.vec2-view.rect-view
+          ( {{vector.x}}, {{vector.y}} )
+          %button{'ng-click': 'setMode("edit")'}
+            %i.fas.fa-edit
+        %form.vector-form.vec2-form.rect-form
+          %oa:bnumberset{'ng-model': 'vector.arrSource', name: '{{name}}', length: 2, 'ng-fieldnames': 'names', 'ng-labels': 'labels', step: 0.001, speed: 1}
+          %button{'ng-click': 'setMode("none")'}
+            %i.fas.fa-times
+    %script#vector-polar-template{type: 'text/ng-template'}
+      .vector-picker.vec2.vector-polar
+        %p Polar Vector
+    %script#vector-2d-template{type: 'text/ng-template'}
+      .vector-picker.vec2
+        %p 2 Dimensional Vector
+    %script#vector-cartesian-template{type: 'text/ng-template'}
+      .vector-picker.vec3.vector-cartesian
+        %p Cartesian Vector
+    %script#vector-cylindrical-template{type: 'text/ng-template'}
+      .vector-picker.vec3.vector-cylindrical
+        %p Cylindrical Vector
+    %script#vector-spherical-template{type: 'text/ng-template'}
+      .vector-picker.vec3.vector-spherical
+        %p Spherical Vector
+    %script#vector-3d-template{type: 'text/ng-template'}
+      .vector-picker.vec3
+        %p 3 Dimensional Vector
+    %script#vector-homogeneous-template{type: 'text/ng-template'}
+      .vector-picker.vec4.vector-homogeneous
+        %p Homogeneous Vector
+    %script#vector-4d-template{type: 'text/ng-template'}
+      .vector-picker.vec4
+        %p 4 Dimensional Vector
+  #app-validator{'ng-app': 'oaValidatorsTestApp', 'ng-if': 't.mode == "validator"', 'ng-cloak': true}
+    %form#numeric-test.test{'ng-controller': 'NumericTestCtrl as c', name: 'numeric'}
+      %section
+        %label{'ng-repeat-start': 'val in c.vals'} {{val.name}}
+        %input{type: 'text', 'ng-model': 'val.value', name: '{{val.name}}', 'oa-numeric': true, 'ng-min': 'c.vals2min', 'ng-max': 'c.vals3max', 'ng-step': 'c.vals4step'}
+        %br
+        {{val.value}}
+        %p{'ng-messages': 'numeric[val.name].$error'}
+          %span{'ng-message': 'oaNumeric'}
+            Value is not a number
+            %br
+            Valid value is {{numeric[val.name].$$element.controller('oa-numeric').numeric}}
+          %span{'ng-message': 'min'} Value must be greater than {{c.vals2min}}
+          %span{'ng-message': 'max'} Value must be less than {{c.vals3max}}
+          %span{'ng-message': 'step'}
+            Value must be a multiple of {{c.vals4step}}
+            %br Closest valid value is {{numeric[val.name].$$element.controller('oa-numeric').closest}}
+            Previous valid value is {{numeric[val.name].$$element.controller('oa-numeric').previous}}
+            %br
+            Next valid value is {{numeric[val.name].$$element.controller('oa-numeric').next}}
+        %span{'ng-repeat-end': true}
+      %p {{numeric}}
+  %form#app-blender-input{'ng-controller': 'NumbersetTestCtrl as c', 'ng-if': 't.mode == "blender-input"', name: 'testForm', 'ng-cloak': true}
+    .oa-bunumberset-test
+      %oa:bnumberset{'ng-model': 'c.nums', name: 'nums', length: 3, 'ng-fieldnames': 'c.names', 'ng-labels': 'c.labels', step: 0.002, basis: 0.002, min: 0, max: 1, speed: 1}
+      %p {{c.nums.length}}
+      - (0..2).each do |i|
+        %p {{c.nums[#{i}]}}
+    .form-obj {{testForm}}
+  #app-linear-algebra{'ng-controller': 'RectTestCtrl', 'ng-if': 't.mode == "linear-algebra"', 'ng-cloak': true}
+    - {rect: 2, cart: 3, homg: 4}.each do |t, d|
+      .test{id: "#{t}-test"}
+        - {V1: 1, V2: 2, 'V1 + V2': 3, 'V1 - V2': 4}.each do |l, i|
+          .vector.vector-2d.vector-rect
+            %h3 #{l}
+            .component.component-x
+              %label X:
+              %input{type: 'number', 'ng-model': "#{t}#{i}.x", 'ng-change': 'update()'}
+            .component.component-y
+              %label Y:
+              %input{type: 'number', 'ng-model': "#{t}#{i}.y", 'ng-change': 'update()'}
+            - if d > 2
+              .component.component-z
+                %label Z:
+                %input{type: 'number', 'ng-model': "#{t}#{i}.z", 'ng-change': 'update()'}
+            - if d > 3
+              .component.component-w
+                %label W:
+                %input{type: 'number', 'ng-model': "#{t}#{i}.w", 'ng-change': 'update()'}
+            .modulus
+              %label M:
+              %input{type: 'number', 'ng-model': "#{t}#{i}.modulus", 'ng-change': 'update()'}
+        -#.vector
+          %h3 Scale
+          %input{'ng-model': 'rectScale'}
+        .vector
+          %h3 Dot
+          %input{'ng-model': 'rectDot', disabled: true}
+    %p C-V1.XY: {{cart1.xy.asArray()}}
+    %p C-V1.YZ: {{cart1.yz.asArray()}}
+    %p C-V1.ZX: {{cart1.zx.asArray()}}
+    %p H-V1.XY: {{homg1.xy.asArray()}}
+    %p H-V1.YZ: {{homg1.yz.asArray()}}
+    %p H-V1.ZW: {{homg1.zw.asArray()}}
+    %p H-V1.WX: {{homg1.wx.asArray()}}
+    %p H-V1.XYZ: {{homg1.xyz.asArray()}}
+  #app-sylvester{'ng-controller': 'oaSylvesterTestCtrl', 'ng-if': 't.mode == "sylvester"', 'ng-cloak': true}
+    .vector{'ng-repeat': 'vector in vectors'}
+      %h3 {{vector.name}}
+      %p dimensions: {{vector.vector.length}}
+      %p modulus: {{vector.vector.modulus}}
+      - (0..3).each do |i|
+        .component{'ng-if': "vector.vector.length > #{i}"}
+          %input{'ng-model': "vector.vector.elements[#{i}]", 'ng-attr-disabled': 'vector.disabled', 'ng-change': 'update()'}
+  #app-blender-view{'ng-controller': 'View3dTestCtrl as c', 'ng-if': 't.mode == "blender-view"', 'ng-cloak': true}
+    %oa:blender:view3{}
+  #app-vector-picker{'ng-controller': 'vectorPickerTestCtrl as c', 'ng-if': 't.mode == "vector-picker"', 'ng-cloak': true}
+    %form{name: 'test'}
+      %vector:rect{vector: 'c.rect1', name: 'rect1'}
+      %vector:polar
+      %vector:d2
+      %vector:cartesian
+      %vector:cylindrical
+      %vector:spherical
+      %vector:d3
+      %vector:homogeneous
+      %vector:d4
+      {{test}}
+  #app-fractal{'ng-controller': 'Ctrl as c', 'ng-if': 't.mode == "fractal"', 'ng-cloak': true}
+    %header#app-header
+      %h1#title Fractal Generator
+    %section#app-row
+      %main#app-content
+        %nav#previews-container
+        %article#main-view
+      %aside#app-menu
+        %ol#app-menu-tab-headers
+          %li#app-menu-tab-header-de
+            %a{href: '#app-menu-tab-content-de'} Distance Function
+          %li#app-menu-tab-header-light
+            %a{href: '#app-menu-tab-content-light'} Lighting
+          %li#app-menu-tab-header-mat
+            %a{href: '#app-menu-tab-content-mat'} Material
+        %section#app-menu-tab-content-de.app-menu-accordion
+          %header#de-function-header Function
+          %section#de-function-content
+            .parameter
+              %label{for: 'input-distance-function'} Function Type
+              %select#input-distance-function{'ng-model': 'c.distanceFunctionIndex', 'ng-change': 'c.distanceFunction = c.distanceFunctions[c.distanceFunctionIndex]'}
+                %option{'ng-repeat': 'de in c.distanceFunctions', 'ng-value': '$index'} {{de.label}}
+            .parameter
+              %label{for: 'input-size-spinner'}
+                %span{'ng-if': 'c.distanceFunction.size'} {{c.distanceFunction.size}}
+                %span{'ng-if': 'c.distanceFunction.size == null'} Size
+              %input#input-size-spinner{type: 'spinner'}
+              #input-size-slider{type: 'slider'}
+            .parameter{'ng-show': 'c.distanceFunction.type === "sierpinski"'}
+              %label{for: 'input-scale-spinner'} Scale
+              %input#input-scale-spinner{type: 'spinner'}
+              #input-scale-slider{type: 'slider'}
+            .parameter{'ng-show': 'c.distanceFunction.type === "sierpinski"'}
+              %label{for: 'input-iterations-spinner'} Iterations
+              %input#input-iterations-spinner{type: 'spinner'}
+              #input-iterations-slider{type: 'slider'}
+          %header#de-modulus-header Repetition
+          %section#de-modulus-content
+        %section#app-menu-tab-content-light
+          %h3 Lighting
+        %section#app-menu-tab-content-mat
+          %h3 Material
+    %footer#app-footer

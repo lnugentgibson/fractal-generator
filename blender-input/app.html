@@ -1,0 +1,98 @@
+<form id='app' name='testForm' ng-app='oaBlenderInputTestApp' ng-cloak ng-controller='TestCtrl as c'>
+<script id='oa-bnumber-template' type='text/ng-template'>
+<div class='oa-bnumber'>
+<form class='oa-bnumber-text' name='{{ib.name + &quot;-form&quot;}}'>
+<label class='oa-bnumber-label' ng-show='ib.label'>{{ib.label}}:</label>
+<input class='oa-bnumber-field' name='{{ib.name + &quot;-val&quot;}}' ng-attr-ng-basis='ib.basis' ng-attr-ng-max='ib.max' ng-attr-ng-min='ib.min' ng-attr-ng-step='ib.step' ng-model='ib.value' ng-required='ib.required' oa-numeric>
+</form>
+<div class='oa-bnumber-overlay'></div>
+<button class='oa-bnumber-button oa-decrement-button'>
+<i class='fas fa-caret-left'></i>
+</button>
+<button class='oa-bnumber-button oa-increment-button'>
+<i class='fas fa-caret-right'></i>
+</button>
+</div>
+</script>
+<script id='oa-bnumbers-template' type='text/ng-template'>
+<div class='oa-bnumbers'>
+<div class='evars' ng-repeat='element in ib.elements'>
+<ul class='vars'>
+<li>
+<b>index</b>
+{{$index}}
+</li>
+<li ng-if='element.fieldnameSpec'>
+<b>fieldname</b>
+{{element.fieldname}}
+</li>
+<li ng-if='element.labelSpec'>
+<b>label</b>
+{{element.label}}
+</li>
+<li ng-if='element.requiredSpec'>
+<b>required</b>
+{{element.required}}
+</li>
+<li ng-if='element.basisSpec'>
+<b>basis</b>
+{{element.basis}}
+</li>
+<li ng-if='element.minSpec'>
+<b>min</b>
+{{element.min}}
+</li>
+<li ng-if='element.maxSpec'>
+<b>max</b>
+{{element.max}}
+</li>
+<li ng-if='element.stepSpec'>
+<b>step</b>
+{{element.step}}
+</li>
+<li ng-if='element.speedSpec'>
+<b>speed</b>
+{{element.speed}}
+</li>
+</ul>
+</div>
+</div>
+</script>
+<script id='oa-bnumberset-template' type='text/ng-template'>
+<div class='oa-bnumberset'>
+<form class='oa-bnumbers-elements' name='{{ib.name + &quot;-form&quot;}}'>
+<div class='oa-bnumbers-element' data-element-index='{{$index}}' ng-repeat='element in ib.elements'>
+<div class='oa-bnumber-text'>
+<label class='oa-bnumber-label' ng-show='element.label'>{{element.label}}:</label>
+<input class='oa-bnumber-field' data-element-index='{{$index}}' name='{{element.fieldname}}' ng-attr-ng-basis='element.basis' ng-attr-ng-max='element.max' ng-attr-ng-min='element.min' ng-attr-ng-step='element.step' ng-model='element.value' ng-required='element.required' oa-numeric>
+</div>
+<div class='oa-bnumber-overlay'></div>
+<button class='oa-bnumber-button oa-decrement-button' data-element-index='{{$index}}'>
+<i class='fas fa-caret-left'></i>
+</button>
+<button class='oa-bnumber-button oa-increment-button' data-element-index='{{$index}}'>
+<i class='fas fa-caret-right'></i>
+</button>
+</div>
+</form>
+</div>
+</script>
+<div class='oa-bunumber-test'>
+<oa:bnumber basis='0.002' label='N1' max='20' min='-5' name='num1' ng-model='c.num1' speed='5' step='0.005'></oa:bnumber>
+<oa:bnumber basis='0.002' label='N2' max='20' min='-5' name='num2' ng-model='c.num2' speed='5' step='0.005'></oa:bnumber>
+<div class='error-messages' ng-messages='testForm.num1.$error'>
+<div class='error-message' ng-message='oaNumeric'>Value is not a number</div>
+<div class='error-message' ng-message='min'>Value is too low</div>
+<div class='error-message' ng-message='max'>Value is too high</div>
+<div class='error-message' ng-message='step'>Value is not valid</div>
+</div>
+<p>{{c.num1}}</p>
+<p>{{testForm.num1.$$element.controller('oaBnumber').state}}</p>
+</div>
+<div class='oa-bunumbers-test'>
+<oa:bnumbers basis='0.001' length='3' max='1' min='0' name='nums' ng-fieldnames='c.names' ng-labels='c.labels' ng-model='c.nums' speed='1' step='0.003'></oa:bnumbers>
+</div>
+<div class='oa-bunumberset-test'>
+<oa:bnumberset basis='0.001' length='3' max='1' min='0' name='nums' ng-fieldnames='c.names' ng-labels='c.labels' ng-model='c.nums' speed='1' step='0.003'></oa:bnumberset>
+</div>
+</form>

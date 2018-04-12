@@ -21,6 +21,8 @@
             %li{'ng-if': "element.#{v}Spec"}
               %b= v
               {{element.#{v}}}
+  %script#oa-bnumberset-template{type: 'text/ng-template'}
+    .oa-bnumberset
       %form.oa-bnumbers-elements{name: '{{ib.name + "-form"}}'}
         .oa-bnumbers-element{'ng-repeat': 'element in ib.elements', 'data-element-index': '{{$index}}'}
           .oa-bnumber-text
@@ -33,6 +35,7 @@
             %i.fas.fa-caret-right
   .oa-bunumber-test
     %oa:bnumber{'ng-model': 'c.num1', name: 'num1', label: 'N1', step: 0.005, basis: 0.002, min: -5, max: 20, speed: 5}
+    %oa:bnumber{'ng-model': 'c.num2', name: 'num2', label: 'N2', step: 0.005, basis: 0.002, min: -5, max: 20, speed: 5}
     .error-messages{'ng-messages': 'testForm.num1.$error'}
       .error-message{'ng-message': 'oaNumeric'} Value is not a number
       .error-message{'ng-message': 'min'} Value is too low
@@ -40,6 +43,9 @@
       .error-message{'ng-message': 'step'} Value is not valid
     %p {{c.num1}}
     %p {{testForm.num1.$$element.controller('oaBnumber').state}}
-  .oa-bunumber-test
+  .oa-bunumbers-test
     %oa:bnumbers{'ng-model': 'c.nums', name: 'nums', length: 3, 'ng-fieldnames': 'c.names', 'ng-labels': 'c.labels', step: 0.003, basis: 0.001, min: 0, max: 1, speed: 1}
     -#%oa:bnumbers{name: 'nums', length: 3, 'ng-fieldnames': 'c.names', 'ng-labels': 'c.labels', step: 0.003, basis: 0.001, min: 0, max: 1, speed: 1}
+  .oa-bunumberset-test
+    -#%oa:bnumber{'ng-model': 'num1', name: 'num2', label: 'N2', step: 0.001, speed: 5, max: 100, min: -100}
+    %oa:bnumberset{'ng-model': 'c.nums', name: 'nums', length: 3, 'ng-fieldnames': 'c.names', 'ng-labels': 'c.labels', step: 0.003, basis: 0.001, min: 0, max: 1, speed: 1}

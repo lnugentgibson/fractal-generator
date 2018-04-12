@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html></html>
+<head>
+<meta charset='UTF-8'>
+<title>Fractal Generator</title>
+<link href='../lib/css/normalize.min.css' rel='stylesheet'>
+<link href='../lib/css/jquery-ui.black-tie.min.css' rel='stylesheet'>
+<link href='style.css' rel='stylesheet'>
+</head>
+<body>
+<div id='app' ng-app='fractalGenerator' ng-cloak ng-controller='Ctrl as c'>
+<script id='oa-bnumberset-template' type='text/ng-template'>
+<div class='oa-bnumberset'>
+<form class='oa-bnumbers-elements' name='{{name + &quot;-form&quot;}}'>
+<div class='oa-bnumbers-element' data-element-index='{{$index}}' ng-repeat='element in elements'>
+<div class='oa-bnumber-text'>
+<label class='oa-bnumber-label' ng-show='element.label'>{{element.label}}:</label>
+<input class='oa-bnumber-field' name='{{element.fieldname}}' ng-blur='element.onBlur($event);' ng-model='element.value'>
+</div>
+<div class='oa-bnumber-overlay' ng-click='element.onClick($event);' ng-mousedown='element.onDown($event);'></div>
+<button class='oa-bnumber-button oa-decrement-button' data-element-index='{{$index}}' ng-click='element.onDecrement($event);'>
+<i class='fas fa-caret-left'></i>
+</button>
+<button class='oa-bnumber-button oa-increment-button' data-element-index='{{$index}}' ng-click='element.onIncrement($event);'>
+<i class='fas fa-caret-right'></i>
+</button>
+</div>
+</form>
+</div>
+</script>
+<script id='vector-rect-template' type='text/ng-template'>
+<div class='vector-picker vec2 vector-rect none'>
+<canvas class='vector-interaction vec2-interaction rect-interaction' ng-if='false'></canvas>
+<p class='vector-view vec2-view rect-view'>
+( {{vector.x}}, {{vector.y}} )
+<button ng-click='setMode(&quot;edit&quot;)'>
+<i class='fas fa-edit'></i>
+</button>
+</p>
+<form class='vector-form vec2-form rect-form'>
+<oa:bnumberset length='2' name='{{name}}' ng-fieldnames='names' ng-labels='labels' ng-model='vector.arrSource' speed='1' step='0.001'></oa:bnumberset>
+<button ng-click='setMode(&quot;none&quot;)'>
+<i class='fas fa-times'></i>
+</button>
+</form>
+</div>
+</script>
+<script id='vector-polar-template' type='text/ng-template'>
+<div class='vector-picker vec2 vector-polar'>
+<p>Polar Vector</p>
+</div>
+</script>
+<script id='vector-2d-template' type='text/ng-template'>
+<div class='vector-picker vec2'>
+<p>2 Dimensional Vector</p>
+</div>
+</script>
+<script id='vector-cartesian-template' type='text/ng-template'>
+<div class='vector-picker vec3 vector-cartesian'>
+<p>Cartesian Vector</p>
+</div>
+</script>
+<script id='vector-cylindrical-template' type='text/ng-template'>
+<div class='vector-picker vec3 vector-cylindrical'>
+<p>Cylindrical Vector</p>
+</div>
+</script>
+<script id='vector-spherical-template' type='text/ng-template'>
+<div class='vector-picker vec3 vector-spherical'>
+<p>Spherical Vector</p>
+</div>
+</script>
+<script id='vector-3d-template' type='text/ng-template'>
+<div class='vector-picker vec3'>
+<p>3 Dimensional Vector</p>
+</div>
+</script>
+<script id='vector-homogeneous-template' type='text/ng-template'>
+<div class='vector-picker vec4 vector-homogeneous'>
+<p>Homogeneous Vector</p>
+</div>
+</script>
+<script id='vector-4d-template' type='text/ng-template'>
+<div class='vector-picker vec4'>
+<p>4 Dimensional Vector</p>
+</div>
+</script>
+<header id='app-header' ng-show='showHeader'>
+<h1 id='title'>Fractal Generator</h1>
+</header>
+<section id='app-row'>
+<main id='app-content'>
+<nav id='previews-container' ng-show='showTopMenu'></nav>
+<article id='main-view'></article>
+</main>
+<aside id='app-menu' ng-show='showSideMenu'>
+<ol id='app-menu-tab-headers'>
+<li id='app-menu-tab-header-de'>
+<a href='#app-menu-tab-content-de'>Distance Function</a>
+</li>
+<li id='app-menu-tab-header-light'>
+<a href='#app-menu-tab-content-light'>Lighting</a>
+</li>
+<li id='app-menu-tab-header-mat'>
+<a href='#app-menu-tab-content-mat'>Material</a>
+</li>
+</ol>
+<section class='app-menu-accordion' id='app-menu-tab-content-de'>
+<header id='de-function-header'>Function</header>
+<section id='de-function-content'>
+<div class='parameter'>
+<label for='input-distance-function'>Function Type</label>
+<select id='input-distance-function' ng-change='c.distanceFunction = c.distanceFunctions[c.distanceFunctionIndex]' ng-model='c.distanceFunctionIndex'>
+<option ng-repeat='de in c.distanceFunctions' ng-value='$index'>{{de.label}}</option>
+</select>
+</div>
+<div class='parameter'>
+<label for='input-size-spinner'>
+<span ng-if='c.distanceFunction.size'>{{c.distanceFunction.size}}</span>
+<span ng-if='c.distanceFunction.size == null'>Size</span>
+</label>
+<input id='input-size-spinner' type='spinner'>
+<div id='input-size-slider' type='slider'></div>
+</div>
+<div class='parameter' ng-show='c.distanceFunction.type === &quot;sierpinski&quot;'>
+<label for='input-scale-spinner'>Scale</label>
+<input id='input-scale-spinner' type='spinner'>
+<div id='input-scale-slider' type='slider'></div>
+</div>
+<div class='parameter' ng-show='c.distanceFunction.type === &quot;sierpinski&quot;'>
+<label for='input-iterations-spinner'>Iterations</label>
+<input id='input-iterations-spinner' type='spinner'>
+<div id='input-iterations-slider' type='slider'></div>
+</div>
+</section>
+<header id='de-modulus-header'>Repetition</header>
+<section id='de-modulus-content'></section>
+</section>
+<section id='app-menu-tab-content-light'>
+<h3>Lighting</h3>
+</section>
+<section id='app-menu-tab-content-mat'>
+<h3>Material</h3>
+</section>
+</aside>
+</section>
+<footer id='app-footer'></footer>
+</div>
+<script src='../lib/js/decimal.min.js'></script>
+<script src='../lib/js/fontawesome-all.js'></script>
+<script src='../lib/js/jquery.min.js'></script>
+<script src='../lib/js/jquery-ui.min.js'></script>
+<script src='../lib/js/angular.js'></script>
+<script src='../lib/js/angular-messages.js'></script>
+<script src='script.js'></script>
+</body>

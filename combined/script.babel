@@ -1,0 +1,4231 @@
+Math.log10 = Math.log(10);
+$(() => {
+  $('#app-menu').tabs();
+  $('.app-menu-accordion').accordion({
+    header: 'header',
+    collapsible: true
+  });
+  //$('input[type=spinner]').spinner();
+  /*
+  $('[type=slider]').slider();
+  $('#input-size-slider').slider('option', {
+    min: 0.1,
+    max: 1000,
+    step: 1
+  });
+  */
+});
+const {
+  angular,
+  $
+} = window;
+// oaUtil
+{
+  angular
+    .module('oaUtil', [])
+    .service('oaUtil', function() {
+      function Util() {
+        this.ngKeySet = (key, _options) => {
+          var options = Object.assign({
+              key: true,
+              keys: true,
+              Key: false,
+              Keys: false,
+              ngKey: true,
+              ngKeys: true,
+              ng_key: false,
+              ng_keys: false
+            },
+            _options
+          );
+          var keyset = {};
+          keyset.key = key.toLowerCase();
+          keyset.keys = options.plural ?
+            options.plural.toLowerCase() :
+            keyset.key + 's';
+          keyset.Key =
+            keyset.key.charAt(0).toUpperCase() +
+            keyset.key.substr(1, keyset.key.length);
+          keyset.Keys = options.plural ?
+            keyset.keys.charAt(0).toUpperCase() +
+            keyset.keys.substr(1, keyset.keys.length) :
+            keyset.Key + 's';
+          keyset.ngKey = 'ng' + keyset.Key;
+          keyset.ngKeys = options.plural ?
+            'ng' + keyset.Keys :
+            keyset.ngKey + 's';
+          keyset.ng_key = 'ng-' + keyset.key;
+          keyset.ng_keys = options.plural ?
+            'ng-' + keyset.keys :
+            keyset.ng_key + 's';
+          var out = {};
+          Object.keys(keyset).forEach(type => {
+            if (options[type]) out[type] = keyset[type];
+          });
+          return out;
+        };
+        this.arrayFunctions = function(_options) {
+          this.asArray = () => {
+            var arr = [];
+            for(var i = 0; i < this.length; i++)
+              arr.push(this[i]);
+          };
+          var options = Object.assign({
+              every: true,
+              fill: true,
+              forEach: true,
+              join: true,
+              map: true,
+              reduce: true,
+              reduceRight: true,
+              reverse: true,
+              rotate: true,
+              rotateRight: true
+            },
+            _options
+          );
+          if (options.every)
+            this.every = function(callback, thisArg) {
+              var arr = this.asArray();
+              for (var i = 0; i < this.length; i++)
+                if (!callback.call(thisArg, this[i], i, arr)) return false;
+              return true;
+            };
+          if (options.fill)
+            this.fill = function(value, start, end) {
+              if (arguments.length < 2) {
+                start = 0;
+                end = this.length;
+              }
+              else if (arguments.length < 3) end = this.length;
+              for (var i = Math.max(start, 0); i < this.length && i < end; i++)
+                this[i] = value;
+            };
+          if (options.forEach)
+            this.forEach = function(callback, thisArg) {
+              var arr = this.asArray();
+              for (var i = 0; i < this.length; i++)
+                callback.call(thisArg, this[i], i, arr);
+            };
+          if (options.join)
+            this.join = function(sep) {
+              var str = '';
+              for (var i = 0; i < this.length; i++)
+                str += (i > 0 ? sep : '') + this[i];
+              return str;
+            };
+          if (options.map)
+            this.map = function(callback, thisArg) {
+              var arr = this.asArray();
+              var out = [];
+              for (var i = 0; i < this.length; i++)
+                out[i] = callback.call(thisArg, this[i], i, arr);
+              return out;
+            };
+          if (options.reduce)
+            this.reduce = function(callback, initialValue) {
+              var arr = this.asArray();
+              var a = initialValue;
+              for (var i = 0; i < this.length; i++)
+                a = callback.call(null, a, this[i], i, arr);
+              return a;
+            };
+          if (options.reduceRight)
+            this.reduceRight = function(callback, initialValue) {
+              var arr = this.asArray();
+              var a = initialValue;
+              for (var i = this.length - 1; i >= 0; i++)
+                a = callback.call(null, a, this[i], i, arr);
+              return a;
+            };
+          if (options.reverse)
+            this.reverse = function() {
+              keys.reverse().forEach((key, i) => (this[i] = this[key]));
+            };
+          if (options.rotate)
+            this.rotate = function(shift) {
+              shift %= this.length;
+              keys
+                .slice(shift, this.length)
+                .concat(keys.slice(0, shift))
+                .forEach((key, i) => (this[i] = this[key]));
+            };
+          if (options.rotateRight)
+            this.rotateRight = function(shift) {
+              shift %= this.length;
+              keys
+                .slice(this.length - shift, this.length)
+                .concat(keys.slice(0, this.length - shift))
+                .forEach((key, i) => (this[i] = this[key]));
+            };
+        }
+      }
+
+      return new Util();
+    })
+    .factory('oaArrayObject', ['oaUtil', function(oaUtil) {
+      function oaArrObj(_src, _keys, _length, getters, setters, _options) {
+        var src = _src ? _src : this;
+        Object.defineProperty(this, 'objSource', {
+          get: () => src,
+          set: v => {
+            if (v) src = v;
+          }
+        });
+        if (!_keys || !_keys.length) throw 'keys cannot be empty';
+        var length = arguments.length > 1 ? parseInt(_length, 10) : _keys.length;
+        if (length < 1) throw 'length must be positive integer';
+        var keys = _keys.slice(0, length);
+        for (var i = 0; i < length; i++)
+          (j => {
+            Object.defineProperty(this, j, {
+              get: () =>
+                getters && getters[j] ? getters[j](src[keys[j]]) : src[keys[j]],
+              set: v => {
+                if (setters && setters[j]) src[keys[j]] = setters[j](v);
+                else src[keys[j]] = v;
+              }
+            });
+          })(i);
+        Object.defineProperty(this, 'length', {
+          get: () => length
+        });
+        this.setArray = arr =>
+          keys.map((key, i) => {
+            if (arr && arr.length > i) this[key] = arr[i];
+          });
+        oaUtil.arrayFunctions.call(this, _options);
+        this.asArray = () => keys.map(key => this[key]);
+      }
+
+      return oaArrObj;
+    }])
+    .factory('oaObjectArray', function() {
+      function oaObjArr(_src, _keys, _length, getters, setters, _options) {
+        var src = _src ? _src : this;
+        Object.defineProperty(this, 'arrSource', {
+          get: () => src,
+          set: v => {
+            if (v) {
+              src = v;
+              //console.log('array source set to ' + v);
+            }
+          }
+        });
+        if (!_keys || !_keys.length) throw 'keys cannot be empty';
+        var length = arguments.length > 1 ? parseInt(_length, 10) : _keys.length;
+        if (length < 1) throw 'length must be positive integer';
+        var keys = _keys.slice(0, length);
+        var options = Object.assign({
+            offset: 0,
+            skip: 1
+          },
+          _options
+        );
+        Object.defineProperties(this, {
+          offset: {
+            get: () => options.offset,
+            set: v => {
+              options.offset = parseInt(v, 10);
+              if (isNaN(options.offset)) options.offset = 0;
+            }
+          },
+          skip: {
+            get: () => options.skip,
+            set: v => {
+              options.skip = parseInt(v, 10);
+              if (isNaN(options.skip)) options.skip = 0;
+            }
+          }
+        });
+        var index = i => {
+          if (options.skip) i *= options.skip;
+          if (options.offset) i += options.offset;
+          return i;
+        };
+        for (var i = 0; i < length; i++)
+          (j => {
+            Object.defineProperty(this, keys[j], {
+              get: () =>
+                getters && getters[j] ? getters[j](src[index(j)]) : src[index(j)],
+              set: v => {
+                if (setters && setters[j]) src[index(j)] = setters[j](v);
+                else src[index(j)] = v;
+              }
+            });
+          })(i);
+      }
+
+      return oaObjArr;
+    })
+    .factory('oaIndexProvider', function() {
+      function oaIndexProvider(initialCapacity) {
+        var ranges = [
+          [0, initialCapacity > 0 ? initialCapacity : -1]
+        ];
+        var size = initialCapacity > 0 ? initialCapacity : -1;
+        var capacity = initialCapacity > 0 ? initialCapacity : 0;
+        Object.defineProperties(this, {
+          size: {
+            get: () => size,
+            set: v => {
+              var d;
+              var lastIndex = ranges.length - 1;
+              var last = ranges[lastIndex];
+              if (size == -1)
+                return 0;
+              if (v > size) {
+                d = v - size;
+                if (last[0] + last[1] < size)
+                  ranges.push([size, d]);
+                else
+                  last[1] = last[1] + d;
+                size = v;
+                return d;
+              }
+              else if (v == size)
+                return 0;
+              else {
+                if (last[0] + last[1] < size)
+                  return 0;
+                v = Math.min(v, last[0]);
+                d = v - size;
+                size = v;
+                if (last[0] == v)
+                  ranges.splice(lastIndex, 1);
+                else
+                  last[1] = size - last[0];
+                return d;
+              }
+            }
+          },
+          capacity: {
+            get: () => capacity
+          }
+        });
+        this.requestIndex = () => {
+          if (!ranges.length)
+            return null;
+          var range = ranges[0];
+          var i = range[0];
+          if (range[1] == 1) {
+            ranges.splice(0, 1);
+            if (size == -1 && !ranges.length)
+              ranges.push([capacity, 1]);
+          }
+          else {
+            range[0] = range[0] + 1;
+            range[1] = range[1] - 1;
+          }
+          if (size == -1)
+            capacity = Math.max(capacity, i + 1);
+          else
+            capacity--;
+          return i;
+        };
+        this.releaseIndex = index => {
+          if (index < 0 || index >= size)
+            return;
+          for (var i = 0; i < ranges.length; i++)
+            if (index < ranges[i][0]) {
+              ranges.splice(i, 0, [index, 1]);
+              return;
+            }
+          else if (index >= ranges[i][0] && index < ranges[i][0] + ranges[i][1])
+            return;
+          else if (index == ranges[i][0] + ranges[i][1]) {
+            ranges[i][1] = ranges[i][1] + 1;
+            return;
+          }
+          ranges.push([index, 1]);
+          if (size != -1)
+            capacity++;
+        };
+      }
+
+      return oaIndexProvider;
+    });
+}
+// oaValidators with tests
+{
+  angular
+    .module('oaValidators', ['oaUtil'])
+    .constant('oaFloatPattern', (() => {
+      return `(^[0-9]+\.([0-9]+)?([eE][-+][0-9]+)?$)|(^\.[0-9]+([eE][-+][0-9]+)?$)|(^[0-9]+([eE][-+][0-9]+)?$)`;
+    })())
+    .constant('oaIntPattern', `^[0-9]+([eE][-+][0-9]+)?$`)
+    .factory('oaFloatRegExp', [
+      'oaFloatPattern',
+      function(oaFloatPattern) {
+        return new RegExp(oaFloatPattern);
+      }
+    ])
+    .factory('oaIntRegExp', [
+      'oaIntPattern',
+      function(oaIntPattern) {
+        return new RegExp(oaIntPattern);
+      }
+    ])
+    .factory('oaNumber', [
+      'oaUtil',
+      'oaFloatPattern',
+      function(oaUtil, oaFloatPattern) {
+        function oaNumber(source, index, keyOptions) {
+          var This = this;
+          keyOptions = Object.assign({
+              key: true,
+              keys: true,
+              ngKey: true,
+              ngKeys: true
+            },
+            keyOptions
+          );
+          This.sourceProperty = (T, src, key, keys, getter, setter) => {
+            var keySet = oaUtil.ngKeySet(
+              key,
+              Object.assign({}, keyOptions, { plural: keys })
+            );
+            var getArr = () => {
+              var arr;
+              if (keySet.ngKeys) arr = src[keySet.ngKeys];
+              if (keySet.ng_keys && !arr) arr = src[keySet.ng_keys];
+              if (keySet.keys && !arr) arr = src[keySet.keys];
+              return arr;
+            };
+            var getVal = () => {
+              var val;
+              if (keySet.ngKey) val = src[keySet.ngKey];
+              if (keySet.ng_key && val == undefined) val = src[keySet.ng_key];
+              if (keySet.key && val == undefined) val = src[keySet.key];
+              return val;
+            };
+            var setVal = v => {
+              if (keySet.ngKey) src[keySet.ngKey] = v;
+              if (keySet.ng_key) src[keySet.ng_key] = v;
+              if (keySet.key) src[keySet.key] = v;
+            };
+            Object.defineProperty(T, '_' + key, {
+              enumerable: true,
+              get: () => {
+                var arr = getArr();
+                var val = getVal();
+                var v = arr && index != undefined ? arr[index] || val : val;
+                return getter ? getter(v) : v;
+              },
+              set: v => {
+                if (v == undefined) return;
+                if (setter) v = setter(v);
+                var arr = getArr();
+                if (arr && index != undefined) arr[index] = v;
+                else setVal(v);
+              }
+            });
+          };
+          This.specProperty = (T, src, key, keys, srcP, getter) => {
+            if (!srcP) T.sourceProperty(T, src, key, keys, getter);
+            Object.defineProperty(T, key + 'Spec', {
+              enumerable: true,
+              get: () => T[key] != undefined
+            });
+          };
+          This.numberProperty = (T, src, key, keys, specP, srcP, getter) => {
+            if (!specP) T.specProperty(T, src, key, keys, srcP, getter);
+            else if (!srcP) T.sourceProperty(T, src, key, keys, getter);
+            Object.defineProperty(T, key, {
+              enumerable: true,
+              get: () =>
+                T['_' + key] != undefined ? parseFloat(T['_' + key]) : undefined,
+              set: v => {
+                T['_' + key] = v == undefined ? v : v.toString();
+              }
+            });
+            Object.defineProperty(T, key + 'Dec', {
+              enumerable: true,
+              get: () => {
+                //console.log(`get this.${key}Dec`);
+                var v = T['_' + key];
+                if (v == undefined) {
+                  //console.log(`this._${key} is undefined`);
+                  return;
+                }
+                try {
+                  var o = new Decimal(v);
+                  //console.log(`this.${key}Dec is ${o}`);
+                  return o;
+                }
+                catch (err) {
+                  //console.log(`error generating this.${key}Dec`);
+                  //console.log(err);
+                }
+              },
+              set: v => {
+                T['_' + key] = v == undefined ? v : v.toString();
+              }
+            });
+          };
+          This.genProperty = (T, src, key, keys, specP, srcP, getter) => {
+            if (!specP) T.specProperty(T, src, key, keys, srcP, getter);
+            else if (!srcP) T.sourceProperty(T, src, key, keys, getter);
+            Object.defineProperty(T, key, {
+              enumerable: true,
+              get: () => {
+                if (T['_' + key] == undefined)
+                  return;
+                return T['_' + key];
+              },
+              set: v => {
+                T['_' + key] = v == undefined ? v : v.toString();
+              }
+            });
+          };
+          This.isNumeric = v => v && v.match(oaFloatPattern);
+          Object.defineProperty(This, 'numeric', {
+            get: () => This.valueSpec && This.isNumeric(This._value)
+          });
+          Object.defineProperty(This, '_number', {
+            get: () => isNaN(This.value) ? This._basis : This.value.toString()
+          });
+          This.numberProperty(This, source, 'number', null, true, true);
+          This.isValidInterval = v => {
+            if (v == undefined)
+              return { valid: false };
+            else if (typeof v === 'string') {
+              if (!v.length || !This.isNumeric(v))
+                return { valid: false };
+              v = new Decimal(v);
+            }
+            else if (typeof v === 'number') {
+              if (isNaN(v))
+                return { valid: false };
+              v = new Decimal(v);
+            }
+            if (!This.stepSpec)
+              return { valid: true };
+            var out = {};
+            var shift = v.sub(This.basis);
+            out.valid = shift.mod(This.step).equals(0);
+            if (out.valid) {
+              out.previous = v.sub(This.step);
+              out.closest = v;
+              out.next = v.add(This.step);
+            }
+            else {
+              out.previous = shift
+                .div(This.step)
+                .floor()
+                .mul(This.step)
+                .add(This.basis);
+              out.closest = shift
+                .div(This.step)
+                .round()
+                .mul(This.step)
+                .add(This.basis);
+              out.next = shift
+                .div(This.step)
+                .ceil()
+                .mul(This.step)
+                .add(This.basis);
+            }
+            return out;
+          };
+          Object.defineProperty(This, 'validInterval', {
+            get: () => This.isValidInterval(This._value).valid
+          });
+          Object.defineProperty(This, '_previous', {
+            get: () => {
+              if (!This.valueSpec || !This.numeric || !This.stepSpec) return;
+              var shift = This.valueDec.sub(This.basis);
+              return (!This.validInterval ?
+                shift
+                .div(This.step)
+                .floor()
+                .mul(This.step)
+                .add(This.basis) :
+                This.valueDec.sub(This.step)).toString();
+            }
+          });
+          Object.defineProperty(This, '_next', {
+            get: () => {
+              if (!This.valueSpec || !This.numeric || !This.stepSpec) return;
+              var shift = This.valueDec.sub(This.basis);
+              return (!This.validInterval ?
+                shift
+                .div(This.step)
+                .ceil()
+                .mul(This.step)
+                .add(This.basis) :
+                This.valueDec.add(This.step)).toString();
+            }
+          });
+          Object.defineProperty(This, '_closest', {
+            get: () => {
+              if (!This.valueSpec || !This.numeric || !This.stepSpec) return;
+              var shift = This.valueDec.sub(This.basis);
+              return (!This.validInterval ?
+                shift
+                .div(This.step)
+                .round()
+                .mul(This.step)
+                .add(This.basis) :
+                This._value).toString();
+            }
+          });
+          This.numberProperty(This, source, 'previous', null, true, true);
+          This.numberProperty(This, source, 'next', null, true, true);
+          This.numberProperty(This, source, 'closest', null, true, true);
+          This.numberProperty(This, source, 'value');
+          This.numberProperty(This, source, 'min');
+          This.numberProperty(This, source, 'max');
+          This.numberProperty(This, source, 'step');
+          This.numberProperty(
+            This,
+            source,
+            'basis',
+            'bases',
+            false,
+            false,
+            v => v || This.min || This.max || 0
+          );
+          This.genProperty(This, source, 'required');
+          This.ensureMin = function() {
+            if (false) console.log('ensure-min called');
+            if (!This.numeric || !This.minSpec) return;
+            var valid;
+            if (This.valueDec.lt(This.min)) {
+              valid = This.isValidInterval(This.min);
+              if (valid.valid) {
+                if (false) console.log(`setting min to ${config.min}`);
+                This.value = valid.closest;
+              }
+              else {
+                if (false) console.log(`setting min to ${this.next}`);
+                This.value = valid.next;
+              }
+            }
+          };
+          This.ensureMax = function() {
+            if (false) console.log('ensure-max called');
+            if (!This.numeric || !This.maxSpec) return;
+            var valid;
+            if (This.valueDec.gt(This.max)) {
+              valid = This.isValidInterval(This.max);
+              if (valid.valid) {
+                if (false) console.log(`setting min to ${config.max}`);
+                This.value = valid.closest;
+              }
+              else {
+                if (false) console.log(`setting min to ${this.next}`);
+                This.value = valid.previous;
+              }
+            }
+          };
+          This.ensureNumeric = function() {
+            if (false) console.log('ensure-numeric called');
+            var orig = This._value;
+            if (!This.numeric) {
+              This.value = This.number;
+            }
+            if (false)
+              console.log({
+                old: orig,
+                new: This._value
+              });
+          };
+          This.ensureStep = function() {
+            if (false) console.log('ensure-step called');
+            if (!This.numeric || !This.stepSpec) return;
+            var orig = This._value;
+            if (!This.validInterval) {
+              This.value = This.closest;
+              This.ensureMin();
+              This.ensureMax();
+            }
+            if (true)
+              console.log({
+                old: orig,
+                new: This._value,
+                closest: This._closest
+              });
+          };
+          This.ensureValid = function() {
+            This.ensureNumeric();
+            This.ensureMin();
+            This.ensureMax();
+            This.ensureStep();
+          };
+          This.decrement = function() {
+            if (!This.numeric || !This.stepSpec) return;
+            This.value = This.previous;
+            This.ensureMin();
+          };
+          This.increment = function() {
+            if (!This.numeric || !This.stepSpec) return;
+            This.value = This.next;
+            This.ensureMax();
+          };
+          This.toJSON = () => {
+            var json = {};
+            Object.keys(This).forEach(p => {
+              json[p] = This[p];
+            });
+            return json;
+          };
+        }
+
+        return oaNumber;
+      }
+    ])
+    .directive('oaNumeric', [
+      'oaFloatPattern',
+      'oaNumber',
+      function(oaFloatPattern, oaNumber) {
+        function oaNumericLink($scope, $element, $attrs, $ctrls) {
+          const [$ctrl, $ngModel] = $ctrls;
+          $ctrl.$scope = $scope;
+          $ctrl.$ngModel = $ngModel;
+          $scope.number = $ctrl;
+          console.log($ctrl.toJSON());
+          //$ctrl.name = $attrs.name;
+          window['oaNumber_' + $ngModel.$name] = $ctrl;
+          $ngModel.$validators.oaNumeric = function(modelValue, viewValue) {
+            $ctrl.value = viewValue;
+            if (false) {
+              console.log({
+                validator: 'numeric',
+                number: number.value,
+                view: viewValue,
+                model: modelValue
+              });
+            }
+            if (!viewValue || !viewValue.length) return true;
+            if (!$ctrl.numeric) {
+              if ($scope.ensureValid != undefined) $ctrl.ensureValid();
+              else if ($scope.ensureNumeric != undefined) $ctrl.ensureNumeric();
+              else return false;
+              $ngModel.$setViewValue($ctrl._value);
+              $ngModel.$validate();
+              $ngModel.$render();
+            }
+            return true;
+          };
+          $ngModel.$validators.min = function(modelValue, viewValue) {
+            $ctrl.value = viewValue;
+            if (false) {
+              console.log({
+                validator: 'min',
+                number: number.value,
+                view: viewValue,
+                model: modelValue
+              });
+            }
+            if (!$ctrl.minSpec) return true;
+            if (!viewValue ||
+              !viewValue.length ||
+              !$ctrl.numeric
+            )
+              return true;
+            if ($ctrl.minDec.gt(modelValue)) {
+              if ($scope.ensureValid != undefined) $ctrl.ensureValid();
+              else if ($scope.ensureMin != undefined) $ctrl.ensureMin();
+              else return false;
+              $ngModel.$setViewValue($ctrl._value);
+              $ngModel.$validate();
+              $ngModel.$render();
+            }
+            return true;
+          };
+          $ngModel.$validators.max = function(modelValue, viewValue) {
+            $ctrl.value = viewValue;
+            if (false) {
+              console.log({
+                validator: 'max',
+                number: number.value,
+                view: viewValue,
+                model: modelValue
+              });
+            }
+            if (!$ctrl.maxSpec) return true;
+            if (!viewValue ||
+              !viewValue.length ||
+              !$ctrl.numeric
+            )
+              return true;
+            if ($ctrl.maxDec.lt(modelValue)) {
+              if ($scope.ensureValid != undefined) $ctrl.ensureValid();
+              else if ($scope.ensureMax != undefined) $ctrl.ensureMax();
+              else return false;
+              $ngModel.$setViewValue($ctrl._value);
+              $ngModel.$validate();
+              $ngModel.$render();
+            }
+            return true;
+          };
+          $ngModel.$validators.step = function(modelValue, viewValue) {
+            $ctrl.value = viewValue;
+            if (false) {
+              console.log({
+                validator: 'step',
+                number: number.value,
+                view: viewValue,
+                model: modelValue
+              });
+            }
+            if (!$ctrl.stepSpec) return true;
+            if (!viewValue ||
+              !viewValue.length ||
+              !$ctrl.numeric
+            )
+              return true;
+            if (!$ctrl.validInterval) {
+              if ($scope.ensureValid != undefined) $ctrl.ensureValid();
+              else if ($scope.ensureStep != undefined) $ctrl.ensureStep();
+              else return false;
+              $ngModel.$setViewValue($ctrl._value);
+              $ngModel.$validate();
+              $ngModel.$render();
+            }
+            return true;
+          };
+          $ngModel.$validators.required = function(modelValue, viewValue) {
+            $ctrl.value = viewValue;
+            if (false)
+              console.log({
+                validator: 'required',
+                number: $ctrl.value,
+                view: viewValue,
+                model: modelValue
+              });
+            if (!$ctrl.requiredSpec) return true;
+            if (
+              $ctrl.required &&
+              $ctrl.required.length &&
+              $ctrl.required !== 'false'
+            )
+              if (!viewValue || !viewValue.length) return false;
+            return true;
+          };
+        }
+        return {
+          restrict: 'A',
+          scope: {
+            required: '@?',
+            ngRequired: '=?',
+            ensureValid: '@?',
+            ensureNumeric: '@?',
+            step: '@?',
+            ngStep: '=?',
+            ensureStep: '@?',
+            basis: '@?',
+            ngBasis: '=?',
+            min: '@?',
+            ngMin: '=?',
+            ensureMin: '@?',
+            max: '@?',
+            ngMax: '=?',
+            ensureMax: '@?',
+            number: '=?'
+          },
+          require: ['oaNumeric', 'ngModel'],
+          //controller: oaNumericCtrl,
+          controller: ['$scope', oaNumber],
+          link: oaNumericLink
+        };
+      }
+    ]);
+  angular
+    .module('oaValidatorsTestApp', ['oaValidators', 'ngMessages'])
+    .controller('NumericTestCtrl', function() {
+      this.vals = [{
+          name: `ValA`,
+          value: `1.6`
+        },
+        {
+          name: `ValB`,
+          value: `1.73f5`
+        },
+        {
+          name: `ValC`,
+          value: `one`
+        },
+        {
+          name: `ValD`,
+          value: `1.7`
+        },
+        {
+          name: `ValE`,
+          value: `5.2`
+        },
+        {
+          name: `ValF`,
+          value: `-3`
+        }
+      ];
+      this.vals2min = 1.6;
+      this.vals3max = 1.8;
+      this.vals4step = 0.008;
+      //this.vals4step = 0.04;
+    });
+}
+// oaBlenderInput with tests
+{
+  angular
+    .module('oaBlenderInput', ['oaValidators'])
+    .constant('ConfigStates', ['none', 'edit', 'down', 'drag', 'fromdrag'])
+    .service('oaBlenderInputDocumentState', [
+      'ConfigStates',
+      function(ConfigStates) {
+        function DocumentState() {
+          var $target, $targetNumber;
+          var pageX, pageY, lastEvent;
+          var dx, dy, dt;
+          var debugState = false;
+          var update = $event => {
+            var now = Date.now();
+            dx = $event.pageX - pageX;
+            dy = $event.pageY - pageY;
+            dt = now - lastEvent;
+            pageX = $event.pageX;
+            pageY = $event.pageY;
+            lastEvent = now;
+          };
+          var stateDebug = (e, number) => {
+            if (number.prevstate !== number.state && debugState) {
+              console.log(
+                `click from state ${number.prevstate} to ${number.state}`
+              );
+            }
+          }
+          this.overlayClick = ($element, number, $event) => {
+            var $field = $element.find('.oa-bnumber-field');
+            update($event);
+            number.prevstate = number.state;
+            if (number.state !== 'drag' && number.state !== 'fromdrag') {
+              number.state = 'edit';
+              $element.addClass('oa-edit-mode');
+              $field.select();
+              $field.focus();
+            }
+            if (number.state === 'fromdrag') number.state = 'none';
+            stateDebug('click', number);
+          };
+          this.overlayDown = ($element, number, $event) => {
+            var $ngModel = $element.controller('ng-model');
+            update($event);
+            number.prevstate = number.state;
+            number.state = 'down';
+            $target = $element;
+            $targetNumber = number;
+            number.float = number.value;
+            stateDebug('down', number);
+          };
+          this.documentUp = $event => {
+            if (!$target) return;
+            $targetNumber.prevstate = $targetNumber.state;
+            update($event);
+            $targetNumber.state =
+              $targetNumber.state === 'drag' ? 'fromdrag' : 'none';
+            stateDebug('up', $targetNumber);
+          };
+          this.documentMove = $event => {
+            if (!$target) return;
+            var $field = $target.find('.oa-bnumber-field');
+            var $ngModel = $field.controller('ng-model');
+            $targetNumber.prevstate = $targetNumber.state;
+            update($event);
+            if (false) console.log(dt);
+            if ($targetNumber.state === 'down' && dt > 100)
+              $targetNumber.state = 'drag';
+            if ($targetNumber.state === 'drag') {
+              $event.preventDefault();
+              if (!$targetNumber.stepSpec) return;
+              var ds = $targetNumber.stepDec.mul($targetNumber.speedDec.mul(dx));
+              var pf = $targetNumber.float;
+              $targetNumber.float = parseFloat(pf) + new Number(ds);
+              if (false)
+                console.log({
+                  ds,
+                  p: pf,
+                  n: $targetNumber.float
+                });
+              $targetNumber._value = $targetNumber._float;
+              $targetNumber.ensureValid();
+              $ngModel.$setViewValue($targetNumber._value);
+              $ngModel.$render();
+            }
+            stateDebug('move', $targetNumber);
+          };
+          this.fieldBlur = ($element, number, $event) => {
+            var $field = $element.find('.oa-bnumber-field');
+            update($event);
+            number.prevstate = number.state;
+            $element.removeClass('oa-edit-mode');
+            number.state = 'none';
+            //console.log('blur');
+            //console.log($ngModelInner.$error);
+            number.ensureValid();
+            stateDebug('blur', number);
+          };
+          this.decrement = ($element, number, $event) => {
+            $event.preventDefault();
+            var $field = $element.find('.oa-bnumber-field');
+            update($event);
+            number.prevstate = number.state;
+            number.decrement();
+            stateDebug('dec', number);
+          };
+          this.increment = function($element, number, $event) {
+            $event.preventDefault();
+            var $field = $element.find('.oa-bnumber-field');
+            if (false)
+              console.log({
+                alen: arguments.length,
+                element: $element.get(0).outerHTML,
+                field: $field.get(0).outerHTML,
+                number: number.toJSON(),
+                event: $event
+              });
+            update($event);
+            number.prevstate = number.state;
+            var o = number.value;
+            if (false)
+              console.log({
+                dt,
+                p: number.prevstate,
+                state: number.state,
+                o
+              });
+            number.increment();
+            if (false)
+              console.log({
+                f: 'inc',
+                o,
+                n: number.value
+              });
+            stateDebug('inc', number);
+          };
+          $(document).mouseup(this.documentUp);
+          $(document).mousemove(this.documentMove);
+        }
+
+        return new DocumentState();
+      }
+    ])
+    .factory('oaNumberElement', [
+      'ConfigStates', 'oaNumber',
+      function(ConfigStates, oaNumber) {
+        function FieldConfig($scope, index) {
+          var This = this;
+          oaNumber.call(This, $scope, index);
+          This.sourceProperty(This, $scope, 'previousstate', null, v => ConfigStates[v], v => ConfigStates.indexOf(v));
+          This.sourceProperty(This, $scope, 'state', null, v => ConfigStates[v], v => ConfigStates.indexOf(v));
+          This.state = 'none';
+          This.numberProperty(This, $scope, 'speed');
+          This.speed = 1;
+          This.genProperty(This, $scope, 'label');
+          This.genProperty(This, $scope, 'fieldname');
+          This.numberProperty(This, $scope, 'float');
+        }
+
+        return FieldConfig;
+      }
+    ])
+    .directive('oaBnumberset', [
+      'oaBlenderInputDocumentState',
+      'oaNumberElement',
+      function(oaBlenderInputDocumentState, oaNumberElement) {
+        function oaBnumberSetCtrl() {}
+
+        function oaBnumberSetLink($scope, $element, $attrs, $ctrls) {
+          var i;
+          const [$ctrl, $ngModel] = $ctrls;
+          $scope.state = 'none';
+          $scope.states = [];
+          $scope.values = [];
+          var elements = $scope.elements = [];
+          $scope.length = parseInt($attrs.length, 10);
+          console.log($scope);
+          for (i = 0; i < $scope.length; i++) {
+            (j => {
+              var $$element = $($element);
+              //console.log(j);
+              var element = elements[j] = new oaNumberElement($scope, j);
+              console.log(element.toJSON());
+              if (true) {
+                //console.log($ctrl.elements[i].basis);
+                element.onClick = $event => {
+                  oaBlenderInputDocumentState.overlayClick(
+                    $$element.find(
+                      `.oa-bnumbers-element[data-element-index=${j}]`
+                    ),
+                    element,
+                    $event
+                  );
+                };
+                element.onDown = $event => {
+                  oaBlenderInputDocumentState.overlayDown(
+                    $$element.find(
+                      `.oa-bnumbers-element[data-element-index=${j}]`
+                    ),
+                    element,
+                    $event
+                  );
+                };
+                element.onBlur = $event => {
+                  oaBlenderInputDocumentState.fieldBlur(
+                    $$element.find(
+                      `.oa-bnumbers-element[data-element-index=${j}]`
+                    ),
+                    element,
+                    $event
+                  );
+                };
+                element.onDecrement = $event => {
+                  oaBlenderInputDocumentState.decrement(
+                    $$element.find(
+                      `.oa-bnumbers-element[data-element-index=${j}]`
+                    ),
+                    element,
+                    $event
+                  );
+                };
+                element.onIncrement = $event => {
+                  //console.log($event);
+                  oaBlenderInputDocumentState.increment(
+                    $$element.find(
+                      `.oa-bnumbers-element[data-element-index=${j}]`
+                    ),
+                    element,
+                    $event
+                  );
+                };
+              }
+            })(i);
+          }
+          $scope.name = $ngModel.$name;
+          if (true)
+            $ngModel.$render = function() {
+              $ngModel.$viewValue.forEach((view, i) => {
+                if (elements[i].value != view)
+                  elements[i].value = view;
+              });
+            };
+          if (true)
+            $scope.$watch('values', function(oldValue, newValue) {
+              $ngModel.$setViewValue(elements.map(element => element._value));
+            }, true)
+          if (false)
+            for (i = 0; i < $scope.length; i++) {
+              (j => {
+                $scope.$watch(`elements[${j}].value`, function watchElement(oldValue, newValue) {
+                  //$ngModel.$viewValue[j] = newValue;
+                  //$ngModel.$$parse();
+                  $ngModel.$setViewValue($scope.values);
+                  if (true) {
+                    console.log({
+                      f: `watch('values')`,
+                      $viewValue: $ngModel.$viewValue,
+                      $modelValue: $ngModel.$modelValue,
+                      scope: $scope.values,
+                      element: elements[j],
+                      elementJSON: elements[j].toJSON(),
+                      _value: elements[j]._value,
+                      value: elements[j].value,
+                      valueDec: elements[j].valueDec,
+                      index: j
+                    });
+                  }
+                });
+              })(i);
+            }
+          if (true)
+            $ngModel.$formatters.push(function(modelValue) {
+              return modelValue.map(model => model.toString());
+            });
+          if (true)
+            $ngModel.$parsers.push(function(viewValue) {
+              return viewValue.map(model => parseFloat(model));
+            });
+        }
+        return {
+          templateUrl: 'oa-bnumberset-template',
+          scope: {
+            length: '@',
+            fieldname: '@?',
+            ngFieldname: '=?',
+            ngFieldnames: '=?',
+            label: '@?',
+            ngLabel: '=?',
+            ngLabels: '=?',
+            required: '@?',
+            ngRequired: '=?',
+            ngRequireds: '=?',
+            speed: '@?',
+            ngSpeed: '=?',
+            ngSpeeds: '=?',
+            step: '@?',
+            ngStep: '=?',
+            ngSteps: '=?',
+            basis: '@?',
+            ngBasis: '=?',
+            ngBases: '=?',
+            min: '@?',
+            ngMin: '=?',
+            ngMins: '=?',
+            max: '@?',
+            ngMax: '=?',
+            ngMaxs: '=?'
+          },
+          restrict: 'E',
+          require: ['oaBnumberset', 'ngModel'],
+          replace: true,
+          controllerAs: 'ib',
+          controller: oaBnumberSetCtrl,
+          link: oaBnumberSetLink
+        };
+      }
+    ]);
+  angular
+    .module('oaBlenderInputTestApp', ['oaBlenderInput', 'ngMessages'])
+    .controller('NumbersetTestCtrl', function() {
+      this.num1 = 0.012;
+      this.num2 = 0.887;
+      this.nums = [0.3, 0.4, 0.5];
+      this.names = ['numX', 'numY', 'numZ'];
+      this.labels = ['X', 'Y', 'Z'];
+    });
+}
+// oaLinearAlgebra with tests
+{
+  angular
+    .module('oaLinearAlgebra', ['oaUtil'])
+    .factory('oaVect', function() {
+      function oaVect(_getters, _setters, _length) {
+        var length = _length == undefined ? this.length : _length;
+        var getters =
+          _getters && _length != undefined ?
+          _getters :
+          (() => {
+            var arr = [];
+            for (var i = 0; i < length; i++)
+              arr[i] = (j => {
+                return () => this[j];
+              })(i);
+            return arr;
+          })();
+        var setters =
+          _setters && _length != undefined ?
+          _setters :
+          (() => {
+            var arr = [];
+            for (var i = 0; i < length; i++)
+              arr[i] = (j => {
+                return v => {
+                  this[j] = v;
+                };
+              })(i);
+            return arr;
+          })();
+        this.add = b => {
+          if (b.length != length) throw 'invalid vector';
+          for (var i = 0; i < length; i++) setters[i](getters[i] + b[i]);
+        };
+      }
+
+      return oaVect;
+    })
+    .factory('oaRectangular', [
+      'oaArrayObject',
+      'oaObjectArray',
+      function(oaArrayObject, oaObjectArray) {
+        function oaRectangular(arr, offset, skip) {
+          var keys = ['x', 'y'];
+          var setter = v => {
+            var o = parseFloat(v);
+            if (isNaN(o)) return 0;
+            return o;
+          };
+          oaObjectArray.call(this, arr, keys, 2, null, [setter, setter], {
+            offset,
+            skip
+          });
+          Object.defineProperties(this, {
+            t: {
+              get: () => `rectangular`
+            },
+            d: {
+              get: () => 2
+            },
+            modulus: {
+              get: () => Math.sqrt(this.reduce((a, c) => a + c * c, 0)),
+              set: v => {
+                var m = this.modulus;
+                this.scale(m != 0 && v != 0 ? v / m : 0);
+              }
+            },
+            argument: {
+              get: () => Math.atan2(y, x),
+              set: v => {
+                var r = v - this.argument;
+                var c = Math.cos(r),
+                  s = Math.sin(r);
+                var t = c * x - s * y;
+                y = s * x + c * y;
+                x = t;
+              }
+            }
+          });
+          oaArrayObject.call(this, this, keys, 2);
+          keys.forEach(k1 => {
+            keys.forEach(k2 => {
+              Object.defineProperty(this, [k1, k2].join(''), {
+                get: () => new oaRectangular([k1, k2].map(k => this[k])),
+                set: v => {
+                  if (v.t !== 'rectangular')
+                    throw `argument must be rectangular vector`;
+                  [k1, k2].forEach((k, i) => {
+                    this[k] = v[i];
+                  });
+                }
+              });
+            });
+          });
+          this.setArray(arr);
+          this.add = b => {
+            if (b.t !== this.t) throw `argument must be ${this.t} vector`;
+            this.forEach((c, i) => {
+              this[i] = c + b[i];
+            });
+            return this;
+          };
+          this.sum = b => new oaRectangular(this).add(b);
+          this.minus = b => {
+            if (b.t !== this.t) throw `argument must be ${this.t} vector`;
+            this.forEach((c, i) => {
+              this[i] = c - b[i];
+            });
+            return this;
+          };
+          this.difference = b => new oaRectangular(this).minus(b);
+          this.scale = s => {
+            this.forEach((c, i) => {
+              this[i] = c * s;
+            });
+            return this;
+          };
+          this.scaled = b => new oaRectangular(this).scale(b);
+          this.dot = b => {
+            if (b.t !== this.t) throw `argument must be ${this.t} vector`;
+            return this.reduce((d, c, i) => d + c * b[i], 0);
+          };
+        }
+
+        oaRectangular.sum = function(a, b) {
+          return new oaRectangular(a).add(b);
+        };
+        oaRectangular.difference = function(a, b) {
+          return new oaRectangular(a).minus(b);
+        };
+        oaRectangular.scaled = function(a, b) {
+          return new oaRectangular(a).scale(b);
+        };
+        oaRectangular.dot = function(a, b) {
+          return new oaRectangular(a).dot(b);
+        };
+
+        return oaRectangular;
+      }
+    ])
+    .factory('oaPolar', [
+      'oaArrayObject',
+      function(oaArrayObject) {
+        function Polar(_r, _a) {
+          var r = parseFloat(_r);
+          var a = parseFloat(_a);
+          Object.defineProperties(this, {
+            t: {
+              get: () => `rect`
+            },
+            d: {
+              get: () => 2
+            },
+            length: {
+              get: () => 2
+            },
+            x: {
+              get: () => x,
+              set: v => {
+                x = parseFloat(v);
+              }
+            },
+            0: {
+              get: () => x,
+              set: v => {
+                x = parseFloat(v);
+              }
+            },
+            y: {
+              get: () => y,
+              set: v => {
+                y = parseFloat(v);
+              }
+            },
+            1: {
+              get: () => y,
+              set: v => {
+                y = parseFloat(v);
+              }
+            }
+          });
+          this.forEach = function(func, thisArg) {
+            func.call(thisArg, x, 0, [x, y]);
+            func.call(thisArg, y, 1, [x, y]);
+          };
+          this.map = function(func, thisArg) {
+            return [
+              func.call(thisArg, x, 0, [x, y]),
+              func.call(thisArg, y, 1, [x, y])
+            ];
+          };
+          this.reduce = function(func, initial) {
+            return func.call(null, func.call(null, initial, x, 0, [x, y]), y, 1, [
+              x,
+              y
+            ]);
+          };
+          this.reduceRight = function(func, initial) {
+            return func.call(null, func.call(null, initial, y, 0, [x, y]), x, 1, [
+              x,
+              y
+            ]);
+          };
+          this.every = function(func, thisArg) {
+            return (
+              func.call(thisArg, x, 0, [x, y]) && func.call(thisArg, y, 0, [x, y])
+            );
+          };
+          this.fill = function(val, start, end) {
+            if (start == undefined) start = 0;
+            if (end == undefined) end = this.length;
+            for (var i = 0; i < this.length; i++) this[i] = val;
+          };
+          this.reverse = function() {
+            var t = x;
+            x = y;
+            y = t;
+          };
+        }
+
+        return Polar;
+      }
+    ])
+    .factory('oaCartesian', [
+      'oaArrayObject',
+      'oaObjectArray',
+      'oaRectangular',
+      function(oaArrayObject, oaObjectArray, oaRectangular) {
+        function oaCartesian(arr, offset, skip) {
+          var keys = ['x', 'y', 'z'];
+          var setter = v => {
+            var o = parseFloat(v);
+            if (isNaN(o)) return 0;
+            return o;
+          };
+          oaObjectArray.call(this, arr, keys, 3, null, [setter, setter, setter], {
+            offset,
+            skip
+          });
+          Object.defineProperties(this, {
+            t: {
+              get: () => `cartesian`
+            },
+            d: {
+              get: () => 3
+            },
+            modulus: {
+              get: () => Math.sqrt(this.reduce((a, c) => a + c * c, 0)),
+              set: v => {
+                var m = this.modulus;
+                this.scale(m != 0 && v != 0 ? v / m : 0);
+              }
+            },
+            argument: {
+              get: () => Math.atan2(y, x),
+              set: v => {
+                var r = v - this.argument;
+                var c = Math.cos(r),
+                  s = Math.sin(r);
+                var t = c * x - s * y;
+                y = s * x + c * y;
+                x = t;
+              }
+            }
+          });
+          oaArrayObject.call(this, this, keys, 3);
+          keys.forEach(k1 => {
+            keys.forEach(k2 => {
+              Object.defineProperty(this, [k1, k2].join(''), {
+                get: () => new oaRectangular([k1, k2].map(k => this[k])),
+                set: v => {
+                  if (v.t !== 'rectangular')
+                    throw `argument must be rectangular vector`;
+                  [k1, k2].forEach((k, i) => {
+                    this[k] = v[i];
+                  });
+                }
+              });
+              keys.forEach(k3 => {
+                Object.defineProperty(this, [k1, k2, k3].join(''), {
+                  get: () => new oaCartesian([k1, k2, k3].map(k => this[k])),
+                  set: v => {
+                    if (v.t !== 'cartesian')
+                      throw `argument must be cartesian vector`;
+                    [k1, k2, k3].forEach((k, i) => {
+                      this[k] = v[i];
+                    });
+                  }
+                });
+              });
+            });
+          });
+          this.setArray(arr);
+          this.add = b => {
+            if (b.t !== this.t) throw `argument must be ${this.t} vector`;
+            this.forEach((c, i) => {
+              this[i] = c + b[i];
+            });
+            return this;
+          };
+          this.sum = b => new oaCartesian(this).add(b);
+          this.minus = b => {
+            if (b.t !== this.t) throw `argument must be ${this.t} vector`;
+            this.forEach((c, i) => {
+              this[i] = c - b[i];
+            });
+            return this;
+          };
+          this.difference = b => new oaCartesian(this).minus(b);
+          this.scale = s => {
+            this.forEach((c, i) => {
+              this[i] = c * s;
+            });
+            return this;
+          };
+          this.scaled = b => new oaCartesian(this).scale(b);
+          this.dot = b => {
+            if (b.t !== this.t) throw `argument must be ${this.t} vector`;
+            return this.reduce((d, c, i) => d + c * b[i], 0);
+          };
+        }
+
+        oaCartesian.sum = function(a, b) {
+          return new oaCartesian(a).add(b);
+        };
+        oaCartesian.difference = function(a, b) {
+          return new oaCartesian(a).minus(b);
+        };
+        oaCartesian.scaled = function(a, b) {
+          return new oaCartesian(a).scale(b);
+        };
+        oaCartesian.dot = function(a, b) {
+          return new oaCartesian(a).dot(b);
+        };
+
+        return oaCartesian;
+      }
+    ])
+    .factory('oaCylindrical', function() {
+      function Cylindrical(r, a, z) {}
+
+      return Cylindrical;
+    })
+    .factory('oaSpherical', function() {
+      function Spherical(r, a, b) {}
+
+      return Spherical;
+    })
+    .factory('oaHomogeneous', [
+      'oaArrayObject',
+      'oaObjectArray',
+      'oaCartesian',
+      'oaRectangular',
+      function(oaArrayObject, oaObjectArray, oaCartesian, oaRectangular) {
+        function oaHomogeneous(arr, offset, skip) {
+          var keys = ['x', 'y', 'z', 'w'];
+          var setter = v => {
+            var o = parseFloat(v);
+            if (isNaN(o)) return 0;
+            return o;
+          };
+          oaObjectArray.call(
+            this,
+            arr,
+            keys,
+            3,
+            null, [setter, setter, setter, setter], {
+              offset,
+              skip
+            }
+          );
+          Object.defineProperties(this, {
+            t: {
+              get: () => `homogeneous`
+            },
+            d: {
+              get: () => 4
+            },
+            modulus: {
+              get: () => Math.sqrt(this.reduce((a, c) => a + c * c, 0)),
+              set: v => {
+                var m = this.modulus;
+                this.scale(m != 0 && v != 0 ? v / m : 0);
+              }
+            },
+            argument: {
+              get: () => Math.atan2(y, x),
+              set: v => {
+                var r = v - this.argument;
+                var c = Math.cos(r),
+                  s = Math.sin(r);
+                var t = c * x - s * y;
+                y = s * x + c * y;
+                x = t;
+              }
+            }
+          });
+          oaArrayObject.call(this, this, keys, 4);
+          keys.forEach(k1 => {
+            keys.forEach(k2 => {
+              Object.defineProperty(this, [k1, k2].join(''), {
+                get: () => new oaRectangular([k1, k2].map(k => this[k])),
+                set: v => {
+                  if (v.t !== 'rectangular')
+                    throw `argument must be rectangular vector`;
+                  [k1, k2].forEach((k, i) => {
+                    this[k] = v[i];
+                  });
+                }
+              });
+              keys.forEach(k3 => {
+                Object.defineProperty(this, [k1, k2, k3].join(''), {
+                  get: () => new oaCartesian([k1, k2, k3].map(k => this[k])),
+                  set: v => {
+                    if (v.t !== 'cartesian')
+                      throw `argument must be cartesian vector`;
+                    [k1, k2, k3].forEach((k, i) => {
+                      this[k] = v[i];
+                    });
+                  }
+                });
+                keys.forEach(k4 => {
+                  Object.defineProperty(this, [k1, k2, k3, k4].join(''), {
+                    get: () =>
+                      new oaHomogeneous([k1, k2, k3, k4].map(k => this[k])),
+                    set: v => {
+                      if (v.t !== 'cartesian')
+                        throw `argument must be homogeneous vector`;
+                      [k1, k2, k3, k4].forEach((k, i) => {
+                        this[k] = v[i];
+                      });
+                    }
+                  });
+                });
+              });
+            });
+          });
+          this.setArray(arr);
+          this.add = b => {
+            if (b.t !== this.t) throw `argument must be ${this.t} vector`;
+            this.forEach((c, i) => {
+              this[i] = c + b[i];
+            });
+            return this;
+          };
+          this.sum = b => new oaHomogeneous(this).add(b);
+          this.minus = b => {
+            if (b.t !== this.t) throw `argument must be ${this.t} vector`;
+            this.forEach((c, i) => {
+              this[i] = c - b[i];
+            });
+            return this;
+          };
+          this.difference = b => new oaHomogeneous(this).minus(b);
+          this.scale = s => {
+            this.forEach((c, i) => {
+              this[i] = c * s;
+            });
+            return this;
+          };
+          this.scaled = b => new oaHomogeneous(this).scale(b);
+          this.dot = b => {
+            if (b.t !== this.t) throw `argument must be ${this.t} vector`;
+            return this.reduce((d, c, i) => d + c * b[i], 0);
+          };
+        }
+
+        oaHomogeneous.sum = function(a, b) {
+          return new oaHomogeneous(a).add(b);
+        };
+        oaHomogeneous.difference = function(a, b) {
+          return new oaHomogeneous(a).minus(b);
+        };
+        oaHomogeneous.scaled = function(a, b) {
+          return new oaHomogeneous(a).scale(b);
+        };
+        oaHomogeneous.dot = function(a, b) {
+          return new oaHomogeneous(a).dot(b);
+        };
+
+        return oaHomogeneous;
+      }
+    ]);
+  angular
+    .module('oaLinearAlgebraTestApp', ['oaLinearAlgebra'])
+    .controller('RectTestCtrl', [
+      '$scope',
+      'oaRectangular',
+      'oaPolar',
+      'oaCartesian',
+      'oaCylindrical',
+      'oaSpherical',
+      'oaHomogeneous',
+      function(
+        $scope,
+        oaRectangular,
+        oaPolar,
+        oaCartesian,
+        oaCylindrical,
+        oaSpherical,
+        oaHomogeneous
+      ) {
+        $scope.rect1 = new oaRectangular([2.5, 3.7]);
+        $scope.rect2 = new oaRectangular([5.4, 6.8]);
+        $scope.rectScale = 1.3;
+        $scope.cart1 = new oaCartesian([7.2, 9.1, 1.3]);
+        $scope.cart2 = new oaCartesian([6.7, 8.2, -1.4]);
+        $scope.cartScale = 2.4;
+        $scope.homg1 = new oaHomogeneous([1.2, 3.7, 2.8, 1.1]);
+        $scope.homg2 = new oaHomogeneous([0.9, 1.8, 3.5, 2.7]);
+        $scope.homgScale = 0.6;
+        $scope.update = () => {
+          $scope.rect3 = oaRectangular.sum($scope.rect1, $scope.rect2);
+          $scope.rect4 = $scope.rect1.difference($scope.rect2);
+          $scope.rectDot = $scope.rect1.dot($scope.rect2);
+
+          $scope.cart3 = oaCartesian.sum($scope.cart1, $scope.cart2);
+          $scope.cart4 = $scope.cart1.difference($scope.cart2);
+          $scope.cartDot = $scope.cart1.dot($scope.cart2);
+
+          $scope.homg3 = oaHomogeneous.sum($scope.homg1, $scope.homg2);
+          $scope.homg4 = $scope.homg1.difference($scope.homg2);
+          $scope.homgDot = $scope.homg1.dot($scope.homg2);
+        };
+        $scope.update();
+      }
+    ]);
+}
+// oaSylvester
+{
+  angular.module('oaSylvester', ['oaUtil'])
+    .service('oaSylvester', ['oaUtil', function(oaUtil) {
+      var Sylvester;
+      
+      function Vector(buffer, type, offset, length, skip) {
+        if(false)
+        console.log({
+          buffer,
+          type,
+          offset,
+          length,
+          skip
+        });
+        type = type || 4;
+        offset = offset || 0;
+        skip = skip || 1;
+        length = length || (buffer ? buffer.byteLength / type : 4);
+        var byteLength = ((length - 1) * skip + 1) * type;
+        if (!buffer)
+          buffer = new ArrayBuffer(offset + byteLength);
+        if(false)
+        console.log({
+          buffer,
+          type,
+          offset,
+          length,
+          byteLength,
+          skip
+        });
+        var array;
+        switch (type) {
+          case 4:
+            array = new Float32Array(buffer, offset, length);
+            break;
+          case 8:
+            array = new Float64Array(length);
+            break;
+          default:
+            console.log('invalid type: ' + type);
+        }
+        var elements = {};
+        for (var i = 0; i < length; i++)
+          (j => {
+            var property = {
+              get: () => array[j * skip],
+              set: v => {
+                array[j * skip] = v;
+              }
+            };
+            Object.defineProperty(elements, j, property);
+            Object.defineProperty(this, j, property);
+          })(i);
+        var lengthProperty = {
+          get: () => length
+        };
+        Object.defineProperties(elements, {
+          length: lengthProperty
+        });
+        Object.defineProperties(this, {
+          elements: {
+            get: () => elements
+          },
+          length: lengthProperty,
+          dimensions: lengthProperty,
+          modulus: {
+            get: () => Math.sqrt(this.dot(this)),
+            set: v => {
+              var r = this.modulus;
+              if(r > Sylvester.precision)
+                this.x(v / r);
+            }
+          }
+        });
+        oaUtil.arrayFunctions.call(elements);
+        if(false)
+        console.log({
+          array,
+          elements: elements.join(', ')
+        })
+      }
+      Vector.prototype = {
+
+        // Returns element i of the vector
+        e: function(i) {
+          return (i < 1 || i > this.elements.length) ? null : this.elements[i - 1];
+        },
+
+        // Returns true iff the vector is equal to the argument
+        eql: function(vector) {
+          var n = this.length;
+          if (n != vector.length) { return false; }
+          do {
+            if (Math.abs(this[n - 1] - vector[n - 1]) > Sylvester.precision) { return false; }
+          } while (--n);
+          return true;
+        },
+
+        // Returns a copy of the vector
+        dup: function() {
+          return Vector.create(this.elements);
+        },
+
+        // Maps the vector to another vector according to the given function
+        map: function(fn) {
+          return Vector.create(this.elements.map((c, i) => fn(c, i + 1)));
+        },
+
+        // Calls the iterator for each element of the vector in turn
+        each: function(fn) {
+          this.elements.forEach((c, i) => fn(c, i + 1));
+        },
+
+        // Returns a new vector created by normalizing the receiver
+        toUnitVector: function() {
+          var r = this.modulus();
+          if (r === 0) { return this.dup(); }
+          return this.map(function(x) { return x / r; });
+        },
+
+        // Returns the angle between the vector and the argument (also a vector)
+        angleFrom: function(vector) {
+          if (this.length != vector.length) { return null; }
+          var dot = 0,
+            mod1 = 0,
+            mod2 = 0;
+          // Work things out in parallel to save time
+          this.each(function(x, i) {
+            dot += x * vector[i - 1];
+            mod1 += x * x;
+            mod2 += vector[i - 1] * vector[i - 1];
+          });
+          mod1 = Math.sqrt(mod1);
+          mod2 = Math.sqrt(mod2);
+          if (mod1 * mod2 === 0) { return null; }
+          var theta = dot / (mod1 * mod2);
+          if (theta < -1) { theta = -1; }
+          if (theta > 1) { theta = 1; }
+          return Math.acos(theta);
+        },
+
+        // Returns true iff the vector is parallel to the argument
+        isParallelTo: function(vector) {
+          var angle = this.angleFrom(vector);
+          return (angle === null) ? null : (angle <= Sylvester.precision);
+        },
+
+        // Returns true iff the vector is antiparallel to the argument
+        isAntiparallelTo: function(vector) {
+          var angle = this.angleFrom(vector);
+          return (angle === null) ? null : (Math.abs(angle - Math.PI) <= Sylvester.precision);
+        },
+
+        // Returns true iff the vector is perpendicular to the argument
+        isPerpendicularTo: function(vector) {
+          var dot = this.dot(vector);
+          return (dot === null) ? null : (Math.abs(dot) <= Sylvester.precision);
+        },
+
+        // Returns the result of adding the argument to the vector
+        sum: function(vector) {
+          if (this.length != vector.length) { return null; }
+          return this.map(function(x, i) { return x + vector[i - 1]; });
+        },
+
+        s: function(vector) { return this.sum(vector); },
+
+        // Adds the argument to the vector
+        add: function(vector) {
+          if (this.length != vector.length) { return null; }
+          return this.setElements(this.elements.map(function(x, i) { return x + vector[i - 1]; }));
+        },
+
+        a: function(vector) { return this.add(vector); },
+
+        // Returns the result of subtracting the argument from the vector
+        difference: function(vector) {
+          if (this.length != vector.length) { return null; }
+          return this.map(function(x, i) { return x - vector[i - 1]; });
+        },
+
+        d: function(vector) { return this.difference(vector); },
+
+        // Subtracts the argument from the vector
+        minus: function(vector) {
+          if (this.length != vector.length) { return null; }
+          return this.setElements(this.elements.map(function(x, i) { return x - vector[i - 1]; }));
+        },
+
+        m: function(vector) { return this.minus(vector); },
+
+        // Returns the result of multiplying the elements of the vector by the argument
+        product: function(k) {
+          return this.map(function(x) { return x * k; });
+        },
+
+        p: function(k) { return this.product(k); },
+
+        // Multiplies the elements of the vector by the argument
+        multiply: function(k) {
+          return this.setElements(this.elements.map(function(x) { return x * k; }));
+        },
+
+        x: function(k) { return this.multiply(k); },
+
+        // Returns the scalar product of the vector with the argument
+        // Both vectors must have equal dimensionality
+        dot: function(vector) {
+          if (this.length != vector.length) { return null; }
+          return this.elements.reduce((d, c, i) => d + c * vector[i], 0);
+        },
+
+        // Returns the vector product of the vector with the argument
+        // Both vectors must have dimensionality 3
+        cross: function(vector) {
+          var B = vector.elements || vector;
+          if (this.length != 3 || B.length != 3) { return null; }
+          var A = this.elements;
+          return Vector.create([
+            (A[1] * B[2]) - (A[2] * B[1]),
+            (A[2] * B[0]) - (A[0] * B[2]),
+            (A[0] * B[1]) - (A[1] * B[0])
+          ]);
+        },
+
+        // Returns the (absolute) largest element of the vector
+        max: function() {
+          return this.elements.reduce((x, c) => x > Math.abs(c) ? x : Math.abs(c), Math.abs(this[0]));
+        },
+
+        // Returns the index of the first match found
+        indexOf: function(x) {
+          var index = null,
+            n = this.elements.length,
+            k = n,
+            i;
+          do {
+            i = k - n;
+            if (index === null && this.elements[i] == x) {
+              index = i + 1;
+            }
+          } while (--n);
+          return index;
+        },
+
+        // Returns a diagonal matrix with the vector's elements as its diagonal elements
+        toDiagonalMatrix: function() {
+          return Matrix.Diagonal(this.elements);
+        },
+
+        // Returns the result of rounding the elements of the vector
+        round: function() {
+          return this.map(function(x) { return Math.round(x); });
+        },
+
+        // Returns a copy of the vector with elements set to the given value if they
+        // differ from it by less than Sylvester.precision
+        snapTo: function(x) {
+          return this.map(function(y) {
+            return (Math.abs(y - x) <= Sylvester.precision) ? x : y;
+          });
+        },
+
+        // Returns the vector's distance from the argument, when considered as a point in space
+        distanceFrom: function(obj) {
+          if (obj.anchor) { return obj.distanceFrom(this); }
+          var V = obj.elements || obj;
+          if (V.length != this.elements.length) { return null; }
+          var sum = 0,
+            part;
+          this.each(function(x, i) {
+            part = x - V[i - 1];
+            sum += part * part;
+          });
+          return Math.sqrt(sum);
+        },
+
+        // Returns true if the vector is point on the given line
+        liesOn: function(line) {
+          return line.contains(this);
+        },
+
+        // Return true iff the vector is a point in the given plane
+        liesIn: function(plane) {
+          return plane.contains(this);
+        },
+
+        // Rotates the vector about the given object. The object should be a 
+        // point if the vector is 2D, and a line if it is 3D. Be careful with line directions!
+        rotate: function(t, obj) {
+          var V, R, x, y, z;
+          switch (this.elements.length) {
+            case 2:
+              V = obj.elements || obj;
+              if (V.length != 2) { return null; }
+              R = Matrix.Rotation(t).elements;
+              x = this.elements[0] - V[0];
+              y = this.elements[1] - V[1];
+              return Vector.create([
+                V[0] + R[0][0] * x + R[0][1] * y,
+                V[1] + R[1][0] * x + R[1][1] * y
+              ]);
+              break;
+            case 3:
+              if (!obj.direction) { return null; }
+              var C = obj.pointClosestTo(this).elements;
+              R = Matrix.Rotation(t, obj.direction).elements;
+              x = this.elements[0] - C[0];
+              y = this.elements[1] - C[1];
+              z = this.elements[2] - C[2];
+              return Vector.create([
+                C[0] + R[0][0] * x + R[0][1] * y + R[0][2] * z,
+                C[1] + R[1][0] * x + R[1][1] * y + R[1][2] * z,
+                C[2] + R[2][0] * x + R[2][1] * y + R[2][2] * z
+              ]);
+              break;
+            default:
+              return null;
+          }
+        },
+
+        // Returns the result of reflecting the point in the given point, line or plane
+        reflectionIn: function(obj) {
+          if (obj.anchor) {
+            // obj is a plane or line
+            var P = this.elements.slice();
+            var C = obj.pointClosestTo(P).elements;
+            return Vector.create([C[0] + (C[0] - P[0]), C[1] + (C[1] - P[1]), C[2] + (C[2] - (P[2] || 0))]);
+          }
+          else {
+            // obj is a point
+            var Q = obj.elements || obj;
+            if (this.elements.length != Q.length) { return null; }
+            return this.map(function(x, i) { return Q[i - 1] + (Q[i - 1] - x); });
+          }
+        },
+
+        // Utility to make sure vectors are 3D. If they are 2D, a zero z-component is added
+        to3D: function() {
+          var V = this.dup();
+          switch (V.elements.length) {
+            case 3:
+              break;
+            case 2:
+              V.elements.push(0);
+              break;
+            default:
+              return null;
+          }
+          return V;
+        },
+
+        // Returns a string representation of the vector
+        inspect: function() {
+          return '[' + this.elements.join(', ') + ']';
+        },
+
+        // Set vector's elements from an array
+        setElements: function(els) {
+          for (var i = 0; i < this.length && i < els.length; i++)
+            this[i] = els[i];
+          return this;
+        }
+      };
+
+      // Constructor function
+      Vector.create = function(elements) {
+        var V = new Vector(null, 4, 0, elements.length, 1);
+        return V.setElements(elements);
+      };
+      Vector.fromBuffer = function(buffer, type, offset, length, skip) {
+        var V = new Vector(buffer, type, offset, length, skip);
+        return V;
+      };
+
+      // 2d unit vectors
+      Vector.x2 = Vector.create([1, 0]);
+      Vector.y2 = Vector.create([0, 1]);
+
+      // 3d unit vectors
+      Vector.i = Vector.x3 = Vector.create([1, 0, 0]);
+      Vector.j = Vector.y3 = Vector.create([0, 1, 0]);
+      Vector.k = Vector.z3 = Vector.create([0, 0, 1]);
+
+      // 4d unit vectors
+      Vector.x4 = Vector.create([1, 0, 0, 0]);
+      Vector.y4 = Vector.create([0, 1, 0, 0]);
+      Vector.z4 = Vector.create([0, 0, 1, 0]);
+      Vector.w4 = Vector.create([0, 0, 0, 1]);
+
+      // Random vector of size n
+      Vector.Random = function(n) {
+        var elements = [];
+        do {
+          elements.push(Math.random());
+        } while (--n);
+        return Vector.create(elements);
+      };
+
+      // Vector filled with zeros
+      Vector.Zero = function(n) {
+        var elements = [];
+        do {
+          elements.push(0);
+        } while (--n);
+        return Vector.create(elements);
+      };
+
+      // 2d origin vector
+      Vector.o2 = Vector.Zero(2);
+      // 3d origin vector
+      Vector.o3 = Vector.Zero(3);
+      // 4d origin vector
+      Vector.o4 = Vector.Zero(4);
+
+
+
+      function Matrix() {}
+      Matrix.prototype = {
+
+        // Returns element (i,j) of the matrix
+        e: function(i, j) {
+          if (i < 1 || i > this.elements.length || j < 1 || j > this.elements[0].length) { return null; }
+          return this.elements[i - 1][j - 1];
+        },
+
+        // Returns row k of the matrix as a vector
+        row: function(i) {
+          if (i > this.elements.length) { return null; }
+          return Vector.create(this.elements[i - 1]);
+        },
+
+        // Returns column k of the matrix as a vector
+        col: function(j) {
+          if (j > this.elements[0].length) { return null; }
+          var col = [],
+            n = this.elements.length,
+            k = n,
+            i;
+          do {
+            i = k - n;
+            col.push(this.elements[i][j - 1]);
+          } while (--n);
+          return Vector.create(col);
+        },
+
+        // Returns the number of rows/columns the matrix has
+        dimensions: function() {
+          return { rows: this.elements.length, cols: this.elements[0].length };
+        },
+
+        // Returns the number of rows in the matrix
+        rows: function() {
+          return this.elements.length;
+        },
+
+        // Returns the number of columns in the matrix
+        cols: function() {
+          return this.elements[0].length;
+        },
+
+        // Returns true iff the matrix is equal to the argument. You can supply
+        // a vector as the argument, in which case the receiver must be a
+        // one-column matrix equal to the vector.
+        eql: function(matrix) {
+          var M = matrix.elements || matrix;
+          if (typeof(M[0][0]) == 'undefined') { M = Matrix.create(M).elements; }
+          if (this.elements.length != M.length ||
+            this.elements[0].length != M[0].length) { return false; }
+          var ni = this.elements.length,
+            ki = ni,
+            i, nj, kj = this.elements[0].length,
+            j;
+          do {
+            i = ki - ni;
+            nj = kj;
+            do {
+              j = kj - nj;
+              if (Math.abs(this.elements[i][j] - M[i][j]) > Sylvester.precision) { return false; }
+            } while (--nj);
+          } while (--ni);
+          return true;
+        },
+
+        // Returns a copy of the matrix
+        dup: function() {
+          return Matrix.create(this.elements);
+        },
+
+        // Maps the matrix to another matrix (of the same dimensions) according to the given function
+        map: function(fn) {
+          var els = [],
+            ni = this.elements.length,
+            ki = ni,
+            i, nj, kj = this.elements[0].length,
+            j;
+          do {
+            i = ki - ni;
+            nj = kj;
+            els[i] = [];
+            do {
+              j = kj - nj;
+              els[i][j] = fn(this.elements[i][j], i + 1, j + 1);
+            } while (--nj);
+          } while (--ni);
+          return Matrix.create(els);
+        },
+
+        // Returns true iff the argument has the same dimensions as the matrix
+        isSameSizeAs: function(matrix) {
+          var M = matrix.elements || matrix;
+          if (typeof(M[0][0]) == 'undefined') { M = Matrix.create(M).elements; }
+          return (this.elements.length == M.length &&
+            this.elements[0].length == M[0].length);
+        },
+
+        // Returns the result of adding the argument to the matrix
+        add: function(matrix) {
+          var M = matrix.elements || matrix;
+          if (typeof(M[0][0]) == 'undefined') { M = Matrix.create(M).elements; }
+          if (!this.isSameSizeAs(M)) { return null; }
+          return this.map(function(x, i, j) { return x + M[i - 1][j - 1]; });
+        },
+
+        a: function(matrix) { return this.add(matrix); },
+
+        // Returns the result of subtracting the argument from the matrix
+        subtract: function(matrix) {
+          var M = matrix.elements || matrix;
+          if (typeof(M[0][0]) == 'undefined') { M = Matrix.create(M).elements; }
+          if (!this.isSameSizeAs(M)) { return null; }
+          return this.map(function(x, i, j) { return x - M[i - 1][j - 1]; });
+        },
+
+        s: function(matrix) { return this.subtract(matrix); },
+
+        // Returns true iff the matrix can multiply the argument from the left
+        canMultiplyFromLeft: function(matrix) {
+          var M = matrix.elements || matrix;
+          if (typeof(M[0][0]) == 'undefined') { M = Matrix.create(M).elements; }
+          // this.columns should equal matrix.rows
+          return (this.elements[0].length == M.length);
+        },
+
+        // Returns the result of multiplying the matrix from the right by the argument.
+        // If the argument is a scalar then just multiply all the elements. If the argument is
+        // a vector, a vector is returned, which saves you having to remember calling
+        // col(1) on the result.
+        multiply: function(matrix) {
+          if (!matrix.elements) {
+            return this.map(function(x) { return x * matrix; });
+          }
+          var returnVector = matrix.modulus ? true : false;
+          var M = matrix.elements || matrix;
+          if (typeof(M[0][0]) == 'undefined') { M = Matrix.create(M).elements; }
+          if (!this.canMultiplyFromLeft(M)) { return null; }
+          var ni = this.elements.length,
+            ki = ni,
+            i, nj, kj = M[0].length,
+            j;
+          var cols = this.elements[0].length,
+            elements = [],
+            sum, nc, c;
+          do {
+            i = ki - ni;
+            elements[i] = [];
+            nj = kj;
+            do {
+              j = kj - nj;
+              sum = 0;
+              nc = cols;
+              do {
+                c = cols - nc;
+                sum += this.elements[i][c] * M[c][j];
+              } while (--nc);
+              elements[i][j] = sum;
+            } while (--nj);
+          } while (--ni);
+          var M = Matrix.create(elements);
+          return returnVector ? M.col(1) : M;
+        },
+
+        x: function(matrix) { return this.multiply(matrix); },
+
+        // Returns a submatrix taken from the matrix
+        // Argument order is: start row, start col, nrows, ncols
+        // Element selection wraps if the required index is outside the matrix's bounds, so you could
+        // use this to perform row/column cycling or copy-augmenting.
+        minor: function(a, b, c, d) {
+          var elements = [],
+            ni = c,
+            i, nj, j;
+          var rows = this.elements.length,
+            cols = this.elements[0].length;
+          do {
+            i = c - ni;
+            elements[i] = [];
+            nj = d;
+            do {
+              j = d - nj;
+              elements[i][j] = this.elements[(a + i - 1) % rows][(b + j - 1) % cols];
+            } while (--nj);
+          } while (--ni);
+          return Matrix.create(elements);
+        },
+
+        // Returns the transpose of the matrix
+        transpose: function() {
+          var rows = this.elements.length,
+            cols = this.elements[0].length;
+          var elements = [],
+            ni = cols,
+            i, nj, j;
+          do {
+            i = cols - ni;
+            elements[i] = [];
+            nj = rows;
+            do {
+              j = rows - nj;
+              elements[i][j] = this.elements[j][i];
+            } while (--nj);
+          } while (--ni);
+          return Matrix.create(elements);
+        },
+
+        // Returns true iff the matrix is square
+        isSquare: function() {
+          return (this.elements.length == this.elements[0].length);
+        },
+
+        // Returns the (absolute) largest element of the matrix
+        max: function() {
+          var m = 0,
+            ni = this.elements.length,
+            ki = ni,
+            i, nj, kj = this.elements[0].length,
+            j;
+          do {
+            i = ki - ni;
+            nj = kj;
+            do {
+              j = kj - nj;
+              if (Math.abs(this.elements[i][j]) > Math.abs(m)) { m = this.elements[i][j]; }
+            } while (--nj);
+          } while (--ni);
+          return m;
+        },
+
+        // Returns the indeces of the first match found by reading row-by-row from left to right
+        indexOf: function(x) {
+          var index = null,
+            ni = this.elements.length,
+            ki = ni,
+            i, nj, kj = this.elements[0].length,
+            j;
+          do {
+            i = ki - ni;
+            nj = kj;
+            do {
+              j = kj - nj;
+              if (this.elements[i][j] == x) { return { i: i + 1, j: j + 1 }; }
+            } while (--nj);
+          } while (--ni);
+          return null;
+        },
+
+        // If the matrix is square, returns the diagonal elements as a vector.
+        // Otherwise, returns null.
+        diagonal: function() {
+          if (!this.isSquare) { return null; }
+          var els = [],
+            n = this.elements.length,
+            k = n,
+            i;
+          do {
+            i = k - n;
+            els.push(this.elements[i][i]);
+          } while (--n);
+          return Vector.create(els);
+        },
+
+        // Make the matrix upper (right) triangular by Gaussian elimination.
+        // This method only adds multiples of rows to other rows. No rows are
+        // scaled up or switched, and the determinant is preserved.
+        toRightTriangular: function() {
+          var M = this.dup(),
+            els;
+          var n = this.elements.length,
+            k = n,
+            i, np, kp = this.elements[0].length,
+            p;
+          do {
+            i = k - n;
+            if (M.elements[i][i] == 0) {
+              for (j = i + 1; j < k; j++) {
+                if (M.elements[j][i] != 0) {
+                  els = [];
+                  np = kp;
+                  do {
+                    p = kp - np;
+                    els.push(M.elements[i][p] + M.elements[j][p]);
+                  } while (--np);
+                  M.elements[i] = els;
+                  break;
+                }
+              }
+            }
+            if (M.elements[i][i] != 0) {
+              for (j = i + 1; j < k; j++) {
+                var multiplier = M.elements[j][i] / M.elements[i][i];
+                els = [];
+                np = kp;
+                do {
+                  p = kp - np;
+                  // Elements with column numbers up to an including the number
+                  // of the row that we're subtracting can safely be set straight to
+                  // zero, since that's the point of this routine and it avoids having
+                  // to loop over and correct rounding errors later
+                  els.push(p <= i ? 0 : M.elements[j][p] - M.elements[i][p] * multiplier);
+                } while (--np);
+                M.elements[j] = els;
+              }
+            }
+          } while (--n);
+          return M;
+        },
+
+        toUpperTriangular: function() { return this.toRightTriangular(); },
+
+        // Returns the determinant for square matrices
+        determinant: function() {
+          if (!this.isSquare()) { return null; }
+          var M = this.toRightTriangular();
+          var det = M.elements[0][0],
+            n = M.elements.length - 1,
+            k = n,
+            i;
+          do {
+            i = k - n + 1;
+            det = det * M.elements[i][i];
+          } while (--n);
+          return det;
+        },
+
+        det: function() { return this.determinant(); },
+
+        // Returns true iff the matrix is singular
+        isSingular: function() {
+          return (this.isSquare() && this.determinant() === 0);
+        },
+
+        // Returns the trace for square matrices
+        trace: function() {
+          if (!this.isSquare()) { return null; }
+          var tr = this.elements[0][0],
+            n = this.elements.length - 1,
+            k = n,
+            i;
+          do {
+            i = k - n + 1;
+            tr += this.elements[i][i];
+          } while (--n);
+          return tr;
+        },
+
+        tr: function() { return this.trace(); },
+
+        // Returns the rank of the matrix
+        rank: function() {
+          var M = this.toRightTriangular(),
+            rank = 0;
+          var ni = this.elements.length,
+            ki = ni,
+            i, nj, kj = this.elements[0].length,
+            j;
+          do {
+            i = ki - ni;
+            nj = kj;
+            do {
+              j = kj - nj;
+              if (Math.abs(M.elements[i][j]) > Sylvester.precision) { rank++; break; }
+            } while (--nj);
+          } while (--ni);
+          return rank;
+        },
+
+        rk: function() { return this.rank(); },
+
+        // Returns the result of attaching the given argument to the right-hand side of the matrix
+        augment: function(matrix) {
+          var M = matrix.elements || matrix;
+          if (typeof(M[0][0]) == 'undefined') { M = Matrix.create(M).elements; }
+          var T = this.dup(),
+            cols = T.elements[0].length;
+          var ni = T.elements.length,
+            ki = ni,
+            i, nj, kj = M[0].length,
+            j;
+          if (ni != M.length) { return null; }
+          do {
+            i = ki - ni;
+            nj = kj;
+            do {
+              j = kj - nj;
+              T.elements[i][cols + j] = M[i][j];
+            } while (--nj);
+          } while (--ni);
+          return T;
+        },
+
+        // Returns the inverse (if one exists) using Gauss-Jordan
+        inverse: function() {
+          if (!this.isSquare() || this.isSingular()) { return null; }
+          var ni = this.elements.length,
+            ki = ni,
+            i, j;
+          var M = this.augment(Matrix.I(ni)).toRightTriangular();
+          var np, kp = M.elements[0].length,
+            p, els, divisor;
+          var inverse_elements = [],
+            new_element;
+          // Matrix is non-singular so there will be no zeros on the diagonal
+          // Cycle through rows from last to first
+          do {
+            i = ni - 1;
+            // First, normalise diagonal elements to 1
+            els = [];
+            np = kp;
+            inverse_elements[i] = [];
+            divisor = M.elements[i][i];
+            do {
+              p = kp - np;
+              new_element = M.elements[i][p] / divisor;
+              els.push(new_element);
+              // Shuffle of the current row of the right hand side into the results
+              // array as it will not be modified by later runs through this loop
+              if (p >= ki) { inverse_elements[i].push(new_element); }
+            } while (--np);
+            M.elements[i] = els;
+            // Then, subtract this row from those above it to
+            // give the identity matrix on the left hand side
+            for (j = 0; j < i; j++) {
+              els = [];
+              np = kp;
+              do {
+                p = kp - np;
+                els.push(M.elements[j][p] - M.elements[i][p] * M.elements[j][i]);
+              } while (--np);
+              M.elements[j] = els;
+            }
+          } while (--ni);
+          return Matrix.create(inverse_elements);
+        },
+
+        inv: function() { return this.inverse(); },
+
+        // Returns the result of rounding all the elements
+        round: function() {
+          return this.map(function(x) { return Math.round(x); });
+        },
+
+        // Returns a copy of the matrix with elements set to the given value if they
+        // differ from it by less than Sylvester.precision
+        snapTo: function(x) {
+          return this.map(function(p) {
+            return (Math.abs(p - x) <= Sylvester.precision) ? x : p;
+          });
+        },
+
+        // Returns a string representation of the matrix
+        inspect: function() {
+          var matrix_rows = [];
+          var n = this.elements.length,
+            k = n,
+            i;
+          do {
+            i = k - n;
+            matrix_rows.push(Vector.create(this.elements[i]).inspect());
+          } while (--n);
+          return matrix_rows.join('\n');
+        },
+
+        setSource: function(source, m, n, offset, s, t) {
+          this.elements = source;
+          this.m = m;
+          this.n = n;
+          this.offset = offset || 0;
+          this.skip1 = s || 1;
+          this.skip2 = s || n;
+          return this;
+        },
+
+        // Set the matrix's elements from an array. If the argument passed
+        // is a vector, the resulting matrix will be a single column.
+        setElements: function(els) {
+          var i, j;
+          if (typeof(els[0][0]) != 'undefined') {
+            for (i = 0; i < els.length && i < this.m; i++)
+              for (j = 0; j < els[0].length && j < this.n; j++)
+                this.elements[i * this.n + j] = els[i][j];
+            return this;
+          }
+          for (i = 0; i < els.length && i < this.m * this.n; i++)
+            this.elements[i] = els[i];
+        }
+      };
+
+      // Constructor function
+      Matrix.create = function(elements) {
+        var M = new Matrix();
+        return M.setElements(elements);
+      };
+
+      // Identity matrix of size n
+      Matrix.I = function(n) {
+        var els = [],
+          k = n,
+          i, nj, j;
+        do {
+          i = k - n;
+          els[i] = [];
+          nj = k;
+          do {
+            j = k - nj;
+            els[i][j] = (i == j) ? 1 : 0;
+          } while (--nj);
+        } while (--n);
+        return Matrix.create(els);
+      };
+
+      // Diagonal matrix - all off-diagonal elements are zero
+      Matrix.Diagonal = function(elements) {
+        var n = elements.length,
+          k = n,
+          i;
+        var M = Matrix.I(n);
+        do {
+          i = k - n;
+          M.elements[i][i] = elements[i];
+        } while (--n);
+        return M;
+      };
+
+      // Rotation matrix about some axis. If no axis is
+      // supplied, assume we're after a 2D transform
+      Matrix.Rotation = function(theta, a) {
+        if (!a) {
+          return Matrix.create([
+            [Math.cos(theta), -Math.sin(theta)],
+            [Math.sin(theta), Math.cos(theta)]
+          ]);
+        }
+        var axis = a.dup();
+        if (axis.elements.length != 3) { return null; }
+        var mod = axis.modulus();
+        var x = axis.elements[0] / mod,
+          y = axis.elements[1] / mod,
+          z = axis.elements[2] / mod;
+        var s = Math.sin(theta),
+          c = Math.cos(theta),
+          t = 1 - c;
+        // Formula derived here: http://www.gamedev.net/reference/articles/article1199.asp
+        // That proof rotates the co-ordinate system so theta
+        // becomes -theta and sin becomes -sin here.
+        return Matrix.create([
+          [t * x * x + c, t * x * y - s * z, t * x * z + s * y],
+          [t * x * y + s * z, t * y * y + c, t * y * z - s * x],
+          [t * x * z - s * y, t * y * z + s * x, t * z * z + c]
+        ]);
+      };
+
+      // Special case rotations
+      Matrix.RotationX = function(t) {
+        var c = Math.cos(t),
+          s = Math.sin(t);
+        return Matrix.create([
+          [1, 0, 0],
+          [0, c, -s],
+          [0, s, c]
+        ]);
+      };
+      Matrix.RotationY = function(t) {
+        var c = Math.cos(t),
+          s = Math.sin(t);
+        return Matrix.create([
+          [c, 0, s],
+          [0, 1, 0],
+          [-s, 0, c]
+        ]);
+      };
+      Matrix.RotationZ = function(t) {
+        var c = Math.cos(t),
+          s = Math.sin(t);
+        return Matrix.create([
+          [c, -s, 0],
+          [s, c, 0],
+          [0, 0, 1]
+        ]);
+      };
+
+      // Random matrix of n rows, m columns
+      Matrix.Random = function(n, m) {
+        return Matrix.Zero(n, m).map(
+          function() { return Math.random(); }
+        );
+      };
+
+      // Matrix filled with zeros
+      Matrix.Zero = function(n, m) {
+        var els = [],
+          ni = n,
+          i, nj, j;
+        do {
+          i = n - ni;
+          els[i] = [];
+          nj = m;
+          do {
+            j = m - nj;
+            els[i][j] = 0;
+          } while (--nj);
+        } while (--ni);
+        return Matrix.create(els);
+      };
+
+
+
+      function Line() {}
+      Line.prototype = {
+
+        // Returns true if the argument occupies the same space as the line
+        eql: function(line) {
+          return (this.isParallelTo(line) && this.contains(line.anchor));
+        },
+
+        // Returns a copy of the line
+        dup: function() {
+          return Line.create(this.anchor, this.direction);
+        },
+
+        // Returns the result of translating the line by the given vector/array
+        translate: function(vector) {
+          var V = vector.elements || vector;
+          return Line.create([
+            this.anchor.elements[0] + V[0],
+            this.anchor.elements[1] + V[1],
+            this.anchor.elements[2] + (V[2] || 0)
+          ], this.direction);
+        },
+
+        // Returns true if the line is parallel to the argument. Here, 'parallel to'
+        // means that the argument's direction is either parallel or antiparallel to
+        // the line's own direction. A line is parallel to a plane if the two do not
+        // have a unique intersection.
+        isParallelTo: function(obj) {
+          if (obj.normal) { return obj.isParallelTo(this); }
+          var theta = this.direction.angleFrom(obj.direction);
+          return (Math.abs(theta) <= Sylvester.precision || Math.abs(theta - Math.PI) <= Sylvester.precision);
+        },
+
+        // Returns the line's perpendicular distance from the argument,
+        // which can be a point, a line or a plane
+        distanceFrom: function(obj) {
+          if (obj.normal) { return obj.distanceFrom(this); }
+          if (obj.direction) {
+            // obj is a line
+            if (this.isParallelTo(obj)) { return this.distanceFrom(obj.anchor); }
+            var N = this.direction.cross(obj.direction).toUnitVector().elements;
+            var A = this.anchor.elements,
+              B = obj.anchor.elements;
+            return Math.abs((A[0] - B[0]) * N[0] + (A[1] - B[1]) * N[1] + (A[2] - B[2]) * N[2]);
+          }
+          else {
+            // obj is a point
+            var P = obj.elements || obj;
+            var A = this.anchor.elements,
+              D = this.direction.elements;
+            var PA1 = P[0] - A[0],
+              PA2 = P[1] - A[1],
+              PA3 = (P[2] || 0) - A[2];
+            var modPA = Math.sqrt(PA1 * PA1 + PA2 * PA2 + PA3 * PA3);
+            if (modPA === 0) return 0;
+            // Assumes direction vector is normalized
+            var cosTheta = (PA1 * D[0] + PA2 * D[1] + PA3 * D[2]) / modPA;
+            var sin2 = 1 - cosTheta * cosTheta;
+            return Math.abs(modPA * Math.sqrt(sin2 < 0 ? 0 : sin2));
+          }
+        },
+
+        // Returns true iff the argument is a point on the line
+        contains: function(point) {
+          var dist = this.distanceFrom(point);
+          return (dist !== null && dist <= Sylvester.precision);
+        },
+
+        // Returns true iff the line lies in the given plane
+        liesIn: function(plane) {
+          return plane.contains(this);
+        },
+
+        // Returns true iff the line has a unique point of intersection with the argument
+        intersects: function(obj) {
+          if (obj.normal) { return obj.intersects(this); }
+          return (!this.isParallelTo(obj) && this.distanceFrom(obj) <= Sylvester.precision);
+        },
+
+        // Returns the unique intersection point with the argument, if one exists
+        intersectionWith: function(obj) {
+          if (obj.normal) { return obj.intersectionWith(this); }
+          if (!this.intersects(obj)) { return null; }
+          var P = this.anchor.elements,
+            X = this.direction.elements,
+            Q = obj.anchor.elements,
+            Y = obj.direction.elements;
+          var X1 = X[0],
+            X2 = X[1],
+            X3 = X[2],
+            Y1 = Y[0],
+            Y2 = Y[1],
+            Y3 = Y[2];
+          var PsubQ1 = P[0] - Q[0],
+            PsubQ2 = P[1] - Q[1],
+            PsubQ3 = P[2] - Q[2];
+          var XdotQsubP = -X1 * PsubQ1 - X2 * PsubQ2 - X3 * PsubQ3;
+          var YdotPsubQ = Y1 * PsubQ1 + Y2 * PsubQ2 + Y3 * PsubQ3;
+          var XdotX = X1 * X1 + X2 * X2 + X3 * X3;
+          var YdotY = Y1 * Y1 + Y2 * Y2 + Y3 * Y3;
+          var XdotY = X1 * Y1 + X2 * Y2 + X3 * Y3;
+          var k = (XdotQsubP * YdotY / XdotX + XdotY * YdotPsubQ) / (YdotY - XdotY * XdotY);
+          return Vector.create([P[0] + k * X1, P[1] + k * X2, P[2] + k * X3]);
+        },
+
+        // Returns the point on the line that is closest to the given point or line
+        pointClosestTo: function(obj) {
+          if (obj.direction) {
+            // obj is a line
+            if (this.intersects(obj)) { return this.intersectionWith(obj); }
+            if (this.isParallelTo(obj)) { return null; }
+            var D = this.direction.elements,
+              E = obj.direction.elements;
+            var D1 = D[0],
+              D2 = D[1],
+              D3 = D[2],
+              E1 = E[0],
+              E2 = E[1],
+              E3 = E[2];
+            // Create plane containing obj and the shared normal and intersect this with it
+            // Thank you: http://www.cgafaq.info/wiki/Line-line_distance
+            var x = (D3 * E1 - D1 * E3),
+              y = (D1 * E2 - D2 * E1),
+              z = (D2 * E3 - D3 * E2);
+            var N = Vector.create([x * E3 - y * E2, y * E1 - z * E3, z * E2 - x * E1]);
+            var P = Plane.create(obj.anchor, N);
+            return P.intersectionWith(this);
+          }
+          else {
+            // obj is a point
+            var P = obj.elements || obj;
+            if (this.contains(P)) { return Vector.create(P); }
+            var A = this.anchor.elements,
+              D = this.direction.elements;
+            var D1 = D[0],
+              D2 = D[1],
+              D3 = D[2],
+              A1 = A[0],
+              A2 = A[1],
+              A3 = A[2];
+            var x = D1 * (P[1] - A2) - D2 * (P[0] - A1),
+              y = D2 * ((P[2] || 0) - A3) - D3 * (P[1] - A2),
+              z = D3 * (P[0] - A1) - D1 * ((P[2] || 0) - A3);
+            var V = Vector.create([D2 * x - D3 * z, D3 * y - D1 * x, D1 * z - D2 * y]);
+            var k = this.distanceFrom(P) / V.modulus();
+            return Vector.create([
+              P[0] + V.elements[0] * k,
+              P[1] + V.elements[1] * k,
+              (P[2] || 0) + V.elements[2] * k
+            ]);
+          }
+        },
+
+        // Returns a copy of the line rotated by t radians about the given line. Works by
+        // finding the argument's closest point to this line's anchor point (call this C) and
+        // rotating the anchor about C. Also rotates the line's direction about the argument's.
+        // Be careful with this - the rotation axis' direction affects the outcome!
+        rotate: function(t, line) {
+          // If we're working in 2D
+          if (typeof(line.direction) == 'undefined') { line = Line.create(line.to3D(), Vector.k); }
+          var R = Matrix.Rotation(t, line.direction).elements;
+          var C = line.pointClosestTo(this.anchor).elements;
+          var A = this.anchor.elements,
+            D = this.direction.elements;
+          var C1 = C[0],
+            C2 = C[1],
+            C3 = C[2],
+            A1 = A[0],
+            A2 = A[1],
+            A3 = A[2];
+          var x = A1 - C1,
+            y = A2 - C2,
+            z = A3 - C3;
+          return Line.create([
+            C1 + R[0][0] * x + R[0][1] * y + R[0][2] * z,
+            C2 + R[1][0] * x + R[1][1] * y + R[1][2] * z,
+            C3 + R[2][0] * x + R[2][1] * y + R[2][2] * z
+          ], [
+            R[0][0] * D[0] + R[0][1] * D[1] + R[0][2] * D[2],
+            R[1][0] * D[0] + R[1][1] * D[1] + R[1][2] * D[2],
+            R[2][0] * D[0] + R[2][1] * D[1] + R[2][2] * D[2]
+          ]);
+        },
+
+        // Returns the line's reflection in the given point or line
+        reflectionIn: function(obj) {
+          if (obj.normal) {
+            // obj is a plane
+            var A = this.anchor.elements,
+              D = this.direction.elements;
+            var A1 = A[0],
+              A2 = A[1],
+              A3 = A[2],
+              D1 = D[0],
+              D2 = D[1],
+              D3 = D[2];
+            var newA = this.anchor.reflectionIn(obj).elements;
+            // Add the line's direction vector to its anchor, then mirror that in the plane
+            var AD1 = A1 + D1,
+              AD2 = A2 + D2,
+              AD3 = A3 + D3;
+            var Q = obj.pointClosestTo([AD1, AD2, AD3]).elements;
+            var newD = [Q[0] + (Q[0] - AD1) - newA[0], Q[1] + (Q[1] - AD2) - newA[1], Q[2] + (Q[2] - AD3) - newA[2]];
+            return Line.create(newA, newD);
+          }
+          else if (obj.direction) {
+            // obj is a line - reflection obtained by rotating PI radians about obj
+            return this.rotate(Math.PI, obj);
+          }
+          else {
+            // obj is a point - just reflect the line's anchor in it
+            var P = obj.elements || obj;
+            return Line.create(this.anchor.reflectionIn([P[0], P[1], (P[2] || 0)]), this.direction);
+          }
+        },
+
+        // Set the line's anchor point and direction.
+        setVectors: function(anchor, direction) {
+          // Need to do this so that line's properties are not
+          // references to the arguments passed in
+          anchor = Vector.create(anchor);
+          direction = Vector.create(direction);
+          if (anchor.elements.length == 2) { anchor.elements.push(0); }
+          if (direction.elements.length == 2) { direction.elements.push(0); }
+          if (anchor.elements.length > 3 || direction.elements.length > 3) { return null; }
+          var mod = direction.modulus();
+          if (mod === 0) { return null; }
+          this.anchor = anchor;
+          this.direction = Vector.create([
+            direction.elements[0] / mod,
+            direction.elements[1] / mod,
+            direction.elements[2] / mod
+          ]);
+          return this;
+        }
+      };
+
+
+      // Constructor function
+      Line.create = function(anchor, direction) {
+        var L = new Line();
+        return L.setVectors(anchor, direction);
+      };
+
+      // Axes
+      //Line.X = Line.create(Vector.o3, Vector.x3);
+      //Line.Y = Line.create(Vector.o3, Vector.y3);
+      //Line.Z = Line.create(Vector.o3, Vector.z3);
+
+
+
+      function Plane() {}
+      Plane.prototype = {
+
+        // Returns true iff the plane occupies the same space as the argument
+        eql: function(plane) {
+          return (this.contains(plane.anchor) && this.isParallelTo(plane));
+        },
+
+        // Returns a copy of the plane
+        dup: function() {
+          return Plane.create(this.anchor, this.normal);
+        },
+
+        // Returns the result of translating the plane by the given vector
+        translate: function(vector) {
+          var V = vector.elements || vector;
+          return Plane.create([
+            this.anchor.elements[0] + V[0],
+            this.anchor.elements[1] + V[1],
+            this.anchor.elements[2] + (V[2] || 0)
+          ], this.normal);
+        },
+
+        // Returns true iff the plane is parallel to the argument. Will return true
+        // if the planes are equal, or if you give a line and it lies in the plane.
+        isParallelTo: function(obj) {
+          var theta;
+          if (obj.normal) {
+            // obj is a plane
+            theta = this.normal.angleFrom(obj.normal);
+            return (Math.abs(theta) <= Sylvester.precision || Math.abs(Math.PI - theta) <= Sylvester.precision);
+          }
+          else if (obj.direction) {
+            // obj is a line
+            return this.normal.isPerpendicularTo(obj.direction);
+          }
+          return null;
+        },
+
+        // Returns true iff the receiver is perpendicular to the argument
+        isPerpendicularTo: function(plane) {
+          var theta = this.normal.angleFrom(plane.normal);
+          return (Math.abs(Math.PI / 2 - theta) <= Sylvester.precision);
+        },
+
+        // Returns the plane's distance from the given object (point, line or plane)
+        distanceFrom: function(obj) {
+          if (this.intersects(obj) || this.contains(obj)) { return 0; }
+          if (obj.anchor) {
+            // obj is a plane or line
+            var A = this.anchor.elements,
+              B = obj.anchor.elements,
+              N = this.normal.elements;
+            return Math.abs((A[0] - B[0]) * N[0] + (A[1] - B[1]) * N[1] + (A[2] - B[2]) * N[2]);
+          }
+          else {
+            // obj is a point
+            var P = obj.elements || obj;
+            var A = this.anchor.elements,
+              N = this.normal.elements;
+            return Math.abs((A[0] - P[0]) * N[0] + (A[1] - P[1]) * N[1] + (A[2] - (P[2] || 0)) * N[2]);
+          }
+        },
+
+        // Returns true iff the plane contains the given point or line
+        contains: function(obj) {
+          if (obj.normal) { return null; }
+          if (obj.direction) {
+            return (this.contains(obj.anchor) && this.contains(obj.anchor.add(obj.direction)));
+          }
+          else {
+            var P = obj.elements || obj;
+            var A = this.anchor.elements,
+              N = this.normal.elements;
+            var diff = Math.abs(N[0] * (A[0] - P[0]) + N[1] * (A[1] - P[1]) + N[2] * (A[2] - (P[2] || 0)));
+            return (diff <= Sylvester.precision);
+          }
+        },
+
+        // Returns true iff the plane has a unique point/line of intersection with the argument
+        intersects: function(obj) {
+          if (typeof(obj.direction) == 'undefined' && typeof(obj.normal) == 'undefined') { return null; }
+          return !this.isParallelTo(obj);
+        },
+
+        // Returns the unique intersection with the argument, if one exists. The result
+        // will be a vector if a line is supplied, and a line if a plane is supplied.
+        intersectionWith: function(obj) {
+          if (!this.intersects(obj)) { return null; }
+          if (obj.direction) {
+            // obj is a line
+            var A = obj.anchor.elements,
+              D = obj.direction.elements,
+              P = this.anchor.elements,
+              N = this.normal.elements;
+            var multiplier = (N[0] * (P[0] - A[0]) + N[1] * (P[1] - A[1]) + N[2] * (P[2] - A[2])) / (N[0] * D[0] + N[1] * D[1] + N[2] * D[2]);
+            return Vector.create([A[0] + D[0] * multiplier, A[1] + D[1] * multiplier, A[2] + D[2] * multiplier]);
+          }
+          else if (obj.normal) {
+            // obj is a plane
+            var direction = this.normal.cross(obj.normal).toUnitVector();
+            // To find an anchor point, we find one co-ordinate that has a value
+            // of zero somewhere on the intersection, and remember which one we picked
+            var N = this.normal.elements,
+              A = this.anchor.elements,
+              O = obj.normal.elements,
+              B = obj.anchor.elements;
+            var solver = Matrix.Zero(2, 2),
+              i = 0;
+            while (solver.isSingular()) {
+              i++;
+              solver = Matrix.create([
+                [N[i % 3], N[(i + 1) % 3]],
+                [O[i % 3], O[(i + 1) % 3]]
+              ]);
+            }
+            // Then we solve the simultaneous equations in the remaining dimensions
+            var inverse = solver.inverse().elements;
+            var x = N[0] * A[0] + N[1] * A[1] + N[2] * A[2];
+            var y = O[0] * B[0] + O[1] * B[1] + O[2] * B[2];
+            var intersection = [
+              inverse[0][0] * x + inverse[0][1] * y,
+              inverse[1][0] * x + inverse[1][1] * y
+            ];
+            var anchor = [];
+            for (var j = 1; j <= 3; j++) {
+              // This formula picks the right element from intersection by
+              // cycling depending on which element we set to zero above
+              anchor.push((i == j) ? 0 : intersection[(j + (5 - i) % 3) % 3]);
+            }
+            return Line.create(anchor, direction);
+          }
+        },
+
+        // Returns the point in the plane closest to the given point
+        pointClosestTo: function(point) {
+          var P = point.elements || point;
+          var A = this.anchor.elements,
+            N = this.normal.elements;
+          var dot = (A[0] - P[0]) * N[0] + (A[1] - P[1]) * N[1] + (A[2] - (P[2] || 0)) * N[2];
+          return Vector.create([P[0] + N[0] * dot, P[1] + N[1] * dot, (P[2] || 0) + N[2] * dot]);
+        },
+
+        // Returns a copy of the plane, rotated by t radians about the given line
+        // See notes on Line#rotate.
+        rotate: function(t, line) {
+          var R = Matrix.Rotation(t, line.direction).elements;
+          var C = line.pointClosestTo(this.anchor).elements;
+          var A = this.anchor.elements,
+            N = this.normal.elements;
+          var C1 = C[0],
+            C2 = C[1],
+            C3 = C[2],
+            A1 = A[0],
+            A2 = A[1],
+            A3 = A[2];
+          var x = A1 - C1,
+            y = A2 - C2,
+            z = A3 - C3;
+          return Plane.create([
+            C1 + R[0][0] * x + R[0][1] * y + R[0][2] * z,
+            C2 + R[1][0] * x + R[1][1] * y + R[1][2] * z,
+            C3 + R[2][0] * x + R[2][1] * y + R[2][2] * z
+          ], [
+            R[0][0] * N[0] + R[0][1] * N[1] + R[0][2] * N[2],
+            R[1][0] * N[0] + R[1][1] * N[1] + R[1][2] * N[2],
+            R[2][0] * N[0] + R[2][1] * N[1] + R[2][2] * N[2]
+          ]);
+        },
+
+        // Returns the reflection of the plane in the given point, line or plane.
+        reflectionIn: function(obj) {
+          if (obj.normal) {
+            // obj is a plane
+            var A = this.anchor.elements,
+              N = this.normal.elements;
+            var A1 = A[0],
+              A2 = A[1],
+              A3 = A[2],
+              N1 = N[0],
+              N2 = N[1],
+              N3 = N[2];
+            var newA = this.anchor.reflectionIn(obj).elements;
+            // Add the plane's normal to its anchor, then mirror that in the other plane
+            var AN1 = A1 + N1,
+              AN2 = A2 + N2,
+              AN3 = A3 + N3;
+            var Q = obj.pointClosestTo([AN1, AN2, AN3]).elements;
+            var newN = [Q[0] + (Q[0] - AN1) - newA[0], Q[1] + (Q[1] - AN2) - newA[1], Q[2] + (Q[2] - AN3) - newA[2]];
+            return Plane.create(newA, newN);
+          }
+          else if (obj.direction) {
+            // obj is a line
+            return this.rotate(Math.PI, obj);
+          }
+          else {
+            // obj is a point
+            var P = obj.elements || obj;
+            return Plane.create(this.anchor.reflectionIn([P[0], P[1], (P[2] || 0)]), this.normal);
+          }
+        },
+
+        // Sets the anchor point and normal to the plane. If three arguments are specified,
+        // the normal is calculated by assuming the three points should lie in the same plane.
+        // If only two are sepcified, the second is taken to be the normal. Normal vector is
+        // normalised before storage.
+        setVectors: function(anchor, v1, v2) {
+          anchor = Vector.create(anchor);
+          anchor = anchor.to3D();
+          if (anchor === null) { return null; }
+          v1 = Vector.create(v1);
+          v1 = v1.to3D();
+          if (v1 === null) { return null; }
+          if (typeof(v2) == 'undefined') {
+            v2 = null;
+          }
+          else {
+            v2 = Vector.create(v2);
+            v2 = v2.to3D();
+            if (v2 === null) { return null; }
+          }
+          var A1 = anchor.elements[0],
+            A2 = anchor.elements[1],
+            A3 = anchor.elements[2];
+          var v11 = v1.elements[0],
+            v12 = v1.elements[1],
+            v13 = v1.elements[2];
+          var normal, mod;
+          if (v2 !== null) {
+            var v21 = v2.elements[0],
+              v22 = v2.elements[1],
+              v23 = v2.elements[2];
+            normal = Vector.create([
+              (v12 - A2) * (v23 - A3) - (v13 - A3) * (v22 - A2),
+              (v13 - A3) * (v21 - A1) - (v11 - A1) * (v23 - A3),
+              (v11 - A1) * (v22 - A2) - (v12 - A2) * (v21 - A1)
+            ]);
+            mod = normal.modulus();
+            if (mod === 0) { return null; }
+            normal = Vector.create([normal.elements[0] / mod, normal.elements[1] / mod, normal.elements[2] / mod]);
+          }
+          else {
+            mod = Math.sqrt(v11 * v11 + v12 * v12 + v13 * v13);
+            if (mod === 0) { return null; }
+            normal = Vector.create([v1.elements[0] / mod, v1.elements[1] / mod, v1.elements[2] / mod]);
+          }
+          this.anchor = anchor;
+          this.normal = normal;
+          return this;
+        }
+      };
+
+      // Constructor function
+      Plane.create = function(anchor, v1, v2) {
+        var P = new Plane();
+        return P.setVectors(anchor, v1, v2);
+      };
+
+      // X-Y-Z planes
+      //Plane.XY = Plane.create(Vector.o3, Vector.x3);
+      //Plane.YZ = Plane.create(Vector.o3, Vector.y3);
+      //Plane.ZX = Plane.create(Vector.o3, Vector.z3);
+      //Plane.YX = Plane.XY;
+      //Plane.ZY = Plane.YZ;
+      //Plane.XZ = Plane.ZX;
+
+      // Utility functions
+      var $V = Vector.create;
+      var $M = Matrix.create;
+      var $L = Line.create;
+      var $P = Plane.create;
+
+      Sylvester = {
+        version: '0.1.3',
+        precision: 1e-6,
+        Vector,
+        Matrix,
+        Line,
+        Plane,
+        $V,
+        $M,
+        $L,
+        $P
+      };
+
+      return Sylvester;
+    }]);
+  angular.module('oaSylvesterTestApp', ['oaSylvester'])
+    .controller('oaSylvesterTestCtrl', ['$scope', 'oaSylvester', function($scope, oaSylvester) {
+      $scope.vectors = [
+        {
+          name: 'a',
+          vector: oaSylvester.$V([3, 4, 5])
+        },
+        {
+          name: 'b',
+          vector: oaSylvester.$V([9, 8, 7])
+        },
+        {
+          name: 'a + b'
+        },
+        {
+          name: 'a - b'
+        },
+        {
+          name: 'a x b'
+        }
+      ];
+      $scope.update = () => {
+        $scope.vectors[2].vector = $scope.vectors[0].vector.s($scope.vectors[1].vector);
+        $scope.vectors[3].vector = $scope.vectors[0].vector.d($scope.vectors[1].vector);
+        $scope.vectors[4].vector = $scope.vectors[0].vector.cross($scope.vectors[1].vector);
+      };
+      $scope.update();
+    }]);
+}
+// oaWebglHelpers with tests
+{
+  angular
+    .module('oaWebglHelpers', [])
+    .service('oaWebglHelpers', function() {
+      function oaWebglHelpers() {
+        this.FLOAT32 = 0;
+        this.loadShader = function loadShader(gl, type, source, onErr) {
+          const shader = gl.createShader(type);
+          gl.shaderSource(shader, source);
+          gl.compileShader(shader);
+          if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+            onErr(gl.getShaderInfoLog(shader));
+            gl.deleteShader(shader);
+            return null;
+          }
+          return shader;
+        };
+        this.loadProgram = function loadProgram(gl, vertexSource, fragmentSource, onErr) {
+          const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vertexSource);
+          const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fragmentSource);
+          const shaderProgram = gl.createProgram();
+          gl.attachShader(shaderProgram, vertexShader);
+          gl.attachShader(shaderProgram, fragmentShader);
+          gl.linkProgram(shaderProgram);
+          if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+            onErr(gl.getProgramInfoLog(shaderProgram));
+            return null;
+          }
+          return shaderProgram;
+        };
+      }
+
+      return new oaWebglHelpers();
+    })
+    .service('oaWebglShaderHelpers', function() {
+      function oaWebglShaderHelpers() {
+        this.precision = 9;
+        this.orthagonalBasis = function(_options) {
+          const {
+            inA,
+            outA,
+            inB,
+            outB,
+            c,
+            swap
+          } = _options;
+          return `vec4 ${outA} = vec4(normalize(${inA}.xyz), 0.0);
+vec4 ${c} = vec4(normalize(cross(normalize(${inB}).xyz, cz.xyz)), 0.0);
+vec4 ${outB} = vec4(normalize(cross(${swap ? c : outA}.xyz, ${swap ? outA : c}.xyz)), 0.0);`;
+        };
+        this.cameraMatrix = function(_options) {
+          const {
+            cameraPosition: p,
+            cameraDirection: z,
+            cameraUp: y,
+            matrix: m,
+            normalizedDirection: Z,
+            normalizedUp: Y,
+            right: X
+          } = Object.assign({
+            cameraPosition: 'camP',
+            cameraDirection: 'camZ',
+            cameraUp: 'camY',
+            matrix: 'cameraMatrix',
+            normalizedDirection: 'cz',
+            normalizedUp: 'cy',
+            right: 'cx'
+          }, _options);
+          var basis = this.orthagonalBasis({
+            inA: z,
+            outA: Z,
+            inB: y,
+            outB: Y,
+            c: X,
+            swap: true
+          });
+          return `${basis}
+mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec3(0.0)), vec4(0.0, 1.0, vec2(0.0)), vec4(vec2(0.0), 1.0, 0.0), vec4(-${p}.xyz, 1.0))`;
+        };
+        this.projectionMatrix = function(_options) {
+          const {
+            fov,
+            far,
+            near
+          } = Object.assign({
+            fov: 'fov',
+            far: 'far',
+            near: 'near'
+          }, _options);
+          return `mat4(vec4(1.0 / tan(${fov}.x / 2.0), vec3(0.0)), vec4(0.0, 1.0 / tan(${fov}.y / 2.0), vec2(0.0)), ve4(vec2(0.0), -(${far} + ${near}) / (${far} - ${near}), -1.0), vec4(vec2(0.0), -${far} * ${near} / (${far} - ${near}), 0.0));`;
+        };
+      }
+
+      return new oaWebglShaderHelpers();
+    })
+    .factory('oaWebglShaderSource', function() {
+      function oaWebglShaderSource(_source, _generator, _parameters) {
+        var source = _source;
+        var generator = _generator;
+        var parameterNames = _parameters || [];
+        var parameters = {};
+        this.printShader = function(_options) {
+          console.log(source
+            .split(/\n/g)
+            .map((line, i) => ('0000' + (i + 1)).substr(-4, 4) + ': ' + line)
+            .join('\n'));
+        };
+        this.getParameter = p => parameters[p];
+        this.setParameter = (p, v) => {
+          parameters[p] = v;
+        };
+        this.generate = function() {
+          if (!generator)
+            return source;
+          var params = {};
+          parameterNames.forEach(p => {
+            params[p] = parameters[p];
+          });
+          return source = generator.call(params, params);
+        };
+        Object.defineProperties(this, {
+          source: {
+            get: () => source,
+            set: v => {
+              source = v;
+            }
+          },
+          generator: {
+            get: () => generator,
+            set: v => {
+              generator = v;
+            }
+          },
+          parameterNames: {
+            get: () => parameterNames
+          },
+          type: {
+            get: () => generator ? (parameters && parameters.length ? 'dynamic' : 'generated') : 'static'
+          }
+        });
+      }
+
+      return oaWebglShaderSource;
+    })
+    .factory('oaWebglProgram', ['oaWebglHelpers', 'oaWebglShaderSource', function(oaWebglHelpers, oaWebglShaderSource) {
+      function oaWebglProgram(_options) {
+        var options = Object.assign({}, _options);
+        var dirty = true;
+        var vertexSource = (options.vertexSource instanceof oaWebglShaderSource) ? options.vertexSource : new oaWebglShaderSource(options.vertexSource);
+        var fragmentSource = (options.fragmentSource instanceof oaWebglShaderSource) ? options.fragmentSource : new oaWebglShaderSource(options.fragmentSource);
+        var attributeSpecs = options.attributes;
+        var uniformSpecs = options.uniforms;
+        var bufferSpecs = options.buffers;
+        var textureSpecs = options.textures;
+        var executor = options.draw;
+        var program;
+        var attributes = {};
+        var uniforms = {};
+        var buffers = {};
+        var textures = {};
+        var vertexShaderParameters = {};
+        var fragmentShaderParameters = {};
+        vertexSource.parameterNames.forEach(p => {
+          Object.defineProperty(vertexShaderParameters, p, {
+            get: vertexSource.getParameter(p),
+            set: v => {
+              vertexSource.setParameter(p, v);
+              dirty = true;
+            }
+          });
+        });
+        fragmentSource.parameterNames.forEach(p => {
+          Object.defineProperty(fragmentShaderParameters, p, {
+            get: fragmentSource.getParameter(p),
+            set: v => {
+              fragmentSource.setParameter(p, v);
+              dirty = true;
+            }
+          });
+        });
+        Object.defineProperties(this, {
+          vertexSource: {
+            get: () => vertexSource,
+            set: v => {
+              vertexSource = (v instanceof oaWebglShaderSource) ? v : new oaWebglShaderSource(v);
+              dirty = true;
+            }
+          },
+          fragmentSource: {
+            get: () => fragmentSource,
+            set: v => {
+              fragmentSource = (v instanceof oaWebglShaderSource) ? v : new oaWebglShaderSource(v);
+              dirty = true;
+            }
+          },
+          vertexShaderParameters: {
+            get: () => vertexShaderParameters
+          },
+          vParams: {
+            get: () => vertexShaderParameters
+          },
+          fragmentShaderParameters: {
+            get: () => fragmentShaderParameters
+          },
+          fParams: {
+            get: () => fragmentShaderParameters
+          },
+          program: {
+            get: () => program
+          }
+        });
+        this.initialize = function initialize(gl) {
+          if (dirty)
+            return;
+          var vertexSourceCode = vertexSource.generate();
+          var fragmentSourceCode = fragmentSource.generate();
+          program = oaWebglHelpers.loadProgram(gl, vertexSourceCode, fragmentSourceCode);
+          Object.keys(attributeSpecs).forEach(attributeId => {
+            var attributeSpec = attributeSpecs[attributeId];
+            let { name: attributeName } = attributeSpec;
+            var attribute = gl.getAttribLocation(program, attributeName);
+            var attributeKey = `a${attributeId.charAt(0).toUpperCase()}${attributeId.substr(1, attributeId.length)}`;
+            var attributeSpeckey = `${attributeKey}Spec`;
+            this[attributeKey] = attribute;
+            attributes[attributeKey] = attribute;
+            this[attributeSpeckey] = attributeSpec;
+          });
+          Object.keys(uniformSpecs).forEach(uniformId => {
+            var uniformSpec = uniformSpecs[uniformId];
+            let { name: uniformName } = uniformSpec;
+            var uniform = gl.getUniformLocation(program, uniformName);
+            var uniformKey = `u${uniformId.charAt(0).toUpperCase()}${uniformId.substr(1, uniformId.length)}`;
+            var uniformSpeckey = `${uniformKey}Spec`;
+            this[uniformKey] = uniform;
+            uniforms[uniformKey] = uniform;
+            this[uniformSpeckey] = uniformSpec;
+          });
+          Object.keys(bufferSpecs).forEach(bufferId => {
+            var bufferSpec = bufferSpecs[bufferId];
+            let {
+              data,
+              datatype,
+              target,
+              usage,
+              name: bufferName,
+              attribute: attributeId
+            } = bufferSpec;
+            var buffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+            var bufferKey = `b${bufferId.charAt(0).toUpperCase()}${bufferId.substr(1, bufferId.length)}`;
+            var bufferSpeckey = `${bufferKey}Spec`;
+            this[bufferKey] = buffer;
+            buffers[bufferKey] = buffer;
+            this[bufferSpeckey] = bufferSpec;
+            switch (datatype) {
+              case oaWebglHelpers.FLOAT32:
+                bufferSpec.Data = new Float32Array(data);
+                break;
+            };
+            gl.bufferData(gl[target], bufferSpec.Data, gl[usage]);
+            bufferSpec.applied = true;
+            Object.defineProperty(bufferSpec, 'data', {
+              get: () => bufferSpec.data,
+              set: v => {
+                bufferSpec.data = v;
+                if (v) {
+                  switch (datatype) {
+                    case oaWebglHelpers.FLOAT32:
+                      bufferSpec.Data = new Float32Array(data);
+                      break;
+                  };
+                  bufferSpec.applied = false;
+                }
+              }
+            });
+            if (attributeId) {
+              var attributeKey = `a${attributeId.charAt(0).toUpperCase()}${attributeId.substr(1, attributeId.length)}`;
+              var attributeSpeckey = `${attributeKey}Spec`;
+              var attributeSpec = this[attributeSpeckey];
+              attributeSpec.buffer = bufferKey;
+            }
+          });
+          Object.keys(textureSpecs).forEach(textureId => {
+            var textureSpec = textureSpecs[textureId];
+            let { image, type, name: textureName } = textureSpec;
+            var texture = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, texture);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl[type], image);
+            var textureKey = `t${textureId.charAt(0).toUpperCase()}${textureId.substr(1, textureId.length)}`;
+            var textureSpeckey = `${textureKey}Spec`;
+            this[textureKey] = texture;
+            textures[textureKey] = texture;
+            this[textureSpeckey] = textureSpec;
+          });
+          dirty = false;
+        };
+        this.pushAttribute = function pushAttribute(gl, attributeId) {
+          var attributeKey = `a${attributeId.charAt(0).toUpperCase()}${attributeId.substr(1, attributeId.length)}`;
+          var attributeSpeckey = `${attributeKey}Spec`;
+          var attribute = this[attributeKey];
+          var attributeSpec = this[attributeSpeckey];
+          var buffer = this[attributeSpec.buffer];
+          var bufferMeta = this[attributeSpec.buffer + 'Spec'];
+          const { numComponents, type, normalize, stride, offset } = bufferMeta;
+          gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+          gl.vertexAttribPointer(
+            attribute,
+            numComponents,
+            gl[type],
+            normalize,
+            stride,
+            offset
+          );
+          gl.enableVertexAttribArray(attribute);
+        };
+        this.draw = gl => {
+          this.initialize(gl);
+          Object.keys(bufferSpecs).forEach(bufferId => {
+            var bufferSpec = bufferSpecs[bufferId];
+            if (!bufferSpec.applied && bufferSpec.Data)
+              gl.bufferData(gl[bufferSpec.target], bufferSpec.Data, gl[bufferSpec.usage]);
+          });
+          if (executor) {
+            executor.call(this, gl);
+          }
+        };
+      }
+
+      return oaWebglProgram;
+    }])
+    .factory('oaWebglCanvas', function() {
+      function oaWebglCanvas(name, canvas, _options) {
+        var options = Object.assign({}, _options);
+        var gl;
+        var main;
+        var programs = {};
+        var newCanvas = () => {
+          if (canvas) {
+            if (options.width && options.height) {
+              canvas.width = options.width;
+              canvas.height = options.height;
+            }
+            gl = canvas.getContext('webgl');
+          }
+          else
+            gl = null;
+        };
+        newCanvas();
+        Object.defineProperties(this, {
+          canvas: {
+            get: () => canvas,
+            set: v => {
+              canvas = v;
+              newCanvas();
+            }
+          },
+          gl: {
+            get: () => gl
+          },
+          main: {
+            get: () => main,
+            set: v => {
+              if (programs[v])
+                main = v;
+            }
+          }
+        });
+        this.registerProgram = (name, program) => {
+          programs[name] = program;
+          if (gl) {
+            program.initialize(gl);
+          }
+        };
+        this.draw = name => {
+          if (gl) {
+            if (!name) {
+              if (main)
+                name = main;
+              else
+                name = 'main';
+            }
+            var program = programs[name];
+            if (program) program.draw(gl);
+          }
+        };
+      }
+      return oaWebglCanvas;
+    });
+  angular
+    .module('oaWebglHelpersTestApp', ['oaWebglHelpers'])
+    .controller('oaWebglHelpersTestCtrl', ['$scope', 'oaWebglHelpers', 'oaWebglShaderHelpers', 'oaWebglCanvas', 'oaWebglProgram', 'oaWebglShaderSource', 'oaSylvester', function($scope, oaWebglHelpers, oaWebglShaderHelpers, oaWebglCanvas, oaWebglProgram, oaWebglShaderSource, oaSylvester) {
+      var name = 'test';
+      var dom = $('#webgl-test')[0];
+      var options = {
+        width: 256,
+        height: 256
+      };
+      var canvas = new oaWebglCanvas(name, dom, options);
+      var camMat = oaWebglShaderHelpers.cameraMatrix({
+        cameraPosition: 'uCamPos',
+        cameraDirection: 'uCamDir',
+        cameraUp: 'uCamUp'
+      });
+      var opMat = oaWebglShaderHelpers.orthaonalProjectionMatrix({
+        size: 'uSize',
+        far: 'uFar',
+        near: 'uNear'
+      });
+      var ppMat = oaWebglShaderHelpers.perspectiveProjectionMatrix({
+        fov: 'uFov',
+        far: 'uFar',
+        near: 'uNear'
+      });
+      var vertexSource = new oaWebglShaderSource(`precision mediump float;
+attribute vec4 aPos;
+attribute vec4 aCol;
+varying vec4 vCol;
+varying vec3 vAmb;
+uniform mat4 uModelMat;
+uniform vec3 uCamPos;
+uniform vec3 uCamDir;
+uniform vec3 uCamUp;
+uniform vec2 uSize;
+uniform vec2 uFov;
+uniform float uFar;
+uniform float uNear;
+void main() {
+  ${camMat}
+  mat4 opMat = ${opMat}
+  mat4 ppMat = ${ppMat}
+  gl_Position = cameraMatrix * uModelMat * aPos;
+  gl_Position = ppMat * cameraMatrix * uModelMat * aPos;
+  //gl_Position = vec4(gl_Position.xyz / gl_Position.w, 1.0);
+  vCol = aCol;
+  vAmb = aPos.xyz;
+  //vAmb = (opMat * cameraMatrix * uModelMat * aPos).xyz;
+}`);
+      //vertexSource.printShader();
+      var fragmentSource = new oaWebglShaderSource(`precision mediump float;
+varying vec4 vCol;
+varying vec3 vAmb;
+void main() {
+  //gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+  gl_FragColor = (1.0 - pow((pow(dot(vAmb, vAmb), 2.0) - 1.0) / 0.5, 1.0)) * vCol;
+  //gl_FragColor = vec4(vec3(vAmb.z), 1.0);
+}`);
+      //fragmentSource.printShader();
+      var attributes = {
+        position: {
+          name: 'aPos'
+        },
+        color: {
+          name: 'aCol'
+        }
+      };
+      var uniforms = {
+        model: {
+          name: 'uModelMat'
+        },
+        cPos: {
+          name: 'uCamPos'
+        },
+        cDir: {
+          name: 'uCamDir'
+        },
+        cUp: {
+          name: 'uCamUp'
+        },
+        size: {
+          name: 'uSize'
+        },
+        fov: {
+          name: 'uFov'
+        },
+        far: {
+          name: 'uFar'
+        },
+        near: {
+          name: 'uNear'
+        }
+      };
+      var buffers = {
+        positions: {
+          name: 'positions',
+          data: [
+            -1, -1, -1,
+             1, -1, -1,
+             1,  1, -1,
+            -1,  1, -1,
+            -1,  1,  1,
+             1,  1,  1,
+             1, -1,  1,
+            -1, -1,  1
+          ].map(p => p * 0.5),
+          datatype: oaWebglHelpers.FLOAT32,
+          target: 'ARRAY_BUFFER',
+          usage: 'STATIC_DRAW',
+          attribute: 'position',
+          numComponents: 3,
+          type: 'FLOAT',
+          normalize: false,
+          stride: 0,
+          offset: 0
+        },
+        colors: {
+          name: 'colors',
+          data: [
+            0, 0, 0, 1,
+            1, 0, 0, 1,
+            1, 1, 0, 1,
+            0, 1, 0, 1,
+            0, 1, 1, 1,
+            1, 1, 1, 1,
+            1, 0, 1, 1,
+            0, 0, 1, 1
+          ].map(p => p * 0.5),
+          datatype: oaWebglHelpers.FLOAT32,
+          target: 'ARRAY_BUFFER',
+          usage: 'STATIC_DRAW',
+          attribute: 'color',
+          numComponents: 4,
+          type: 'FLOAT',
+          normalize: false,
+          stride: 0,
+          offset: 0
+        },
+        indices: {
+          name: 'indices',
+          data: [
+            0, 7, 4, 4, 3, 0,
+            0, 1, 6, 6, 7, 0,
+            0, 3, 2, 2, 1, 0,
+            5, 6, 1, 1, 2, 5,
+            5, 2, 3, 3, 4, 5,
+            5, 4, 7, 7, 6, 5
+          ],
+          datatype: oaWebglHelpers.UINT16,
+          target: 'ELEMENT_ARRAY_BUFFER',
+          usage: 'STATIC_DRAW'
+        }
+      };
+      var textures = {};
+      var executor = function(gl) {
+        gl.clearColor(0.3, 0.3, 0.3, 1.0);
+        gl.enable(gl.DEPTH_TEST);
+        gl.clearDepth(-1.0);
+        gl.depthFunc(gl.GEQUAL);
+        //gl.clearDepth(1.0);
+        //gl.depthFunc(gl.LEQUAL);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        this.pushAttribute(gl, "position");
+        this.pushAttribute(gl, "color");
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.bIndices);
+        gl.useProgram(this.program);
+        //gl.uniform3fv(this.uCPos, new Float32Array([1.0, -2.0, 0.75]));
+        //gl.uniform3fv(this.uCDir, new Float32Array([-4.0, 8.0, -3.0]));
+        //gl.uniform3fv(this.uCUp, new Float32Array([0.0, 0.0, 1.0]));
+        //var y = -Math.PI / 4, x = Math.PI / 4;
+        var y = Math.PI / 12, x = Math.PI / 12;
+        y = x = 0;
+        var cy = Math.cos(y), sy = Math.sin(y);
+        var cx = Math.cos(x), sx = Math.sin(x);
+        var mat = new Float32Array([
+           cy,  sy * sx,  sy * cx, 0,
+            0,       cx,      -sx, 0,
+          -sy, +cy * sx, +cy * cx, 0,
+            0,        0,        0, 1
+        ]);
+        gl.uniformMatrix4fv(this.uModel, false, mat);
+        y = Math.PI / 6;
+        x = -Math.PI / 12;
+        cy = Math.cos(y); sy = Math.sin(y);
+        cx = Math.cos(x); sx = Math.sin(x);
+        var d = -3;
+        gl.uniform3fv(this.uCPos,  new Float32Array([d * sy * cx, -d * sx, d * cy * cx]));
+        //gl.uniform3fv(this.uCPos,  new Float32Array([0, 0, 0]));
+        gl.uniform3fv(this.uCDir, new Float32Array([sy * cx, -sx, cy * cx]));
+        gl.uniform3fv(this.uCUp,  new Float32Array([0, 1, 0]));
+        gl.uniform2fv(this.uSize,  new Float32Array([1, 1]));
+        gl.uniform2fv(this.uFov,  new Float32Array([Math.PI / 6, Math.PI / 6]));
+        gl.uniform1f(this.uFar, 10.0);
+        gl.uniform1f(this.uNear, 0.1);
+        const offset = 0;
+        const vertexCount = 3 * 2 * 6;
+        //gl.drawArrays(gl.TRIANGLE_STRIP, offset, vertexCount);
+        gl.drawElements(gl.TRIANGLES, vertexCount, gl.UNSIGNED_SHORT, offset);
+      };
+      var program = new oaWebglProgram({
+        vertexSource,
+        fragmentSource,
+        attributes,
+        uniforms,
+        buffers,
+        textures,
+        executor
+      });
+      canvas.registerProgram('main', program);
+      canvas.draw();
+    }]);
+}
+// oaMesh
+{
+  angular.module('oaMesh', ['oaSylvester', 'oaUtil'])
+    .factory('oaMesh', ['oaSylvester', 'oaIndexProvider', function(oaSylvester, oaIndexProvider) {
+      function oaMesh(_options) {
+        var options = Object.assign({
+          elementSize: 4,
+          initialSize: 4 * 4 * 64,
+          growthFactor: 0,
+          growthIncrement: 4 * 4 * 64,
+          growOnFull: false,
+          maximumSize: 0
+        }, _options);
+        var buffer = new ArrayBuffer(options.initialSize);
+        var index = [],
+          bufferIndicies = new oaIndexProvider(options.initialSize / (4 * options.elementSize)),
+          ids = new oaIndexProvider(-1);
+        var vertices = [],
+          edges = [],
+          faces = [];
+        this.addVertex = function(v) {
+          if (!bufferIndicies.capacity) {
+            if (options.maximumSize && buffer.byteLength >= options.maximumSize)
+              throw 'maximum size reached';
+            this.grow();
+          }
+          var i = bufferIndicies.requestIndex();
+          var id = ids.requestIndex();
+          index[id] = i;
+          var vect = vertices[id] = oaSylvester.$V(buffer, options.elementSize, 4 * i * options.elementSize, 4 * options.elementSize);
+          vect.setElements(v);
+          return vect;
+        };
+      }
+
+      return oaMesh;
+    }]);
+}
+// oaBlenderView
+{
+  angular
+    .module('oaBlenderView', ['oaLinearAlgebra', 'oaWebglHelpers'])
+    .directive('oaBlenderView3', ['oaWebglCanvas', function(oaWebglCanvas) {
+      function oaBlenderView3Ctrl($scope) {
+        this.render = function() {
+
+        };
+      }
+
+      function oaBlenderView3Link($scope, $element, $attrs, $ctrl) {
+        var canvas = $scope.canvas = new oaWebglCanvas($scope.name, $element[0]);
+      }
+      return {
+        restrict: 'E',
+        replace: true,
+        templateUrl: 'oa-blender-view-3d-template',
+        scope: {
+          mode: '=',
+          elements: '=',
+          name: '@',
+          camera: '=',
+
+        },
+        controller: oaBlenderView3Ctrl,
+        controllerAs: 'v3',
+        link: oaBlenderView3Link
+      };
+    }]);
+  angular
+    .module('oaBlenderViewTestApp', ['oaBlenderView'])
+    .controller('View3dTestCtrl', function($scope) {;
+    });
+}
+// oaVectorPicker with tests
+{
+  angular
+    .module('oaVectorPicker', ['oaUtil', 'oaBlenderInput', 'oaLinearAlgebra'])
+    .directive('vectorRect', [
+      'oaRectangular',
+      function(Rect) {
+        return {
+          restrict: 'E',
+          replace: true,
+          templateUrl: 'vector-rect-template',
+          scope: {
+            vector: '=',
+            //source: '=',
+            name: '@'
+          },
+          controller: function() {},
+          controllerAs: 'rp',
+          link: function($scope, $element, âattrs, ângModelCtrl) {
+            $scope.labels = ['X', 'Y'];
+            $scope.names = [$scope.name + '.x', $scope.name + '.y'];
+            $scope.mode = 'none';
+            $scope.setMode = mode => {
+              $element.removeClass($scope.mode);
+              $scope.mode = mode;
+              $element.addClass($scope.mode);
+            };
+          }
+        };
+      }
+    ])
+    .directive('vectorPolar', [
+      'oaPolar',
+      function(Polar) {
+        return {
+          restrict: 'E',
+          templateUrl: 'vector-polar-template',
+          link: function($scope, $element, $attrs) {}
+        };
+      }
+    ])
+    .directive('vectorD2', [
+      'oaRectangular',
+      'oaPolar',
+      function(Rect, Polar) {
+        return {
+          restrict: 'E',
+          templateUrl: 'vector-2d-template',
+          link: function($scope, $element, $attrs) {}
+        };
+      }
+    ])
+    .directive('vectorCartesian', [
+      'oaCartesian',
+      function(Cartesian) {
+        return {
+          restrict: 'E',
+          templateUrl: 'vector-cartesian-template',
+          link: function($scope, $element, $attrs) {}
+        };
+      }
+    ])
+    .directive('vectorCylindrical', [
+      'oaCylindrical',
+      function(Cylindrical) {
+        return {
+          restrict: 'E',
+          templateUrl: 'vector-cylindrical-template',
+          link: function($scope, $element, $attrs) {}
+        };
+      }
+    ])
+    .directive('vectorSpherical', [
+      'oaSpherical',
+      function(Spherical) {
+        return {
+          restrict: 'E',
+          templateUrl: 'vector-spherical-template',
+          link: function($scope, $element, $attrs) {}
+        };
+      }
+    ])
+    .directive('vectorD3', [
+      'oaCartesian',
+      'oaCylindrical',
+      'oaSpherical',
+      function(Cartesian, Cylindrical, Spherical) {
+        return {
+          restrict: 'E',
+          templateUrl: 'vector-3d-template',
+          link: function($scope, $element, $attrs) {}
+        };
+      }
+    ])
+    .directive('vectorHomogeneous', [
+      'oaHomogeneous',
+      function(Homogeneous) {
+        return {
+          restrict: 'E',
+          templateUrl: 'vector-homogeneous-template',
+          link: function($scope, $element, $attrs) {}
+        };
+      }
+    ])
+    .directive('vectorD4', [
+      'oaHomogeneous',
+      function(Homogeneous) {
+        return {
+          restrict: 'E',
+          templateUrl: 'vector-4d-template',
+          link: function($scope, $element, $attrs) {}
+        };
+      }
+    ]);
+  angular
+    .module('oaVectorPickerTestApp', ['oaVectorPicker', 'ngMessages'])
+    .controller('vectorPickerTestCtrl', [
+      'oaRectangular',
+      'oaPolar',
+      'oaCartesian',
+      'oaCylindrical',
+      'oaSpherical',
+      'oaHomogeneous',
+      function(oaRectangular, oaPolar, oaCartesian, oaCylindrical, oaSpherical, oaHomogeneous) {
+        this.rect1src = [2.5, 3.7];
+        this.rect1 = new oaRectangular(this.rect1src);
+      }
+    ]);
+}
+// oaFractalGenerator
+{
+  angular
+    .module('oaFractalGenerator', ['oaVectorPicker'])
+    .controller('Ctrl', function($scope) {
+      $scope.showHeader = false;
+      $scope.showTopMenu = false;
+      $scope.showSideMenu = false;
+      const Ctrl = this;
+      Ctrl.distanceFunctions = [{
+          name: 'spherical',
+          label: 'Sphere',
+          type: 'shape',
+          size: 'Radius',
+          generator: () => {}
+        },
+        {
+          name: 'icoscahedral',
+          label: 'Icoscahedron',
+          type: 'shape',
+          size: 'Radius',
+          generator: () => {}
+        },
+        {
+          name: 'recursiveTetrahedral',
+          label: 'Recursive Tetrahedron',
+          type: 'sierpinski',
+          size: 'Radius',
+          generator: () => {}
+        },
+        {
+          name: 'recursiveOctahedral',
+          label: 'Recursive Octahedron',
+          type: 'sierpinski',
+          size: 'Radius',
+          generator: () => {}
+        },
+        {
+          name: 'recursiveIcoscahedral',
+          label: 'Recursive Icoscahedron',
+          type: 'sierpinski',
+          size: 'Radius',
+          generator: () => {}
+        }
+      ];
+      Ctrl.distanceFunctionNames = {};
+      Ctrl.distanceFunctions.forEach((de, i) => {
+        Ctrl.distanceFunctionNames[de.name] = i;
+      });
+      Ctrl.distanceFunctionIndex = Ctrl.distanceFunctionNames['recursiveIcoscahedral'];
+      //Ctrl.distanceFunctionIndex = Ctrl.distanceFunctionNames['spherical'];
+      Ctrl.distanceFunction = Ctrl.distanceFunctions[Ctrl.distanceFunctionIndex];
+      Ctrl.size = 0.5;
+      var spinSlide = (prop, initial, min, max, step, page, spin, slide) => {
+        Ctrl[prop] = initial;
+        $(`#input-${prop}-spinner`).spinner({
+          min: Array.isArray(min) ? min[0] : min,
+          max: Array.isArray(max) ? max[0] : max,
+          step: Array.isArray(step) ? step[0] : step,
+          page,
+          spin: (event, ui) => {
+            Ctrl[prop] = spin ? spin.set(ui.value) : ui.value;
+            var slideVal = $(`#input-${prop}-slider`).slider('value');
+            var diff = (slide ? slide.set(slideVal) : slideVal) - Ctrl[prop];
+            if (diff)
+              $(`#input-${prop}-slider`).slider('value', slide ? slide.get(Ctrl[prop]) : Ctrl[prop]);
+          }
+        });
+        $(`#input-${prop}-slider`).slider({
+          min: Array.isArray(min) ? min[1] : min,
+          max: Array.isArray(max) ? max[1] : max,
+          step: Array.isArray(step) ? step[1] : step,
+          value: slide ? slide.get(Ctrl[prop]) : Ctrl[prop],
+          slide: (event, ui) => {
+            Ctrl[prop] = slide ? slide.set(ui.value) : ui.value;
+            var spinVal = $(`#input-${prop}-spinner`).spinner('value');
+            var diff = (slide ? slide.set(spinVal) : spinVal) - Ctrl[prop];
+            if (diff)
+              $(`#input-${prop}-spinner`).spinner('value', Ctrl[prop]);
+          }
+        });
+        $(`#input-${prop}-spinner`).spinner('value', spin ? spin.get(Ctrl[prop]) : Ctrl[prop]);
+      };
+      spinSlide('size', 1, [0.1, 0], [10000, 1000], [0.001, 1], 3, {
+        get: r => r,
+        set: v => v
+      }, {
+        get: r => Math.round(200 * (1 + Math.log(r) / Math.log10)),
+        set: v => parseFloat(Math.pow(10, v / 200.0 - 1).toFixed(3), 10)
+      });
+      spinSlide('scale', 2, 2, 20, 1, 3);
+      spinSlide('iterations', 13, 2, 50, 1, 6);
+    });
+}
+angular
+  .module('testApp', ['oaValidatorsTestApp', 'oaBlenderInputTestApp', 'oaLinearAlgebraTestApp', 'oaSylvesterTestApp', 'oaBlenderViewTestApp', 'oaVectorPickerTestApp', 'oaFractalGenerator'])
+  .controller('TestCtrl', function($scope) {
+    //this.mode = 'validator';
+    //this.mode = 'blender-input';
+    //this.mode = 'linear-algebra';
+    this.mode = 'sylvester';
+    //this.mode = 'vector-picker';
+    //this.mode = 'blender-view';
+    //this.mode = 'fractal';
+  });

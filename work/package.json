@@ -1,0 +1,19 @@
+{
+  "name": "fractal-generator",
+  "version": "18.321.1420",
+  "main": "index.js",
+  "dependencies": {
+    "babel-cli": "^6.26.0",
+    "npx": "^10.0.1"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-preset-env": "^1.6.1"
+  },
+  "scripts": {
+    "build": "make",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "oalpha",
+  "license": "ISC"
+}
