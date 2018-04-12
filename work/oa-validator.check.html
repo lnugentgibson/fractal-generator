@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html></html>
+<head>
+<meta charset='UTF-8'>
+<title>OAlpha Validator Check</title>
+<link href='lib/css/normalize.min.css' rel='stylesheet'>
+<link href='lib/css/jquery-ui.black-tie.min.css' rel='stylesheet'>
+<link href='oa-validator.check.css' rel='stylesheet'>
+</head>
+<body>
+<div id='app' ng-app='oaValidatorsTestApp' ng-cloak ng-controller='NumericTestCtrl as c'>
+<div id='app-validator' ng-cloak>
+<form class='test' id='numeric-test' name='numeric'>
+<section>
+<label ng-repeat-start='val in c.vals'>{{val.name}}</label>
+<input name='{{val.name}}' ng-max='c.vals3max' ng-min='c.vals2min' ng-model='val.value' ng-step='c.vals4step' oa-numeric type='text'>
+<br>
+{{val.value}}
+<p ng-messages='numeric[val.name].$error'>
+<span ng-message='oaNumeric'>
+Value is not a number
+<br>
+Valid value is {{numeric[val.name].$$element.controller('oa-numeric').numeric}}
+</span>
+<span ng-message='min'>Value must be greater than {{c.vals2min}}</span>
+<span ng-message='max'>Value must be less than {{c.vals3max}}</span>
+<span ng-message='step'>
+Value must be a multiple of {{c.vals4step}}
+<br>Closest valid value is {{numeric[val.name].$$element.controller('oa-numeric').closest}}</br>
+Previous valid value is {{numeric[val.name].$$element.controller('oa-numeric').previous}}
+<br>
+Next valid value is {{numeric[val.name].$$element.controller('oa-numeric').next}}
+</span>
+</p>
+<span ng-repeat-end></span>
+</section>
+<p>{{numeric}}</p>
+</form>
+</div>
+</div>
+<script src='lib/js/decimal.min.js'></script>
+<script src='lib/js/angular.js'></script>
+<script src='lib/js/angular-messages.js'></script>
+<script src='oa-util.js'></script>
+<script src='oa-validator.js'></script>
+<script src='oa-validator.check.js'></script>
+</body>

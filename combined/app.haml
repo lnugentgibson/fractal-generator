@@ -50,8 +50,8 @@
     %script#vector-4d-template{type: 'text/ng-template'}
       .vector-picker.vec4
         %p 4 Dimensional Vector
-  #app-validator{'ng-app': 'oaValidatorsTestApp', 'ng-if': 't.mode == "validator"', 'ng-cloak': true}
-    %form#numeric-test.test{'ng-controller': 'NumericTestCtrl as c', name: 'numeric'}
+  #app-validator{'ng-controller': 'NumericTestCtrl as c', 'ng-if': 't.mode == "validator"', 'ng-cloak': true}
+    %form#numeric-test.test{name: 'numeric'}
       %section
         %label{'ng-repeat-start': 'val in c.vals'} {{val.name}}
         %input{type: 'text', 'ng-model': 'val.value', name: '{{val.name}}', 'oa-numeric': true, 'ng-min': 'c.vals2min', 'ng-max': 'c.vals3max', 'ng-step': 'c.vals4step'}

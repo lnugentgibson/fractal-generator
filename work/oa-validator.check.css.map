@@ -1,0 +1,7 @@
+{
+"version": 3,
+"mappings": "AAAA,WAAY;EACV,UAAU,EAAE,qBAAe",
+"sources": ["oa-validator.check.scss"],
+"names": [],
+"file": "oa-validator.check.css"
+}
