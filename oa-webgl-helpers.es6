@@ -125,9 +125,161 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
     return new oaWebglShaderHelpers();
   })
   .factory('oaWebglShaderSnippet', function() {
+    var parameterMarker = /(^|[^\$])\$/;
+    var keyPattern = /[a-z]([-_a-z0-9]*[a-z0-9])?/;
+    var valueModifiers = /(:([^}]+)?)?/;
+    var valueParameterRegexGlobal = new RegExp(parameterMarker.source + '{(' + keyPattern.source + ')' + valueModifiers.source + '}', 'ig');
+    var valueParameterRegex = new RegExp(parameterMarker.source + '{(' + keyPattern.source + ')' + valueModifiers.source + '}', 'i');
+    var arrayMarker = /(array|arr|a):/;
+    var arrayModifiers = /(:([^}:]+)?(:([^}:]+)?(:([^}:]+)?)?)?)?/;
+    var arrayParameterRegexGlobal = new RegExp(parameterMarker.source + '{' + arrayMarker.source + '(' + keyPattern.source + ')' + arrayModifiers.source + '}', 'ig');
+    var arrayParameterRegex = new RegExp(parameterMarker.source + '{' + arrayMarker.source + '(' + keyPattern.source + ')' + arrayModifiers.source + '}', 'i');
+    //var arrayParameterRegexGlobal = /(^|[^\$])\${(array|arr|a):([a-z]([-_a-z0-9]*[a-z0-9])?)}/ig;
+    //var arrayParameterRegex = /(^|[^\$])\${([a-zA-Z]([-_a-zA-Z0-9]*[a-zA-Z0-9])?)}/i;
+    var snippetMarker = /(snippet|s):/;
+    var snippetModifiers = /(:[^}]+)?/;
+    var snippetParameterRegexGlobal = new RegExp(parameterMarker.source + '{' + snippetMarker.source + '(' + keyPattern.source + ')' + snippetModifiers.source + '}', 'ig');
+    var snippetParameterRegex = new RegExp(parameterMarker.source + '{' + snippetMarker.source + '(' + keyPattern.source + ')' + snippetModifiers.source + '}', 'i');
+    //var snippetParameterRegexGlobal = /(^|[^\$])\${(snippet|s)([a-z]([-_a-z0-9]*[a-z0-9])?)}/ig;
+    //var snippetParameterRegex = /(^|[^\$])\${([a-zA-Z]([-_a-zA-Z0-9]*[a-zA-Z0-9])?)}/i;
+    if(false)
+    console.log(JSON.stringify({
+      parameterRegexGlobal: valueParameterRegexGlobal.toString(),
+      parameterRegex: valueParameterRegex.toString(),
+      arrayParameterRegexGlobal: arrayParameterRegexGlobal.toString(),
+      arrayParameterRegex: arrayParameterRegex.toString(),
+      snippetParameterRegexGlobal: snippetParameterRegexGlobal.toString(),
+      snippetParameterRegex: snippetParameterRegex.toString()
+    }, null, 2));
+
     function Snippet() {
-      var source = '';
-      var parameters = {};
+      var source;
+      var parameters;
+
+      function ValueParam(_defaultValue) {
+        var value;
+        var defaultValue = _defaultValue || '';
+        Object.defineProperties(this, {
+          type: {
+            get: () => 'value'
+          },
+          value: {
+            get: () => value || defaultValue,
+            set: v => {
+              value = v;
+            }
+          }
+        });
+      }
+
+      function ArrayParam(_delimeter, _emptyString, _defaultElementValue) {
+        var array;
+        var delimeter = _delimeter || ',';
+        var emptyString = _emptyString || '';
+        var defaultElementValue = _defaultElementValue || '';
+        Object.defineProperties(this, {
+          type: {
+            get: () => 'array'
+          },
+          value: {
+            get: () => array && array.length ? array.map(e => e ? e : defaultElementValue).join(delimeter) : emptyString,
+            set: v => {
+              if (v.length != undefined) {
+                array = [];
+                for (var i = 0; i < v.length; i++)
+                  array[i] = v[i];
+              }
+            }
+          },
+          delimeter: {
+            get: () => delimeter,
+            set: v => {
+              delimeter = v ? v.toString() : '';
+            }
+          }
+        });
+      }
+
+      function SnippetParam(_nullString) {
+        var snippet;
+        var nullString = _nullString || '';
+        Object.defineProperties(this, {
+          type: {
+            get: () => 'snippet'
+          },
+          value: {
+            get: () => snippet ? snippet.generate(parent.getParameters()): nullString,
+            set: v => {
+              if (v instanceof Snippet)
+                snippet = v;
+            }
+          }
+        });
+      }
+
+      function parseSource(source) {
+        var params = {};
+        var values = source.match(valueParameterRegexGlobal);
+        if (values)
+          values.map(match => match.match(valueParameterRegex)).forEach(matchset => {
+            const [, // match
+              , // first character
+              key,
+              , // rest of key
+              , //modifiers
+              defaultValue
+            ] = matchset;
+            console.log(JSON.stringify({
+              key,
+              defaultValue
+            }, null, 2));
+            if (!params[key])
+              params[key] = new ValueParam(defaultValue);
+          });
+        var arrays = source.match(arrayParameterRegexGlobal);
+        if (arrays)
+          arrays.map(match => match.match(arrayParameterRegex)).forEach(matchset => {
+            const [, // match
+              , // first character
+              , // array marker
+              key,
+              , // rest of key
+              , // modifiers,
+              delimeter,
+              , // modifiers
+              emptyString,
+              , //modifiers
+              defaultElementValue
+            ] = matchset;
+            console.log(JSON.stringify({
+              key,
+              delimeter,
+              emptyString,
+              defaultElementValue
+            }, null, 2));
+            if (!params[key])
+              params[key] = new ArrayParam(delimeter, emptyString, defaultElementValue);
+          });
+        var snippets = source.match(snippetParameterRegexGlobal);
+        if (snippets)
+          snippets.map(match => match.match(snippetParameterRegex)).forEach(matchset => {
+            const [, // match
+              , // first character
+              , // snippet marker
+              key,
+              , // rest of key
+              , //modifiers
+              nullString
+            ] = matchset;
+            console.log(JSON.stringify({
+              key,
+              nullString
+            }, null, 2));
+            if (!params[key])
+              params[key] = new SnippetParam(nullString);
+          });
+        return params;
+      }
 
       function render(string, options) {
         const {
@@ -159,42 +311,67 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
           var key = p2;
           if (!params.hasOwnProperty(key))
             return match;
-          var value = params[key];
-          if (value.generate)
-            value = value.generate(params, options);
           return params.hasOwnProperty(key) ? p1 + params[key] : match;
         });
       }
-      
+
       this.generate = (_params, _options) => {
-        var params = Object.assign({}, parameters, _params), options = Object.assign({}, params, _options);
+        var params = Object.assign({}, this.getParameters(), _params),
+          options = Object.assign({}, params, _options);
         return render(applyParams(source, params, options), options);
       };
-      
+
+      function createParam(v) {
+        var param;
+        if (v instanceof Snippet)
+          param = new SnippetParam();
+        else if (Array.isArray(v))
+          param = new ArrayParam();
+        else
+          param = new ValueParam();
+        param.value = v;
+        return param;
+      }
+
       this.applyParams = params => {
         var p = {};
         if (Array.isArray(params))
           params.forEach(paramName => {
-            p[paramName] = parameters[paramName];
+            if (parameters.hasOwnProperty(paramName)) {
+              p[paramName] = parameters[paramName].parameters;
+              delete parameters[paramName];
+            }
           });
         else
-          p = params;
+          Object.keys(params).forEach(paramName => {
+            if (parameters.hasOwnProperty(paramName)) {
+              p[paramName] = params[paramName];
+              delete parameters[paramName];
+            }
+          });
         source = applyParams(source, p);
       };
       Object.defineProperty(this, 'source', {
         get: () => source,
         set: v => {
-          source = v.generate ? v.generate(parameters) : v.toString();
+          source = v;
+          parameters = parseSource(v);
         }
       });
-      this.getParameter = k => parameters[k];
+      this.getParameter = k => parameters[k].value;
+      this.getParameterType = k => parameters[k].type;
       this.setParameter = (k, v) => {
-        parameters[k] = v;
+        if (parameters.hasOwnProperty(k))
+          parameters[k].value = v;
+      };
+      this.getParameters = () => {
+        var p = {};
+        Object.keys(parameters).forEach(k => {
+          p[k] = parameters[k].value;
+        });
+        return p;
       };
       this.getParameterNames = () => Object.keys(parameters);
-      this.removeParameter = k => {
-        delete parameters[k];
-      };
     }
 
     return Snippet;

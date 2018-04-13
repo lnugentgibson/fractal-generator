@@ -58,18 +58,18 @@ describe('oaWebglHelpers module', function() {
       // missing parameter substitution
       {
         name: 'missing parameter substitution',
-        source: `param1 = "\${param1}"
-param2 = "\${paramB}"`,
+        source: `param1 = "\${param1:v1}"
+param2 = "\${paramB:v2}"`,
         parameters: {
           param1: 'Val1'
         },
         generated: `param1 = "Val1"
-param2 = "\${paramB}"`
+param2 = "v2"`
       },
       // single substitution in vertex shader
       {
         name: 'single substitution in vertex shader',
-        source: `precision \${precision} float;
+        source: `precision \${precision:mediump} float;
 attribute vec4 a_position;
 void main() {
   gl_Position = a_position;
