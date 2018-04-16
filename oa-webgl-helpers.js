@@ -6,7 +6,8 @@ var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = [
  * OAlpha WebGL Helper Library
  */
 var _window = window,
-    angular = _window.angular;
+    angular = _window.angular,
+    _ = _window._;
 
 angular.module('oaWebglHelpers', []).service('oaWebglHelpers', function () {
   function oaWebglHelpers() {
@@ -123,14 +124,10 @@ angular.module('oaWebglHelpers', []).service('oaWebglHelpers', function () {
   var arrayModifiers = /(:([^}:]+)?(:([^}:]+)?(:([^}:]+)?)?)?)?/;
   var arrayParameterRegexGlobal = new RegExp(parameterMarker.source + '{' + arrayMarker.source + '(' + keyPattern.source + ')' + arrayModifiers.source + '}', 'ig');
   var arrayParameterRegex = new RegExp(parameterMarker.source + '{' + arrayMarker.source + '(' + keyPattern.source + ')' + arrayModifiers.source + '}', 'i');
-  //var arrayParameterRegexGlobal = /(^|[^\$])\${(array|arr|a):([a-z]([-_a-z0-9]*[a-z0-9])?)}/ig;
-  //var arrayParameterRegex = /(^|[^\$])\${([a-zA-Z]([-_a-zA-Z0-9]*[a-zA-Z0-9])?)}/i;
   var snippetMarker = /(snippet|s):/;
-  var snippetModifiers = /(:[^}]+)?/;
+  var snippetModifiers = /(:[^}]+(:([^}:]+)?)?)?/;
   var snippetParameterRegexGlobal = new RegExp(parameterMarker.source + '{' + snippetMarker.source + '(' + keyPattern.source + ')' + snippetModifiers.source + '}', 'ig');
   var snippetParameterRegex = new RegExp(parameterMarker.source + '{' + snippetMarker.source + '(' + keyPattern.source + ')' + snippetModifiers.source + '}', 'i');
-  //var snippetParameterRegexGlobal = /(^|[^\$])\${(snippet|s)([a-z]([-_a-z0-9]*[a-z0-9])?)}/ig;
-  //var snippetParameterRegex = /(^|[^\$])\${([a-zA-Z]([-_a-zA-Z0-9]*[a-zA-Z0-9])?)}/i;
   if (false) console.log(JSON.stringify({
     parameterRegexGlobal: valueParameterRegexGlobal.toString(),
     parameterRegex: valueParameterRegex.toString(),
@@ -141,14 +138,20 @@ angular.module('oaWebglHelpers', []).service('oaWebglHelpers', function () {
   }, null, 2));
 
   function Snippet() {
-    var _this = this;
+    var _this3 = this;
 
     var source;
     var parameters;
 
-    function ValueParam(_defaultValue) {
+    function ValueParam(name, _defaultValue) {
+      var _this = this;
+
       var value;
       var defaultValue = _defaultValue || '';
+      if (false) console.log(JSON.stringify({
+        value: value,
+        defaultValue: defaultValue
+      }, null, 2));
       Object.defineProperties(this, {
         type: {
           get: function get() {
@@ -157,18 +160,31 @@ angular.module('oaWebglHelpers', []).service('oaWebglHelpers', function () {
         },
         value: {
           get: function get() {
-            return value || defaultValue;
+            var o = value || defaultValue;
+            if (false) console.log(name + ' = ' + o);
+            return o;
           },
           set: function set(v) {
             value = v;
+            if (false) console.log(name + ' := ' + _this.value);
+          }
+        },
+        parameters: {
+          get: function get() {
+            return _this.value;
           }
         }
       });
+      this.getValue = function (params) {
+        return _this.value;
+      };
     }
 
-    function ArrayParam(_delimeter, _emptyString, _defaultElementValue) {
+    function ArrayParam(name, _delimeter, _emptyString, _defaultElementValue) {
+      var _this2 = this;
+
       var array;
-      var delimeter = _delimeter || ',';
+      var delimeter = _delimeter || '';
       var emptyString = _emptyString || '';
       var defaultElementValue = _defaultElementValue || '';
       Object.defineProperties(this, {
@@ -180,7 +196,7 @@ angular.module('oaWebglHelpers', []).service('oaWebglHelpers', function () {
         value: {
           get: function get() {
             return array && array.length ? array.map(function (e) {
-              return e ? e : defaultElementValue;
+              return e != null ? e : defaultElementValue;
             }).join(delimeter) : emptyString;
           },
           set: function set(v) {
@@ -192,6 +208,11 @@ angular.module('oaWebglHelpers', []).service('oaWebglHelpers', function () {
             }
           }
         },
+        parameters: {
+          get: function get() {
+            return _this2.value;
+          }
+        },
         delimeter: {
           get: function get() {
             return delimeter;
@@ -199,13 +220,34 @@ angular.module('oaWebglHelpers', []).service('oaWebglHelpers', function () {
           set: function set(v) {
             delimeter = v ? v.toString() : '';
           }
+        },
+        emptyString: {
+          get: function get() {
+            return emptyString;
+          },
+          set: function set(v) {
+            emptyString = v ? v.toString() : '';
+          }
+        },
+        defaultElementValue: {
+          get: function get() {
+            return defaultElementValue;
+          },
+          set: function set(v) {
+            defaultElementValue = v ? v.toString() : '';
+          }
         }
       });
+      this.getValue = function (params) {
+        return _this2.value;
+      };
     }
 
-    function SnippetParam(_nullString) {
+    function SnippetParam(name, _nullString, _inherit, parent) {
       var snippet;
       var nullString = _nullString || '';
+      var inherit = !!_inherit;
+      var parameters = {};
       Object.defineProperties(this, {
         type: {
           get: function get() {
@@ -214,79 +256,113 @@ angular.module('oaWebglHelpers', []).service('oaWebglHelpers', function () {
         },
         value: {
           get: function get() {
-            return snippet ? snippet.generate(parent.getParameters()) : nullString;
+            return snippet ? snippet.generate(inherit ? Object.assign({}, parent.getParameters(), parameters) : parameters) : nullString;
           },
           set: function set(v) {
             if (v instanceof Snippet) snippet = v;
           }
+        },
+        parameters: {
+          get: function get() {
+            return parameters;
+          }
+        },
+        nullString: {
+          get: function get() {
+            return nullString;
+          },
+          set: function set(v) {
+            nullString = v ? v.toString() : '';
+          }
         }
       });
+      this.getValue = function (params) {
+        return snippet ? snippet.generate(inherit ? Object.assign({}, parent.getParameters(), parameters, params) : Object.assign({}, parameters, params)) : nullString;
+      };
     }
 
-    function parseSource(source) {
+    function parseSource(source, snippet) {
       var params = {};
       var values = source.match(valueParameterRegexGlobal);
       if (values) values.map(function (match) {
         return match.match(valueParameterRegex);
       }).forEach(function (matchset) {
         var _matchset = _slicedToArray(matchset, 6),
-            // match
-        // first character
-        key = _matchset[2],
-            // rest of key
-        //modifiers
-        defaultValue = _matchset[5];
 
-        console.log(JSON.stringify({
-          key: key,
-          defaultValue: defaultValue
+        // parameter specification
+        // match
+        // first character
+        k = _matchset[2],
+            // key
+        // rest of key
+        //modifiers
+        d // default value
+        = _matchset[5];
+
+        if (false) console.log(JSON.stringify({
+          k: k,
+          d: d
         }, null, 2));
-        if (!params[key]) params[key] = new ValueParam(defaultValue);
+        if (!params[k]) params[k] = new ValueParam(k, d);
       });
       var arrays = source.match(arrayParameterRegexGlobal);
       if (arrays) arrays.map(function (match) {
         return match.match(arrayParameterRegex);
       }).forEach(function (matchset) {
         var _matchset2 = _slicedToArray(matchset, 11),
-            // match
+
+        // parameter specification
+        // match
         // first character
         // array marker
-        key = _matchset2[3],
-            // rest of key
+        k = _matchset2[3],
+            // key
+        // rest of key
         // modifiers,
-        delimeter = _matchset2[6],
-            // modifiers
-        emptyString = _matchset2[8],
-            //modifiers
-        defaultElementValue = _matchset2[10];
+        s = _matchset2[6],
+            // delimeter
+        // modifiers
+        e = _matchset2[8],
+            // empty string
+        //modifiers
+        d // default element value
+        = _matchset2[10];
 
-        console.log(JSON.stringify({
-          key: key,
-          delimeter: delimeter,
-          emptyString: emptyString,
-          defaultElementValue: defaultElementValue
+        if (false) console.log(JSON.stringify({
+          k: k,
+          s: s,
+          e: e,
+          d: d
         }, null, 2));
-        if (!params[key]) params[key] = new ArrayParam(delimeter, emptyString, defaultElementValue);
+        if (!params[k]) params[k] = new ArrayParam(k, s, e, d);
       });
       var snippets = source.match(snippetParameterRegexGlobal);
       if (snippets) snippets.map(function (match) {
         return match.match(snippetParameterRegex);
       }).forEach(function (matchset) {
-        var _matchset3 = _slicedToArray(matchset, 7),
-            // match
+        var _matchset3 = _slicedToArray(matchset, 9),
+
+        // parameter specification
+        // match
         // first character
         // snippet marker
-        key = _matchset3[3],
-            // rest of key
-        //modifiers
-        nullString = _matchset3[6];
+        k = _matchset3[3],
+            // key
+        // rest of key
+        // modifiers
+        n = _matchset3[6],
+            // null string
+        // modifiers
+        i // inherit
+        = _matchset3[8];
 
-        console.log(JSON.stringify({
-          key: key,
-          nullString: nullString
+        if (false) console.log(JSON.stringify({
+          k: k,
+          n: n
         }, null, 2));
-        if (!params[key]) params[key] = new SnippetParam(nullString);
+        if (!params[k]) params[k] = new SnippetParam(k, n, i, snippet);
       });
+      //console.log(Object.keys(params));
       return params;
     }
 
@@ -316,25 +392,53 @@ angular.module('oaWebglHelpers', []).service('oaWebglHelpers', function () {
     }
 
     function applyParams(string, params, options) {
-      return string.replace(/(^|[^\$])\${([a-zA-Z]([-_a-zA-Z0-9]*[a-zA-Z0-9])?)}/g, function (match, p1, p2) {
+      string = string.replace(snippetParameterRegexGlobal, function (match, p1, p2, p3) {
+        if (false) console.log(JSON.stringify({
+          type: 'value',
+          match: match,
+          p1: p1,
+          p2: p2,
+          p3: p3
+        }));
+        var key = p3;
+        if (!params.hasOwnProperty(key)) return match;
+        return p1 + params[key];
+      });
+      string = string.replace(arrayParameterRegexGlobal, function (match, p1, p2, p3) {
+        if (false) console.log(JSON.stringify({
+          type: 'value',
+          match: match,
+          p1: p1,
+          p2: p2,
+          p3: p3
+        }));
+        var key = p3;
+        if (!params.hasOwnProperty(key)) return match;
+        return p1 + params[key];
+      });
+      string = string.replace(valueParameterRegexGlobal, function (match, p1, p2) {
+        if (false) console.log(JSON.stringify({
+          type: 'value',
+          match: match,
+          p1: p1,
+          p2: p2
+        }));
         var key = p2;
         if (!params.hasOwnProperty(key)) return match;
-        return params.hasOwnProperty(key) ? p1 + params[key] : match;
+        return p1 + params[key];
       });
+      return string;
     }
 
     this.generate = function (_params, _options) {
-      var params = Object.assign({}, _this.getParameters(), _params),
+      var params = Object.assign({}, _this3.getParameters(), _params),
           options = Object.assign({}, params, _options);
+      if (false) {
+        console.log(JSON.stringify(params, null, 2));
+        console.log(JSON.stringify(options, null, 2));
+      }
       return render(applyParams(source, params, options), options);
     };
-
-    function createParam(v) {
-      var param;
-      if (v instanceof Snippet) param = new SnippetParam();else if (Array.isArray(v)) param = new ArrayParam();else param = new ValueParam();
-      param.value = v;
-      return param;
-    }
 
     this.applyParams = function (params) {
       var p = {};
@@ -372,8 +476,17 @@ angular.module('oaWebglHelpers', []).service('oaWebglHelpers', function () {
     this.getParameters = function () {
       var p = {};
       Object.keys(parameters).forEach(function (k) {
+        p[k] = parameters[k].parameters;
+      });
+      //console.log(JSON.stringify(p, null, 2));
+      return p;
+    };
+    this.getParameterValues = function () {
+      var p = {};
+      Object.keys(parameters).forEach(function (k) {
         p[k] = parameters[k].value;
       });
+      //console.log(JSON.stringify(p, null, 2));
       return p;
     };
     this.getParameterNames = function () {
@@ -440,7 +553,7 @@ angular.module('oaWebglHelpers', []).service('oaWebglHelpers', function () {
   return oaWebglShaderSource;
 }).factory('oaWebglProgram', ['oaWebglHelpers', 'oaWebglShaderSource', function (oaWebglHelpers, oaWebglShaderSource) {
   function oaWebglProgram(_options) {
-    var _this3 = this;
+    var _this5 = this;
 
     var options = Object.assign({}, _options);
     var dirty = true;
@@ -522,7 +635,7 @@ angular.module('oaWebglHelpers', []).service('oaWebglHelpers', function () {
       }
     });
     this.initialize = function initialize(gl) {
-      var _this2 = this;
+      var _this4 = this;
 
       if (!dirty) return;
       console.log('program.initialize');
@@ -536,9 +649,9 @@ angular.module('oaWebglHelpers', []).service('oaWebglHelpers', function () {
         var attribute = gl.getAttribLocation(program, attributeName);
         var attributeKey = 'a' + attributeId.charAt(0).toUpperCase() + attributeId.substr(1, attributeId.length);
         var attributeSpeckey = attributeKey + 'Spec';
-        _this2[attributeKey] = attribute;
+        _this4[attributeKey] = attribute;
         attributes[attributeKey] = attribute;
-        _this2[attributeSpeckey] = attributeSpec;
+        _this4[attributeSpeckey] = attributeSpec;
       });
       Object.keys(uniformSpecs).forEach(function (uniformId) {
         var uniformSpec = uniformSpecs[uniformId];
@@ -547,9 +660,9 @@ angular.module('oaWebglHelpers', []).service('oaWebglHelpers', function () {
         var uniform = gl.getUniformLocation(program, uniformName);
         var uniformKey = 'u' + uniformId.charAt(0).toUpperCase() + uniformId.substr(1, uniformId.length);
         var uniformSpeckey = uniformKey + 'Spec';
-        _this2[uniformKey] = uniform;
+        _this4[uniformKey] = uniform;
         uniforms[uniformKey] = uniform;
-        _this2[uniformSpeckey] = uniformSpec;
+        _this4[uniformSpeckey] = uniformSpec;
       });
       Object.keys(bufferSpecs).forEach(function (bufferId) {
         var bufferSpec = bufferSpecs[bufferId];
@@ -564,9 +677,9 @@ angular.module('oaWebglHelpers', []).service('oaWebglHelpers', function () {
         gl.bindBuffer(gl[target], buffer);
         var bufferKey = 'b' + bufferId.charAt(0).toUpperCase() + bufferId.substr(1, bufferId.length);
         var bufferSpeckey = bufferKey + 'Spec';
-        _this2[bufferKey] = buffer;
+        _this4[bufferKey] = buffer;
         buffers[bufferKey] = buffer;
-        _this2[bufferSpeckey] = bufferSpec;
+        _this4[bufferSpeckey] = bufferSpec;
         switch (datatype) {
           case oaWebglHelpers.FLOAT32:
             bufferSpec.Data = new Float32Array(data);
@@ -614,7 +727,7 @@ angular.module('oaWebglHelpers', []).service('oaWebglHelpers', function () {
         if (attributeId) {
           var attributeKey = 'a' + attributeId.charAt(0).toUpperCase() + attributeId.substr(1, attributeId.length);
           var attributeSpeckey = attributeKey + 'Spec';
-          var attributeSpec = _this2[attributeSpeckey];
+          var attributeSpec = _this4[attributeSpeckey];
           attributeSpec.buffer = bufferId;
         }
       });
@@ -633,9 +746,9 @@ angular.module('oaWebglHelpers', []).service('oaWebglHelpers', function () {
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl[type], image);
         var textureKey = 't' + textureId.charAt(0).toUpperCase() + textureId.substr(1, textureId.length);
         var textureSpeckey = textureKey + 'Spec';
-        _this2[textureKey] = texture;
+        _this4[textureKey] = texture;
         textures[textureKey] = texture;
-        _this2[textureSpeckey] = textureSpec;
+        _this4[textureSpeckey] = textureSpec;
       });
       dirty = false;
       console.log('program.initialized');
@@ -676,14 +789,14 @@ angular.module('oaWebglHelpers', []).service('oaWebglHelpers', function () {
     };
     this.draw = function (gl) {
       console.log('program.draw');
-      _this3.initialize(gl);
+      _this5.initialize(gl);
       Object.keys(bufferSpecs).forEach(function (bufferId) {
         var bufferSpec = bufferSpecs[bufferId];
         if (!bufferSpec.applied && bufferSpec.Data) gl.bufferData(gl[bufferSpec.target], bufferSpec.Data, gl[bufferSpec.usage]);
       });
       if (executor) {
         console.log('program.execute');
-        executor.call(_this3, gl);
+        executor.call(_this5, gl);
       } else console.log('!executor');
       console.log('program.drawn');
     };

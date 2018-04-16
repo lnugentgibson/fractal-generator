@@ -1,25 +1,32 @@
 .DEFAULT_GOAL := all
 
-Components := $(patsubst %,oa-%,util validator blender-input math linear-algebra sylvester webgl-helpers mesh gl-noise blender-view vector-picker fractal-generator)
+Components := $(patsubst %,oa-%,util validator blender-input math linear-algebra sylvester object webgl-helpers mesh gl-noise blender-view vector-picker fractal-generator)
 
-LibraryComponents := $(patsubst %,oa-%,util validator math linear-algebra sylvester webgl-helpers mesh gl-noise)
+LibraryComponents := $(patsubst %,oa-%,util validator math linear-algebra sylvester object webgl-helpers mesh gl-noise)
 
 AppComponents := $(patsubst %,oa-%,blender-input blender-view vector-picker fractal-generator)
 
 AppScripts := $(patsubst %,%.js,$(Components))
+AppMinScripts := $(patsubst %,%.min.js,$(Components))
 TestScripts := $(patsubst %,%.test.js,$(Components))
+TestMinScripts := $(patsubst %,%.test.min.js,$(Components))
 Tests := $(patsubst %,test-%,$(Components))
 AppTemplates := $(patsubst %,%.templates.html,$(AppComponents))
 AppStyles := $(patsubst %,%.css,$(AppComponents))
+AppMinStyles := $(patsubst %,%.min.css,$(Components))
 AppBodies := $(patsubst %,%.app.html,$(AppComponents))
 AppContainers := $(patsubst %,%.html,$(AppComponents))
 CheckScripts := $(patsubst %,%.check.js,$(Components))
+CheckMinScripts := $(patsubst %,%.check.min.js,$(Components))
 CheckStyles := $(patsubst %,%.check.css,$(Components))
+CheckMinStyles := $(patsubst %,%.check.min.css,$(Components))
 CheckBodies := $(patsubst %,%.check.app.html,$(Components))
 CheckLibraryContainers := $(patsubst %,%.check.html,$(LibraryComponents))
 CheckAppContainers := $(patsubst %,%.check.html,$(AppComponents))
 DemoScripts := $(patsubst %,%.demo.js,$(Components))
+DemoMinScripts := $(patsubst %,%.demo.min.js,$(Components))
 DemoStyles := $(patsubst %,%.demo.css,$(Components))
+DemoMinStyles := $(patsubst %,%.demo.min.css,$(Components))
 DemoBodies := $(patsubst %,%.demo.app.html,$(Components))
 DemoLibraryContainers := $(patsubst %,%.demo.html,$(LibraryComponents))
 DemoAppContainers := $(patsubst %,%.demo.html,$(AppComponents))
@@ -29,16 +36,26 @@ $(AppScripts): %.js: %.es6
 
 appscripts: $(AppScripts)
 
-$(TestScripts): %.test.js: %.test.es6
+$(AppMinScripts): %.min.js: %.js
+	uglify -s $< -o $@
+
+appminscripts: $(AppMinScripts)
+
+$(TestScripts): %.test.js: %.test.es6 %.js
 	npx babel $< --out-file $@
 
 testscripts: $(TestScripts)
 
+$(TestMinScripts): %.min.js: %.js
+	uglify -s $< -o $@
+
+testminscripts: $(TestMinScripts)
+
 $(Tests): test-%: %.test.js %.js
 	mocha $<
 
-tests: $(Tests)
-	moch $(TestScripts)
+test: $(TestScripts)
+	mocha $(TestScripts)
 
 $(AppTemplates): %.html: %.haml
 	haml $< $@
@@ -48,6 +65,9 @@ templates: $(AppTemplates)
 $(AppStyles): %.css: %.scss
 	npx sass $< $@
 
+$(AppMinStyles): %.min.css: %.css
+	uglify -s $< -o $@ -c
+
 appstyles: $(AppStyles)
 
 $(AppBodies): %.html: %.haml
@@ -55,7 +75,7 @@ $(AppBodies): %.html: %.haml
 
 appbodies: $(AppBodies)
 
-$(AppContainers): %.html: %.haml %.app.html %.templates.html %.css %.js
+$(AppContainers): %.html: %.haml %.app.html %.templates.html %.min.css %.min.js
 	haml $< $(patsubst %.html,%.tmp1.html,$@)
 	awk '/###body###/ { system ( "cat $(patsubst %.html,%.app.html,$@)" ) } !/###body###/ { print; }' $(patsubst %.html,%.tmp1.html,$@) > $(patsubst %.html,%.tmp2.html,$@)
 	awk '/###temp###/ { system ( "cat $(patsubst %.html,%.templates.html,$@)" ) } !/###temp###/ { print; }' $(patsubst %.html,%.tmp2.html,$@) > $@
@@ -68,22 +88,32 @@ $(CheckScripts): %.check.js: %.check.es6 %.js
 
 checkscripts: $(CheckScripts)
 
+$(CheckMinScripts): %.min.js: %.js
+	uglify -s $< -o $@
+
+checkminscripts: $(CheckMinScripts)
+
 $(CheckStyles): %.css: %.scss
 	npx sass $< $@
 
 checkstyles: $(CheckStyles)
+
+$(CheckMinStyles): %.min.css: %.css
+	uglify -s $< -o $@ -c
+
+checkminstyles: $(CheckMinStyles)
 
 $(CheckBodies): %.html: %.haml
 	haml $< $@
 
 checkbodies: $(CheckBodies)
 
-$(CheckLibraryContainers): %.check.html: %.check.haml %.check.app.html %.check.css %.check.js %.js
+$(CheckLibraryContainers): %.check.html: %.check.haml %.check.app.html %.check.min.css %.check.min.js %.min.js
 	haml $< $(patsubst %.html,%.tmp.html,$@)
 	awk '/###body###/ { system ( "cat $(patsubst %.html,%.app.html,$@)" ) } !/###body###/ { print; }' $(patsubst %.html,%.tmp.html,$@) > $@
 	rm $(patsubst %.html,%.tmp.html,$@)
 
-$(CheckAppContainers): %.check.html: %.check.haml %.check.app.html %.templates.html %.check.css %.check.js %.css %.js
+$(CheckAppContainers): %.check.html: %.check.haml %.check.app.html %.templates.html %.check.min.css %.check.min.js %.min.css %.min.js
 	haml $< $(patsubst %.html,%.tmp1.html,$@)
 	awk '/###body###/ { system ( "cat $(patsubst %.html,%.app.html,$@)" ) } !/###body###/ { print; }' $(patsubst %.html,%.tmp1.html,$@) > $(patsubst %.html,%.tmp2.html,$@)
 	awk '/###temp###/ { system ( "cat $(patsubst %.check.html,%.templates.html,$@)" ) } !/###temp###/ { print; }' $(patsubst %.html,%.tmp2.html,$@) > $@
@@ -96,22 +126,32 @@ $(DemoScripts): %.demo.js: %.demo.es6 %.js
 
 demoscripts: $(DemoScripts)
 
+$(DemoMinScripts): %.min.js: %.js
+	uglify -s $< -o $@
+
+demominscripts: $(DemoMinScripts)
+
 $(DemoStyles): %.css: %.scss
 	npx sass $< $@
 
 demostyles: $(DemoStyles)
+
+$(DemoMinStyles): %.min.css: %.css
+	uglify -s $< -o $@ -c
+
+demominstyles: $(DemoMinStyles)
 
 $(DemoBodies): %.html: %.haml
 	haml $< $@
 
 demobodies: $(DemoBodies)
 
-$(DemoLibraryContainers): %.demo.html: %.demo.haml %.demo.app.html %.demo.css %.demo.js %.js
+$(DemoLibraryContainers): %.demo.html: %.demo.haml %.demo.app.html %.demo.min.css %.demo.min.js %.min.js
 	haml $< $(patsubst %.html,%.tmp.html,$@)
 	awk '/###body###/ { system ( "cat $(patsubst %.html,%.app.html,$@)" ) } !/###body###/ { print; }' $(patsubst %.html,%.tmp.html,$@) > $@
 	rm $(patsubst %.html,%.tmp.html,$@)
 
-$(DemoAppContainers): %.demo.html: %.demo.haml %.demo.app.html %.templates.html %.demo.css %.demo.js %.css %.js
+$(DemoAppContainers): %.demo.html: %.demo.haml %.demo.app.html %.templates.html %.demo.min.css %.demo.min.js %.min.css %.min.js
 	haml $< $(patsubst %.html,%.tmp1.html,$@)
 	awk '/###body###/ { system ( "cat $(patsubst %.html,%.app.html,$@)" ) } !/###body###/ { print; }' $(patsubst %.html,%.tmp1.html,$@) > $(patsubst %.html,%.tmp2.html,$@)
 	awk '/###temp###/ { system ( "cat $(patsubst %.demo.html,%.templates.html,$@)" ) } !/###temp###/ { print; }' $(patsubst %.html,%.tmp2.html,$@) > $@
@@ -134,9 +174,9 @@ oa-validator.js: oa-util.js
 oa-blender-input.js: oa-validator.js
 oa-linear-algebra.js: oa-util.js
 oa-sylvester.js: oa-util.js
-oa-mesh.js: oa-sylvester.js
+oa-webgl-helpers.js: oa-object.js
+oa-mesh.js: oa-linear-algebra.js oa-sylvester.js
 oa-gl-noise.js: oa-webgl-helpers.js
-#oa-blender-view.js: oa-linear-algebra.js oa-sylvester.js oa-webgl-helpers.js
 oa-blender-view.js: oa-mesh.js oa-webgl-helpers.js
 oa-vector-picker.js: oa-blender-input.js oa-blender-view.js
 oa-fractal-generator.js: oa-vector-picker.js

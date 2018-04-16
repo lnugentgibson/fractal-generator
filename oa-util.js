@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * OAlpha Utilities
+ * OAlpha Utilities Library
  * 
  * An anular module containing providers for string, object and array
  * manipulation.
@@ -18,7 +18,7 @@ angular.module('oaUtil', []).service('oaUtil', function () {
    * 
    * Defines the static functionality of the module.
    */
-  function Util() {
+  function oaUtil() {
     /**
      * This function generates a set of keys derived by the spcified key for
      * use in angular directives. It generates singular and plural forms of
@@ -154,7 +154,7 @@ angular.module('oaUtil', []).service('oaUtil', function () {
     };
   }
 
-  return new Util();
+  return new oaUtil();
 }).factory('oaArrayObject', ['oaUtil', function (oaUtil) {
   /**
    * Factory oaArrObj
