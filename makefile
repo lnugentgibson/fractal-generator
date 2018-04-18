@@ -41,7 +41,7 @@ $(AppMinScripts): %.min.js: %.js
 
 appminscripts: $(AppMinScripts)
 
-$(TestScripts): %.test.js: %.test.es6 %.js
+$(TestScripts): %.js: %.es6
 	npx babel $< --out-file $@
 
 testscripts: $(TestScripts)
@@ -54,7 +54,7 @@ testminscripts: $(TestMinScripts)
 $(Tests): test-%: %.test.js %.js
 	mocha $<
 
-test: $(TestScripts)
+test: $(TestScripts) $(AppScripts)
 	mocha $(TestScripts)
 
 $(AppTemplates): %.html: %.haml
@@ -170,16 +170,13 @@ containers: appcontainers checkcontainers democontainers
 all: containers
 
 
-oa-validator.js: oa-util.js
-oa-blender-input.js: oa-validator.js
-oa-linear-algebra.js: oa-util.js
-oa-sylvester.js: oa-util.js
-oa-webgl-helpers.js: oa-object.js
-oa-mesh.js: oa-linear-algebra.js oa-sylvester.js
-oa-gl-noise.js: oa-webgl-helpers.js
-oa-blender-view.js: oa-mesh.js oa-webgl-helpers.js
-oa-vector-picker.js: oa-blender-input.js oa-blender-view.js
-oa-fractal-generator.js: oa-vector-picker.js
-
-oa-vector-picker.css: oa-blender-input.css oa-blender-view.css
-oa-fractal-generator.css: oa-vector-picker.css
+oa-validator.check.html oa-validator.demo.html: oa-util.js
+oa-blender-input.check.html oa-blender-input.demo.html: oa-validator.js
+oa-linear-algebra.check.html oa-linear-algebra.demo.html: oa-util.js
+oa-sylvester.check.html oa-sylvester.demo.html: oa-util.js
+oa-webgl-helpers.check.html oa-webgl-helpers.demo.html: oa-object.js
+oa-mesh.check.html oa-mesh.demo.html: oa-linear-algebra.js oa-sylvester.js
+oa-gl-noise.check.html oa-gl-noise.demo.html: oa-webgl-helpers.js
+oa-blender-view.check.html oa-blender-view.demo.html: oa-mesh.js oa-webgl-helpers.js
+oa-vector-picker.check.html oa-vector-picker.demo.html: oa-blender-input.js oa-blender-input.css oa-blender-view.js oa-blender-view.css
+oa-fractal-generator.check.html oa-fractal-generator.demo.html: oa-vector-picker.js oa-vector-picker.css

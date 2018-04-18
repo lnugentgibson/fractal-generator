@@ -131,12 +131,13 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
     var valueModifiers = /(:([^}]+)?)?/;
     var valueParameterRegexGlobal = new RegExp(parameterMarker.source + '{(' + keyPattern.source + ')' + valueModifiers.source + '}', 'ig');
     var valueParameterRegex = new RegExp(parameterMarker.source + '{(' + keyPattern.source + ')' + valueModifiers.source + '}', 'i');
+    // array:delimeter:emptyString:nullValue:prefix:suffix
     var arrayMarker = /(array|arr|a):/;
-    var arrayModifiers = /(:([^}:]+)?(:([^}:]+)?(:([^}:]+)?)?)?)?/;
+    var arrayModifiers = /(:([^}:]+)?(:([^}:]+)?(:([^}:]+(:([^}:]+)?(:([^}:]+)?)?)?)?)?)?)?/;
     var arrayParameterRegexGlobal = new RegExp(parameterMarker.source + '{' + arrayMarker.source + '(' + keyPattern.source + ')' + arrayModifiers.source + '}', 'ig');
     var arrayParameterRegex = new RegExp(parameterMarker.source + '{' + arrayMarker.source + '(' + keyPattern.source + ')' + arrayModifiers.source + '}', 'i');
     var snippetMarker = /(snippet|s):/;
-    var snippetModifiers = /(:[^}]+(:([^}:]+)?)?)?/;
+    var snippetModifiers = /(:([^}]+)(:([^}:]+)?)?)?/;
     var snippetParameterRegexGlobal = new RegExp(parameterMarker.source + '{' + snippetMarker.source + '(' + keyPattern.source + ')' + snippetModifiers.source + '}', 'ig');
     var snippetParameterRegex = new RegExp(parameterMarker.source + '{' + snippetMarker.source + '(' + keyPattern.source + ')' + snippetModifiers.source + '}', 'i');
     if (false)
@@ -155,7 +156,7 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
 
       function ValueParam(name, _defaultValue) {
         var value;
-        var defaultValue = _defaultValue || '';
+        var defaultValue = _defaultValue == undefined ? '' : _defaultValue;
         if (false)
           console.log(JSON.stringify({
             value,
@@ -185,11 +186,11 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
         this.getValue = params => this.value;
       }
 
-      function ArrayParam(name, _delimeter, _emptyString, _defaultElementValue) {
+      function ArrayParam(name, _delimeter, _emptyString, _defaultElementValue, prefix, suffix) {
         var array;
-        var delimeter = _delimeter || '';
-        var emptyString = _emptyString || '';
-        var defaultElementValue = _defaultElementValue || '';
+        var delimeter = _delimeter == undefined ? '' : _delimeter;
+        var emptyString = _emptyString == undefined ? '' : _emptyString;
+        var defaultElementValue = _defaultElementValue == undefined ? '' : _defaultElementValue;
         Object.defineProperties(this, {
           type: {
             get: () => 'array'
@@ -231,7 +232,7 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
 
       function SnippetParam(name, _nullString, _inherit, parent) {
         var snippet;
-        var nullString = _nullString || '';
+        var nullString = _nullString == undefined ? '' : _nullString;
         var inherit = !!_inherit;
         var parameters = {};
         Object.defineProperties(this, {
@@ -255,13 +256,39 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
             }
           },
           source: {
-            get: snippet.source,
+            get: () => snippet ? snippet.source : null,
             set: v => {
-              snippet.source = v;
+              if (snippet)
+                snippet.source = v;
             }
           }
         });
-        this.getValue = params => snippet ? snippet.generate(inherit ? Object.assign({}, parent.getParameters(), parameters, params) : Object.assign({}, parameters, params)) : nullString;
+        this.getValue = params => {
+          var p;
+          if (inherit)
+            p = Object.assign({}, parameters, params);
+          else
+            p = Object.assign({}, parent.getParameters(), parameters, params);
+          if (false)
+            console.log(JSON.stringify({
+              parent: parent.getParameters(),
+              child: parameters,
+              argument: params,
+              combined: p
+            }, null, 2));
+          return snippet ? snippet.generate(p) : nullString;
+        };
+        this.getParameter = k => parameters[k];
+        this.setParameter = (k, v) => {
+          if (false)
+            console.log(JSON.stringify({
+              k,
+              ov: parameters[k],
+              nv: v
+            }, null, 2));
+          //if (parameters.hasOwnProperty(k))
+          parameters[k] = v;
+        };
       }
 
       function parseSource(source, snippet) {
@@ -278,6 +305,7 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
               , //modifiers
               d // default value
             ] = matchset;
+            if(k === 'a' || k === 'arr' || k === 'array' || k === 's' || k === 'snippet')
             if (false)
               console.log(JSON.stringify({
                 k,
@@ -337,6 +365,10 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
               params[k] = new SnippetParam(k, n, i, snippet);
           });
         //console.log(Object.keys(params));
+        params.indent = new ValueParam('indent', 0);
+        params.indentationStr = new ValueParam('indentationStr', '  ');
+        params.lineNumbers = new ValueParam('lineNumbers', false);
+        params.lineNumberWidth = new ValueParam('lineNumberWidth', 4);
         return params;
       }
 
@@ -365,7 +397,7 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
         }).join('\n');
       }
 
-      function applyParams(string, params, options) {
+      function applyParams(string, params) {
         string = string.replace(snippetParameterRegexGlobal, (match, p1, p2, p3) => {
           if (false)
             console.log(JSON.stringify({
@@ -410,14 +442,11 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
         return string;
       }
 
-      this.generate = (_params, _options) => {
-        var params = Object.assign({}, this.getParameters(), _params),
-          options = Object.assign({}, params, _options);
-        if (false) {
+      this.generate = _params => {
+        var params = Object.assign({}, this.getParameterValues(_params), _params);
+        if (false)
           console.log(JSON.stringify(params, null, 2));
-          console.log(JSON.stringify(options, null, 2));
-        }
-        return render(applyParams(source, params, options), options);
+        return render(applyParams(source, params), params);
       };
 
       this.applyParams = params => {
@@ -442,7 +471,7 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
         get: () => source,
         set: v => {
           source = v;
-          parameters = parseSource(v);
+          parameters = parseSource(v, this);
         }
       });
       this.getParameter = k => parameters[k].value;
@@ -455,6 +484,10 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
         if (parameters.hasOwnProperty(k) && parameters[k].type == 'snippet')
           parameters[k].source = v;
       };
+      this.setSnippetParameter = (k, p, v) => {
+        if (parameters.hasOwnProperty(k) && parameters[k].type == 'snippet')
+          parameters[k].setParameter(p, v);
+      };
       this.getParameters = () => {
         var p = {};
         Object.keys(parameters).forEach(k => {
@@ -463,10 +496,10 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
         //console.log(JSON.stringify(p, null, 2));
         return p;
       };
-      this.getParameterValues = () => {
+      this.getParameterValues = params => {
         var p = {};
         Object.keys(parameters).forEach(k => {
-          p[k] = parameters[k].value;
+          p[k] = parameters[k].getValue(params);
         });
         //console.log(JSON.stringify(p, null, 2));
         return p;

@@ -147,7 +147,7 @@ angular.module('oaWebglHelpers', []).service('oaWebglHelpers', function () {
       var _this = this;
 
       var value;
-      var defaultValue = _defaultValue || '';
+      var defaultValue = _defaultValue == undefined ? '' : _defaultValue;
       if (false) console.log(JSON.stringify({
         value: value,
         defaultValue: defaultValue
@@ -184,9 +184,9 @@ angular.module('oaWebglHelpers', []).service('oaWebglHelpers', function () {
       var _this2 = this;
 
       var array;
-      var delimeter = _delimeter || '';
-      var emptyString = _emptyString || '';
-      var defaultElementValue = _defaultElementValue || '';
+      var delimeter = _delimeter == undefined ? '' : _delimeter;
+      var emptyString = _emptyString == undefined ? '' : _emptyString;
+      var defaultElementValue = _defaultElementValue == undefined ? '' : _defaultElementValue;
       Object.defineProperties(this, {
         type: {
           get: function get() {
@@ -245,7 +245,7 @@ angular.module('oaWebglHelpers', []).service('oaWebglHelpers', function () {
 
     function SnippetParam(name, _nullString, _inherit, parent) {
       var snippet;
-      var nullString = _nullString || '';
+      var nullString = _nullString == undefined ? '' : _nullString;
       var inherit = !!_inherit;
       var parameters = {};
       Object.defineProperties(this, {
@@ -274,10 +274,38 @@ angular.module('oaWebglHelpers', []).service('oaWebglHelpers', function () {
           set: function set(v) {
             nullString = v ? v.toString() : '';
           }
+        },
+        source: {
+          get: function get() {
+            return snippet ? snippet.source : null;
+          },
+          set: function set(v) {
+            if (snippet) snippet.source = v;
+          }
         }
       });
       this.getValue = function (params) {
-        return snippet ? snippet.generate(inherit ? Object.assign({}, parent.getParameters(), parameters, params) : Object.assign({}, parameters, params)) : nullString;
+        var p;
+        if (inherit) p = Object.assign({}, parameters, params);else p = Object.assign({}, parent.getParameters(), parameters, params);
+        if (false) console.log(JSON.stringify({
+          parent: parent.getParameters(),
+          child: parameters,
+          argument: params,
+          combined: p
+        }, null, 2));
+        return snippet ? snippet.generate(p) : nullString;
+      };
+      this.getParameter = function (k) {
+        return parameters[k];
+      };
+      this.setParameter = function (k, v) {
+        if (false) console.log(JSON.stringify({
+          k: k,
+          ov: parameters[k],
+          nv: v
+        }, null, 2));
+        //if (parameters.hasOwnProperty(k))
+        parameters[k] = v;
       };
     }
 
@@ -363,6 +391,10 @@ angular.module('oaWebglHelpers', []).service('oaWebglHelpers', function () {
         if (!params[k]) params[k] = new SnippetParam(k, n, i, snippet);
       });
       //console.log(Object.keys(params));
+      params.indent = new ValueParam('indent', 0);
+      params.indentationStr = new ValueParam('indentationStr', '  ');
+      params.lineNumbers = new ValueParam('lineNumbers', false);
+      params.lineNumberWidth = new ValueParam('lineNumberWidth', 4);
       return params;
     }
 
@@ -391,7 +423,7 @@ angular.module('oaWebglHelpers', []).service('oaWebglHelpers', function () {
       }).join('\n');
     }
 
-    function applyParams(string, params, options) {
+    function applyParams(string, params) {
       string = string.replace(snippetParameterRegexGlobal, function (match, p1, p2, p3) {
         if (false) console.log(JSON.stringify({
           type: 'value',
@@ -430,14 +462,10 @@ angular.module('oaWebglHelpers', []).service('oaWebglHelpers', function () {
       return string;
     }
 
-    this.generate = function (_params, _options) {
-      var params = Object.assign({}, _this3.getParameters(), _params),
-          options = Object.assign({}, params, _options);
-      if (false) {
-        console.log(JSON.stringify(params, null, 2));
-        console.log(JSON.stringify(options, null, 2));
-      }
-      return render(applyParams(source, params, options), options);
+    this.generate = function (_params) {
+      var params = Object.assign({}, _this3.getParameterValues(), _params);
+      if (false) console.log(JSON.stringify(params, null, 2));
+      return render(applyParams(source, params), params);
     };
 
     this.applyParams = function (params) {
@@ -461,7 +489,7 @@ angular.module('oaWebglHelpers', []).service('oaWebglHelpers', function () {
       },
       set: function set(v) {
         source = v;
-        parameters = parseSource(v);
+        parameters = parseSource(v, _this3);
       }
     });
     this.getParameter = function (k) {
@@ -473,6 +501,12 @@ angular.module('oaWebglHelpers', []).service('oaWebglHelpers', function () {
     this.setParameter = function (k, v) {
       if (parameters.hasOwnProperty(k)) parameters[k].value = v;
     };
+    this.setSnippetParameterSource = function (k, v) {
+      if (parameters.hasOwnProperty(k) && parameters[k].type == 'snippet') parameters[k].source = v;
+    };
+    this.setSnippetParameter = function (k, p, v) {
+      if (parameters.hasOwnProperty(k) && parameters[k].type == 'snippet') parameters[k].setParameter(p, v);
+    };
     this.getParameters = function () {
       var p = {};
       Object.keys(parameters).forEach(function (k) {
@@ -481,10 +515,10 @@ angular.module('oaWebglHelpers', []).service('oaWebglHelpers', function () {
       //console.log(JSON.stringify(p, null, 2));
       return p;
     };
-    this.getParameterValues = function () {
+    this.getParameterValues = function (params) {
       var p = {};
       Object.keys(parameters).forEach(function (k) {
-        p[k] = parameters[k].value;
+        p[k] = parameters[k].getValue(params);
       });
       //console.log(JSON.stringify(p, null, 2));
       return p;

@@ -110,9 +110,7 @@ void main() {
   gl_Position = a_position;
 }`,
         parameters: {
-          precision: 'mediump'
-        },
-        options: {
+          precision: 'mediump',
           lineNumbers: true,
           lineNumberWidth: 2
         },
@@ -128,8 +126,7 @@ void main() {
         source: `void main() {
   gl_Position = a_position;
 }`,
-        parameters: {},
-        options: {
+        parameters: {
           indent: 1,
           indentationStr: '  '
         },
@@ -146,9 +143,7 @@ void main() {
   gl_Position = vec4(0.0);
 }`,
         parameters: {
-          precision: 'highp'
-        },
-        options: {
+          precision: 'highp',
           indent: 0,
           indentationStr: '  '
         },
@@ -168,9 +163,7 @@ void main() {
 }`,
         parameters: {
           precision: 'highp',
-          attributes: ['attribute vec4 a_position;']
-        },
-        options: {
+          attributes: ['attribute vec4 a_position;'],
           indent: 0,
           indentationStr: '  '
         },
@@ -265,9 +258,7 @@ void main() {
   gl_FragColor = vec4(vec3(s2 * s2), 1.0);
   gl_FragColor = vec4(vec3(g2 * g2), 1.0);
   gl_FragColor = vec4(vec3(g3 * g3), 1.0);
-  gl_FragColor = vec4(g1 * vec3(g4 * g4), 1.0);`
-        },
-        options: {
+  gl_FragColor = vec4(g1 * vec3(g4 * g4), 1.0);`,
           indent: 0,
           indentationStr: '  '
         },
@@ -344,52 +335,72 @@ float noise(vec2 op) {
 }`
       }
     ];
-    sss.forEach(function(snippetSource, i) {
-      describe(`parameter set #${i + 1}: ${snippetSource.name}`, function() {
-        var source, parameters, params, options, generated;
-        var snippet;
+    describe('A', function() {
+      sss.forEach(function(snippetSource, i) {
+        describe(`parameter set #${i + 1}: ${snippetSource.name}`, function() {
+          var source, parameters, params, generated;
+          var snippet;
 
-        beforeEach(() => {
-          source = snippetSource.source;
-          parameters = snippetSource.parameters;
-          params = snippetSource.params;
-          options = snippetSource.options;
-          generated = snippetSource.generated;
-          snippet = new $oaWebglShaderSnippet();
-          snippet.source = source;
-          Object.keys(parameters).forEach(k => {
-            snippet.setParameter(k, parameters[k]);
+          beforeEach(() => {
+            source = snippetSource.source;
+            parameters = snippetSource.parameters;
+            params = snippetSource.params;
+            generated = snippetSource.generated;
+            snippet = new $oaWebglShaderSnippet();
+            snippet.source = source;
+            Object.keys(parameters).forEach(k => {
+              snippet.setParameter(k, parameters[k]);
+            });
           });
-        });
 
-        it('should generate correct string', function() {
-          assert.equal(snippet.generate(params, options), generated);
+          it('should generate correct string', function() {
+            assert.equal(snippet.generate(params), generated);
+          });
         });
       });
     });
-    
+
     var i = sss.length;
-    describe(`parameter set #${i + 1}: snippet value`, function() {
-      var snippet, params, options, generated;
-      
+    describe('B', function() {
+      var vertexShaderSnippet;
+      var vertexShaderInnerSnippet;
+
       beforeEach(() => {
-        snippet = new $oaWebglShaderSnippet();
-        snippet.source = `precision \${precision:mediump} float;
+        vertexShaderSnippet = new $oaWebglShaderSnippet();
+        vertexShaderSnippet.source = `precision \${precision:mediump} float;
+\${a:uniforms:\n}
 \${a:attributes:\n}
+\${a:varying:\n}
+\${a:definitions:\n}
 void main() {
-  gl_Position = vec4(0.0);
-}`;
-        params = {
-          
-        };
-        options = {
-          
-        };
-        generated = ``;
+\${s:body:gl_Position = vec4(0.0);}
+}
+\${a:declarations:\n}`;
       });
-      
-      it('should generate correct string', function() {
-        assert.equal(snippet.generate(params, options), generated);
+
+      describe(`parameter set #${i + 1}: snippet value`, function() {
+        var generated;
+
+        beforeEach(() => {
+          vertexShaderInnerSnippet = new $oaWebglShaderSnippet();
+          vertexShaderInnerSnippet.source = 'gl_Position = a_position;';
+          vertexShaderSnippet.setParameter('attributes', ['attribute vec4 a_position;']);
+          vertexShaderSnippet.setParameter('body', vertexShaderInnerSnippet);
+          vertexShaderSnippet.setSnippetParameter('body', 'indent', 1);
+          generated = `precision mediump float;
+
+attribute vec4 a_position;
+
+
+void main() {
+  gl_Position = a_position;
+}
+`;
+        });
+
+        it('should generate correct string', function() {
+          assert.equal(vertexShaderSnippet.generate(), generated);
+        });
       });
     });
   });
