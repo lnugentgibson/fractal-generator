@@ -8,7 +8,7 @@ const {
 angular
   .module('oaObject', [])
   .service('oaObject', function() {
-    Object.filter = function(obj, filters) {
+    Object.filterObject = function(obj, filters) {
       var o = {};
       var _filters = _(filters);
       if(_filters.isArray())
@@ -24,6 +24,12 @@ angular
             o[key] = obj[key];
         });
       return o;
+    };
+    Object.prototype.filter = function(filters) {
+      return Object.filterObject(this, filters);
+    };
+    Object.getKeys = function() {
+      return Object.keys(this);
     };
     
     return Object;

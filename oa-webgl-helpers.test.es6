@@ -368,14 +368,36 @@ float noise(vec2 op) {
       beforeEach(() => {
         vertexShaderSnippet = new $oaWebglShaderSnippet();
         vertexShaderSnippet.source = `precision \${precision:mediump} float;
-\${a:uniforms:\n}
-\${a:attributes:\n}
-\${a:varying:\n}
-\${a:definitions:\n}
+\${P("uniforms")}
+\${P("attributes)}
+\${P("varying)}
+\${P("definitions)}
 void main() {
-\${s:body:gl_Position = vec4(0.0);}
+\${S("body", "body"}
 }
-\${a:declarations:\n}`;
+\${P("declarations)}`;
+        vertexShaderSnippet.addParameter('a', 'uniforms', {
+          delimiter: '\n'
+        });
+        vertexShaderSnippet.addParameter('a', 'attributes', {
+          delimiter: '\n'
+        });
+        vertexShaderSnippet.addParameter('a', 'varying', {
+          delimiter: '\n'
+        });
+        vertexShaderSnippet.addParameter('a', 'definitions', {
+          delimiter: '\n'
+        });
+        vertexShaderSnippet.addParameter('a', 'declarations', {
+          delimiter: '\n'
+        });
+        vertexShaderSnippet.addParameter('o', 'body', {
+          delimiter: '\n'
+        });
+        vertexShaderSnippet.addParameter('v', 'body.indent', {
+          type: 'int',
+          nullValue: 1
+        });
       });
 
       describe(`parameter set #${i + 1}: snippet value`, function() {
@@ -385,8 +407,8 @@ void main() {
           vertexShaderInnerSnippet = new $oaWebglShaderSnippet();
           vertexShaderInnerSnippet.source = 'gl_Position = a_position;';
           vertexShaderSnippet.setParameter('attributes', ['attribute vec4 a_position;']);
-          vertexShaderSnippet.setParameter('body', vertexShaderInnerSnippet);
-          vertexShaderSnippet.setSnippetParameter('body', 'indent', 1);
+          vertexShaderSnippet.setParameter('body.indent', 1);
+          vertexShaderSnippet.addSnippet('body', vertexShaderInnerSnippet);
           generated = `precision mediump float;
 
 attribute vec4 a_position;
