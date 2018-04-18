@@ -9,10 +9,12 @@ global.window.mocha = {};
 global.window.beforeEach = beforeEach;
 global.window.afterEach = afterEach;
 
-require('./lib/js/underscore-min');
+var _ = require('./lib/js/underscore');
 require('./lib/js/jquery.min');
 require('./lib/js/angular.min');
 require('angular-mocks');
+
+window._ = _;
 
 global.angular = window.angular;
 global.inject = global.angular.mock.inject;
@@ -25,7 +27,7 @@ module.exports = {
   Node: global.Node,
   angular: global.angular,
   $: global.$,
-  _: global._,
+  _,
   inject: global.inject,
   ngModule: global.ngModule
 };

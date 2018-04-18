@@ -125,30 +125,8 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
 
     return new oaWebglShaderHelpers();
   })
-  .factory('oaWebglShaderSnippet', function() {
+  .factory('oaWebglShaderSnippet', ['oaObject', function() {
     var parameterMarker = /(^|[^\$])\$/;
-    var keyPattern = /[a-z]([-_a-z0-9]*[a-z0-9])?/;
-    var valueModifiers = /(:([^}]+)?)?/;
-    var valueParameterRegexGlobal = new RegExp(parameterMarker.source + '{(' + keyPattern.source + ')' + valueModifiers.source + '}', 'ig');
-    var valueParameterRegex = new RegExp(parameterMarker.source + '{(' + keyPattern.source + ')' + valueModifiers.source + '}', 'i');
-    // array:delimiter:emptyString:nullValue:prefix:suffix
-    var arrayMarker = /(array|arr|a):/;
-    var arrayModifiers = /(:([^}:]+)?(:([^}:]+)?(:([^}:]+(:([^}:]+)?(:([^}:]+)?)?)?)?)?)?)?/;
-    var arrayParameterRegexGlobal = new RegExp(parameterMarker.source + '{' + arrayMarker.source + '(' + keyPattern.source + ')' + arrayModifiers.source + '}', 'ig');
-    var arrayParameterRegex = new RegExp(parameterMarker.source + '{' + arrayMarker.source + '(' + keyPattern.source + ')' + arrayModifiers.source + '}', 'i');
-    var snippetMarker = /(snippet|s):/;
-    var snippetModifiers = /(:([^}]+)(:([^}:]+)?)?)?/;
-    var snippetParameterRegexGlobal = new RegExp(parameterMarker.source + '{' + snippetMarker.source + '(' + keyPattern.source + ')' + snippetModifiers.source + '}', 'ig');
-    var snippetParameterRegex = new RegExp(parameterMarker.source + '{' + snippetMarker.source + '(' + keyPattern.source + ')' + snippetModifiers.source + '}', 'i');
-    if (false)
-      console.log(JSON.stringify({
-        parameterRegexGlobal: valueParameterRegexGlobal.toString(),
-        parameterRegex: valueParameterRegex.toString(),
-        arrayParameterRegexGlobal: arrayParameterRegexGlobal.toString(),
-        arrayParameterRegex: arrayParameterRegex.toString(),
-        snippetParameterRegexGlobal: snippetParameterRegexGlobal.toString(),
-        snippetParameterRegex: snippetParameterRegex.toString()
-      }, null, 2));
     var expressionRegexGlobal = new RegExp(parameterMarker.source + '{([^}])}', 'ig');
     //var expressionRegex = new RegExp(parameterMarker.source + '{([^}])}', 'i');
     var parameterReferenceRegexGlobal = new RegExp('P\(([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)\)', 'ig');
@@ -177,7 +155,7 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
         }
       };
       var parameters = {};
-      var snippets;
+      var snippets = {};
 
       this.addParameter = (t, k, s, o) => {
         const {
@@ -269,7 +247,9 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
         }).join('\n');
       }
 
-      function applyParams(string, params) {
+      function applyParams(string, _params) {
+        var params = Object.assign({}, _params);
+        
         function A(param) {
           var array = specifiers[param];
           var arrayElements = params[param];
@@ -293,24 +273,43 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
         }
 
         return string.replace(expressionRegexGlobal, (match, p1) => {
-          if (false)
+          if (true)
             console.log(JSON.stringify({
               type: 'value',
               match,
-              p1,
-              p2
+              p1
             }));
           var exp = p1;
           var parameterReferences = exp.match(parameterReferenceRegexGlobal).map(match => match.match(parameterReferenceRegex));
           var snippetReferences = exp.match(snippetReferenceRegexGlobal).map(match => match.match(snippetReferenceRegex));
-          if (parameterReferences.every(ref => specifiers[ref[1]]) && snippetReferences.every(ref => snippets[ref[1]] && specifiers[ref[2]]))
+          var pmatches = parameterReferences.map(ref => {
+            return {
+              data: ref,
+              ref: ref[1],
+              match: specifiers[ref[1]]
+            };
+          });
+          var smatches = snippetReferences.map(ref => {
+            return {
+              data: ref,
+              sref: ref[1],
+              pref: ref[2],
+              match: snippets[ref[1]] && specifiers[ref[2]]
+            };
+          });
+          console.log({
+            exp,
+            pmatches,
+            smatches
+          });
+          if (pmatches.every(m => m.match) && smatches.every(m => m.match))
             return apply.call({ P, S }, exp);
           return match;
         });
       }
 
       this.generate = _params => {
-        var params = Object.assign({}, parameters, params.filter(parameters.getKeys()));
+        var params = Object.assign({}, parameters, params ? params.filter(parameters.getKeys()) : null);
         if (false)
           console.log(JSON.stringify(params, null, 2));
         return render(applyParams(source, params), params);
@@ -329,7 +328,7 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
     }
 
     return Snippet;
-  })
+  }])
   .factory('oaWebglShaderSource', function() {
     function oaWebglShaderSource(_source, _generator, _parameters) {
       var source = _source;

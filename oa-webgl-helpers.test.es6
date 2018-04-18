@@ -335,6 +335,7 @@ float noise(vec2 op) {
 }`
       }
     ];
+    if(false)
     describe('A', function() {
       sss.forEach(function(snippetSource, i) {
         describe(`parameter set #${i + 1}: ${snippetSource.name}`, function() {
@@ -367,15 +368,19 @@ float noise(vec2 op) {
 
       beforeEach(() => {
         vertexShaderSnippet = new $oaWebglShaderSnippet();
-        vertexShaderSnippet.source = `precision \${precision:mediump} float;
+        vertexShaderSnippet.source = `precision \${P("precision")} float;
 \${P("uniforms")}
-\${P("attributes)}
-\${P("varying)}
-\${P("definitions)}
+\${P("attributes")}
+\${P("varying")}
+\${P("definitions")}
 void main() {
-\${S("body", "body"}
+\${S("body", "body")}
 }
-\${P("declarations)}`;
+\${P("declarations")}`;
+        vertexShaderSnippet.addParameter('v', 'precision', {
+          type: 'str',
+          nullValue: 'mediump'
+        });
         vertexShaderSnippet.addParameter('a', 'uniforms', {
           delimiter: '\n'
         });

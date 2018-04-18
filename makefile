@@ -51,7 +51,7 @@ $(TestMinScripts): %.min.js: %.js
 
 testminscripts: $(TestMinScripts)
 
-$(Tests): test-%: %.test.js %.js
+$(Tests): test-%: %.test.js %.js test-helpers.js
 	mocha $<
 
 test: $(TestScripts) $(AppScripts)
