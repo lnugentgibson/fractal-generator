@@ -636,7 +636,31 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
   }])
   .factory('oaWebglFunctionSnippet', ['oaWebglSnippet', function(oaWebglSnippet) {
     function FunctionSnippet() {
-      
+      oaWebglSnippet.call(this);
+      var bodyType = 'string';
+      var sourceGen = () => `\${S("signiture", "null")} {
+${bodyType === 'string' ? '${P("body")}' : '${S("body", "null")}'}
+}`;
+      this.source = sourceGen();
+      var signitureSnippet = new oaWebglSnippet();
+      signitureSnippet.source = '\${P("returnType")} \${P("funcName")}()';
+      signitureSnippet.addParameter('v', 'returnType', {
+        type: 'str',
+        nullValue: 'float'
+      });
+      signitureSnippet.addParameter('v', 'funcName', {
+        type: 'str'
+      });
+      var body;
+      Object.defineProperties(this, {
+        bodySnippet: {
+          get: () => body,
+          set: v => {
+            body = v;
+            this.setSnippet('body', body);
+          }
+        }
+      });
     }
     
     return FunctionSnippet;
@@ -670,6 +694,19 @@ void main() {
         nullValue: 1
       });
       this.setParameter('body.indent', 1);
+      var variables = {
+        names: []
+      };
+      variables.add = (name, type, datatype) => {
+        if(variables.names.indexOf(name) > -1)
+          return;
+        variables.names.push(name);
+        variables[name] = {
+          type,
+          datatype,
+          name
+        };
+      };
       var variableSnippet = new oaWebglSnippet();
       variableSnippet.source = '${P("vartype")} ${P("datatype")} ${P("varname")};';
       variableSnippet.addParameter('v', 'datatype', {
@@ -684,6 +721,11 @@ void main() {
         type: 'str'
       });
       this.addSnippet('variable', variableSnippet);
+      Object.defineProperties(this, {
+        variables: {
+          get: () => variables
+        }
+      });
     }
 
     return ShaderSnippet;
