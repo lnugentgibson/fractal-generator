@@ -125,15 +125,21 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
 
     return new oaWebglShaderHelpers();
   })
-  .factory('oaWebglShaderSnippet', ['oaObject', function() {
+  .factory('oaWebglSnippet', ['oaObject', function() {
     var parameterMarker = /(^|[^\$])\$/;
     var expressionRegexGlobal = new RegExp(parameterMarker.source + '{([^}]+)}', 'ig');
     var parameterReferenceRegexString = /P\("([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)"\)/;
     var parameterReferenceRegexGlobal = new RegExp(parameterReferenceRegexString.source, 'ig');
     var parameterReferenceRegex = new RegExp(parameterReferenceRegexString.source, 'i');
+    var arrayReferenceRegexString = /A\("([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)"\)/;
+    var arrayReferenceRegexGlobal = new RegExp(arrayReferenceRegexString.source, 'ig');
+    var arrayReferenceRegex = new RegExp(arrayReferenceRegexString.source, 'i');
     var snippetReferenceRegexString = /S\("([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)", "([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)"\)/;
     var snippetReferenceRegexGlobal = new RegExp(snippetReferenceRegexString.source, 'ig');
     var snippetReferenceRegex = new RegExp(snippetReferenceRegexString.source, 'i');
+    var dynamicSnippetReferenceRegexString = /D\("([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)", "([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)"\)/;
+    var dynamicSnippetReferenceRegexGlobal = new RegExp(dynamicSnippetReferenceRegexString.source, 'ig');
+    var dynamicSnippetReferenceRegex = new RegExp(dynamicSnippetReferenceRegexString.source, 'i');
     if (false)
       console.log(JSON.stringify({
         marker: parameterMarker.toString(),
@@ -175,19 +181,27 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
 
       this.addParameter = (t, k, s, o) => {
         const {
-          replace
+          replace,
+          ignore
         } = Object.assign({
           replace: false
         }, o);
-        if (specifiers[k] && !replace)
-          throw 'parameter already exists';
+        if (specifiers[k]) {
+          if (ignore)
+            return;
+          if (!replace)
+            throw 'parameter already exists';
+        }
         var ks = k.split('.');
         var parent = objectKeys;
-        for (var i = 0; i + 1 < ks.length; i++) {
-          parent = parent[ks[i]];
-          if (!parent)
-            parent = parent[ks[i]] = {};
-        }
+        if (false)
+          for (var i = 0; i + 1 < ks.length; i++) {
+            parent = parent[ks[i]];
+            if (!parent)
+              parent = parent[ks[i]] = {};
+          }
+        else if (ks.length > 1)
+          this.addParameter('o', ks.slice(0, ks.length - 1).join('.'), null, { ignore: true });
         s = Object.assign({}, s);
         switch (t) {
           case 'o':
@@ -288,10 +302,28 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
             snippets
           }, null, 2));
 
+        function O(param) {
+          var object = specifiers[param];
+          if (object.parameterType !== 'a')
+            return;
+          var objectValue = params[param];
+          var out = objectValue ? objectValue : {};
+          if (false)
+            console.log(JSON.stringify({
+              param,
+              object,
+              objectValue,
+              out
+            }, null, 2));
+          return out;
+        }
+
         function A(param) {
           var array = specifiers[param];
+          if (array.parameterType !== 'a')
+            return;
           var arrayElements = params[param];
-          var out = arrayElements && arrayElements.length ? arrayElements.map(e => e != null ? e : array.nullElement).join(array.delimiter) : array.nullArray;
+          var out = arrayElements && arrayElements.length ? arrayElements.map(e => e != null ? e : array.nullElement) : [];
           if (false)
             console.log(JSON.stringify({
               param,
@@ -303,14 +335,25 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
         }
 
         function P(param) {
-          var value = specifiers[param];
-          if (value.parameterType === 'a')
-            return A(param);
-          var paramValue = params[param];
-          var out = paramValue == undefined ? value.nullValue : paramValue;
+          if (false)
+            console.log({
+              f: 'P',
+              param
+            });
+          var spec = specifiers[param];
+          var out;
+          if (spec.parameterType === 'a') {
+            var arrayElements = params[param];
+            out = arrayElements && arrayElements.length ? arrayElements.map(e => e != null ? e : spec.nullElement).join(spec.delimiter) : spec.nullArray;
+          }
+          else {
+            var paramValue = params[param];
+            out = paramValue == undefined ? spec.nullValue : paramValue;
+          }
           if (false)
             console.log({
               param,
+              spec,
               paramValue,
               out
             });
@@ -318,9 +361,81 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
         }
 
         function S(param, paramSet) {
-          var ps = P(paramSet);
-          //console.log(ps);
-          return snippets[param].generate(ps);
+          if (false)
+            console.log({
+              f: 'S',
+              snippet: param,
+              param: paramSet
+            });
+          var value = specifiers[paramSet];
+          var out;
+          if (value.parameterType === 'a') {
+            if (false)
+              console.log(JSON.stringify({
+                type: 'a',
+                value: params[paramSet]
+              }, null, 2));
+            out = params[paramSet] ? params[paramSet].map(p => snippets[param].generate(p)).join(value.delimiter) : '';
+            //out = params[paramSet] ? params[paramSet].map(p => snippets[param].generate(p)) : snippets[param].generate();
+          }
+          else {
+            if (false)
+              console.log(JSON.stringify({
+                type: '!a',
+                value: params[paramSet]
+              }, null, 2));
+            out = snippets[param].generate(params[paramSet]);
+          }
+          if (false)
+            console.log({
+              snippet: param,
+              param: paramSet,
+              out
+            });
+          return out;
+        }
+
+        function D(param, paramSet) {
+          if (false)
+            console.log({
+              f: 'D',
+              snippet: param,
+              param: paramSet
+            });
+          var pspec = specifiers[paramSet];
+          var sspec = specifiers[param];
+          var out;
+          if (sspec.parameterType === 'a' && pspec.parameterType === 'a') {
+            out = '';
+            //out = params[param] ? params[param].map(p => snippets[p].generate(params[paramSet])).join(sspec.delimiter) : '';
+          }
+          else if (pspec.parameterType === 'a') {
+            if (false)
+              console.log(JSON.stringify({
+                type: 'a',
+                value: params[paramSet]
+              }, null, 2));
+            out = params[paramSet] ? params[paramSet].map(p => snippets[param].generate(p)).join(pspec.delimiter) : '';
+            //out = params[paramSet] ? params[paramSet].map(p => snippets[param].generate(p)) : snippets[param].generate();
+          }
+          else if (sspec.parameterType === 'a') {
+            out = params[param] ? params[param].map(p => snippets[p].generate(params[paramSet])).join(sspec.delimiter) : '';
+          }
+          else {
+            if (false)
+              console.log(JSON.stringify({
+                type: '!a',
+                value: params[paramSet]
+              }, null, 2));
+            out = snippets[param].generate(params[paramSet]);
+          }
+          if (false)
+            console.log({
+              snippet: param,
+              param: paramSet,
+              out
+            });
+          return out;
         }
 
         function apply(exp) {
@@ -329,7 +444,7 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
 
         if (false)
           console.log(string);
-        return string.replace(expressionRegexGlobal, (match, p1, p2) => {
+        var out = string.replace(expressionRegexGlobal, (match, p1, p2) => {
           if (false)
             console.log(JSON.stringify({
               match,
@@ -338,16 +453,29 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
             }, null, 2));
           let [prefix, exp] = [p1, p2];
           var parameterMatches = exp.match(parameterReferenceRegexGlobal) || [];
+          var arrayMatches = exp.match(arrayReferenceRegexGlobal) || [];
           var snippetMatches = exp.match(snippetReferenceRegexGlobal) || [];
+          var dynamicSnippetMatches = exp.match(dynamicSnippetReferenceRegexGlobal) || [];
           if (false)
             console.log(JSON.stringify({
               exp,
               parameterMatches,
-              snippetMatches
+              arrayMatches,
+              snippetMatches,
+              dynamicSnippetMatches
             }, null, 2));
           var parameterReferences = parameterMatches.map(match => match.match(parameterReferenceRegex));
+          var arrayReferences = arrayMatches.map(match => match.match(arrayReferenceRegex));
           var snippetReferences = snippetMatches.map(match => match.match(snippetReferenceRegex));
+          var dynamicSnippetReferences = dynamicSnippetMatches.map(match => match.match(dynamicSnippetReferenceRegex));
           var pmatches = parameterReferences.map(ref => {
+            return {
+              data: ref,
+              ref: ref[1],
+              match: !!specifiers[ref[1]]
+            };
+          });
+          var amatches = arrayReferences.map(ref => {
             return {
               data: ref,
               ref: ref[1],
@@ -365,34 +493,76 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
               match: !!snippets[ref[1]] && !!specifiers[ref[3]]
             };
           });
+          var dmatches = dynamicSnippetReferences.map(ref => {
+            var snippetmatch = !!specifiers[ref[1]];
+            var snippetsmatch = true;
+            if (snippetmatch && !!parameters[ref[1]]) {
+              snippetsmatch = parameters[ref[1]].every(s => !!snippets[s]);
+              if (!snippetsmatch)
+                console.log(JSON.stringify(parameters[ref[1]].map(s => {
+                  return {
+                    s,
+                    match: !!snippets[s]
+                  };
+                }), null, 2));
+            }
+            return {
+              data: ref,
+              sref: ref[1],
+              pref: ref[3],
+              snippetmatch,
+              snippetsmatch,
+              specifiersmatch: !!specifiers[ref[3]],
+              match: snippetmatch && snippetsmatch && !!specifiers[ref[3]]
+            };
+          });
           var pmatch = pmatches.every(m => m.match);
+          var amatch = amatches.every(m => m.match);
           var smatch = smatches.every(m => m.match);
+          var dmatch = dmatches.every(m => m.match);
           if (false)
             console.log(JSON.stringify({
               exp,
               parameterMatches,
+              arrayMatches,
               snippetMatches,
+              dynamicSnippetMatches,
               parameterReferences,
+              arrayReferences,
               snippetReferences,
+              dynamicSnippetReferences,
               pmatches,
+              amatches,
               smatches,
+              dmatches,
               pmatch,
-              smatch
+              amatch,
+              smatch,
+              dmatch
             }, null, 2));
           var out;
-          if (pmatch && smatch)
-            out = prefix + apply.call({ P, S }, exp);
+          if (pmatch && amatch && smatch && dmatch)
+            out = prefix + apply.call({
+              P,
+              A,
+              S,
+              D
+            }, exp);
           else
             out = touch ? prefix : match;
           if (false)
             console.log({
               exp,
               pmatch,
+              amatch,
               smatch,
+              dmatch,
               out
             });
           return out;
         });
+        //console.log(out);
+        return out;
       }
 
       function objectify(params) {
@@ -463,6 +633,60 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
     }
 
     return Snippet;
+  }])
+  .factory('oaWebglFunctionSnippet', ['oaWebglSnippet', function(oaWebglSnippet) {
+    function FunctionSnippet() {
+      
+    }
+    
+    return FunctionSnippet;
+  }])
+  .factory('oaWebglShaderSnippet', ['oaWebglSnippet', function(oaWebglSnippet) {
+    function ShaderSnippet() {
+      oaWebglSnippet.call(this);
+      this.source = `precision \${P("precision")} float;
+\${S("variable", "variables")}
+\${D("functionDeclarations", "null")}
+void main() {
+\${S("body", "body")}
+}
+\${D("functionDefinitions", "null")}`;
+      this.addParameter('v', 'precision', {
+        type: 'str',
+        nullValue: 'mediump'
+      });
+      this.addParameter('a', 'variables', {
+        delimiter: '\n'
+      });
+      this.addParameter('o', 'null');
+      this.addParameter('a', 'functionDeclarations', {
+        delimiter: '\n'
+      });
+      this.addParameter('a', 'functionDefinitions', {
+        delimiter: '\n'
+      });
+      this.addParameter('v', 'body.indent', {
+        type: 'int',
+        nullValue: 1
+      });
+      this.setParameter('body.indent', 1);
+      var variableSnippet = new oaWebglSnippet();
+      variableSnippet.source = '${P("vartype")} ${P("datatype")} ${P("varname")};';
+      variableSnippet.addParameter('v', 'datatype', {
+        type: 'str',
+        nullValue: 'float'
+      });
+      variableSnippet.addParameter('v', 'vartype', {
+        type: 'str',
+        nullValue: 'attribute'
+      });
+      variableSnippet.addParameter('v', 'varname', {
+        type: 'str'
+      });
+      this.addSnippet('variable', variableSnippet);
+    }
+
+    return ShaderSnippet;
   }])
   .factory('oaWebglShaderSource', function() {
     function oaWebglShaderSource(_source, _generator, _parameters) {

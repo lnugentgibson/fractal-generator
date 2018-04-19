@@ -112,15 +112,21 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
   }
 
   return new oaWebglShaderHelpers();
-}).factory('oaWebglShaderSnippet', ['oaObject', function () {
+}).factory('oaWebglSnippet', ['oaObject', function () {
   var parameterMarker = /(^|[^\$])\$/;
   var expressionRegexGlobal = new RegExp(parameterMarker.source + '{([^}]+)}', 'ig');
   var parameterReferenceRegexString = /P\("([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)"\)/;
   var parameterReferenceRegexGlobal = new RegExp(parameterReferenceRegexString.source, 'ig');
   var parameterReferenceRegex = new RegExp(parameterReferenceRegexString.source, 'i');
+  var arrayReferenceRegexString = /A\("([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)"\)/;
+  var arrayReferenceRegexGlobal = new RegExp(arrayReferenceRegexString.source, 'ig');
+  var arrayReferenceRegex = new RegExp(arrayReferenceRegexString.source, 'i');
   var snippetReferenceRegexString = /S\("([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)", "([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)"\)/;
   var snippetReferenceRegexGlobal = new RegExp(snippetReferenceRegexString.source, 'ig');
   var snippetReferenceRegex = new RegExp(snippetReferenceRegexString.source, 'i');
+  var dynamicSnippetReferenceRegexString = /D\("([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)", "([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)"\)/;
+  var dynamicSnippetReferenceRegexGlobal = new RegExp(dynamicSnippetReferenceRegexString.source, 'ig');
+  var dynamicSnippetReferenceRegex = new RegExp(dynamicSnippetReferenceRegexString.source, 'i');
   if (false) console.log(JSON.stringify({
     marker: parameterMarker.toString(),
     expression: expressionRegexGlobal.toString(),
@@ -131,6 +137,8 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
   }, null, 2));
 
   function Snippet() {
+    var _this = this;
+
     var source;
     var specifiers = {
       indent: {
@@ -163,15 +171,19 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
       var _Object$assign3 = Object.assign({
         replace: false
       }, o),
-          replace = _Object$assign3.replace;
+          replace = _Object$assign3.replace,
+          ignore = _Object$assign3.ignore;
 
-      if (specifiers[k] && !replace) throw 'parameter already exists';
+      if (specifiers[k]) {
+        if (ignore) return;
+        if (!replace) throw 'parameter already exists';
+      }
       var ks = k.split('.');
       var parent = objectKeys;
-      for (var i = 0; i + 1 < ks.length; i++) {
+      if (false) for (var i = 0; i + 1 < ks.length; i++) {
         parent = parent[ks[i]];
         if (!parent) parent = parent[ks[i]] = {};
-      }
+      } else if (ks.length > 1) _this.addParameter('o', ks.slice(0, ks.length - 1).join('.'), null, { ignore: true });
       s = Object.assign({}, s);
       switch (t) {
         case 'o':
@@ -259,12 +271,27 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
         snippets: snippets
       }, null, 2));
 
+      function O(param) {
+        var object = specifiers[param];
+        if (object.parameterType !== 'a') return;
+        var objectValue = params[param];
+        var out = objectValue ? objectValue : {};
+        if (false) console.log(JSON.stringify({
+          param: param,
+          object: object,
+          objectValue: objectValue,
+          out: out
+        }, null, 2));
+        return out;
+      }
+
       function A(param) {
         var array = specifiers[param];
+        if (array.parameterType !== 'a') return;
         var arrayElements = params[param];
         var out = arrayElements && arrayElements.length ? arrayElements.map(function (e) {
           return e != null ? e : array.nullElement;
-        }).join(array.delimiter) : array.nullArray;
+        }) : [];
         if (false) console.log(JSON.stringify({
           param: param,
           array: array,
@@ -275,12 +302,24 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
       }
 
       function P(param) {
-        var value = specifiers[param];
-        if (value.parameterType === 'a') return A(param);
-        var paramValue = params[param];
-        var out = paramValue == undefined ? value.nullValue : paramValue;
+        if (false) console.log({
+          f: 'P',
+          param: param
+        });
+        var spec = specifiers[param];
+        var out;
+        if (spec.parameterType === 'a') {
+          var arrayElements = params[param];
+          out = arrayElements && arrayElements.length ? arrayElements.map(function (e) {
+            return e != null ? e : spec.nullElement;
+          }).join(spec.delimiter) : spec.nullArray;
+        } else {
+          var paramValue = params[param];
+          out = paramValue == undefined ? spec.nullValue : paramValue;
+        }
         if (false) console.log({
           param: param,
+          spec: spec,
           paramValue: paramValue,
           out: out
         });
@@ -288,9 +327,75 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
       }
 
       function S(param, paramSet) {
-        var ps = P(paramSet);
-        //console.log(ps);
-        return snippets[param].generate(ps);
+        if (false) console.log({
+          f: 'S',
+          snippet: param,
+          param: paramSet
+        });
+        var value = specifiers[paramSet];
+        var out;
+        if (value.parameterType === 'a') {
+          if (false) console.log(JSON.stringify({
+            type: 'a',
+            value: params[paramSet]
+          }, null, 2));
+          out = params[paramSet] ? params[paramSet].map(function (p) {
+            return snippets[param].generate(p);
+          }).join(value.delimiter) : '';
+          //out = params[paramSet] ? params[paramSet].map(p => snippets[param].generate(p)) : snippets[param].generate();
+        } else {
+          if (false) console.log(JSON.stringify({
+            type: '!a',
+            value: params[paramSet]
+          }, null, 2));
+          out = snippets[param].generate(params[paramSet]);
+        }
+        if (false) console.log({
+          snippet: param,
+          param: paramSet,
+          out: out
+        });
+        return out;
+      }
+
+      function D(param, paramSet) {
+        if (false) console.log({
+          f: 'D',
+          snippet: param,
+          param: paramSet
+        });
+        var pspec = specifiers[paramSet];
+        var sspec = specifiers[param];
+        var out;
+        if (sspec.parameterType === 'a' && pspec.parameterType === 'a') {
+          out = '';
+          //out = params[param] ? params[param].map(p => snippets[p].generate(params[paramSet])).join(sspec.delimiter) : '';
+        } else if (pspec.parameterType === 'a') {
+          if (false) console.log(JSON.stringify({
+            type: 'a',
+            value: params[paramSet]
+          }, null, 2));
+          out = params[paramSet] ? params[paramSet].map(function (p) {
+            return snippets[param].generate(p);
+          }).join(pspec.delimiter) : '';
+          //out = params[paramSet] ? params[paramSet].map(p => snippets[param].generate(p)) : snippets[param].generate();
+        } else if (sspec.parameterType === 'a') {
+          out = params[param] ? params[param].map(function (p) {
+            return snippets[p].generate(params[paramSet]);
+          }).join(sspec.delimiter) : '';
+        } else {
+          if (false) console.log(JSON.stringify({
+            type: '!a',
+            value: params[paramSet]
+          }, null, 2));
+          out = snippets[param].generate(params[paramSet]);
+        }
+        if (false) console.log({
+          snippet: param,
+          param: paramSet,
+          out: out
+        });
+        return out;
       }
 
       function apply(exp) {
@@ -298,7 +403,7 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
       }
 
       if (false) console.log(string);
-      return string.replace(expressionRegexGlobal, function (match, p1, p2) {
+      var out = string.replace(expressionRegexGlobal, function (match, p1, p2) {
         if (false) console.log(JSON.stringify({
           match: match,
           p1: p1,
@@ -308,19 +413,36 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
             exp = p2;
 
         var parameterMatches = exp.match(parameterReferenceRegexGlobal) || [];
+        var arrayMatches = exp.match(arrayReferenceRegexGlobal) || [];
         var snippetMatches = exp.match(snippetReferenceRegexGlobal) || [];
+        var dynamicSnippetMatches = exp.match(dynamicSnippetReferenceRegexGlobal) || [];
         if (false) console.log(JSON.stringify({
           exp: exp,
           parameterMatches: parameterMatches,
-          snippetMatches: snippetMatches
+          arrayMatches: arrayMatches,
+          snippetMatches: snippetMatches,
+          dynamicSnippetMatches: dynamicSnippetMatches
         }, null, 2));
         var parameterReferences = parameterMatches.map(function (match) {
           return match.match(parameterReferenceRegex);
         });
+        var arrayReferences = arrayMatches.map(function (match) {
+          return match.match(arrayReferenceRegex);
+        });
         var snippetReferences = snippetMatches.map(function (match) {
           return match.match(snippetReferenceRegex);
         });
+        var dynamicSnippetReferences = dynamicSnippetMatches.map(function (match) {
+          return match.match(dynamicSnippetReferenceRegex);
+        });
         var pmatches = parameterReferences.map(function (ref) {
+          return {
+            data: ref,
+            ref: ref[1],
+            match: !!specifiers[ref[1]]
+          };
+        });
+        var amatches = arrayReferences.map(function (ref) {
           return {
             data: ref,
             ref: ref[1],
@@ -338,33 +460,80 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
             match: !!snippets[ref[1]] && !!specifiers[ref[3]]
           };
         });
+        var dmatches = dynamicSnippetReferences.map(function (ref) {
+          var snippetmatch = !!specifiers[ref[1]];
+          var snippetsmatch = true;
+          if (snippetmatch && !!parameters[ref[1]]) {
+            snippetsmatch = parameters[ref[1]].every(function (s) {
+              return !!snippets[s];
+            });
+            if (!snippetsmatch) console.log(JSON.stringify(parameters[ref[1]].map(function (s) {
+              return {
+                s: s,
+                match: !!snippets[s]
+              };
+            }), null, 2));
+          }
+          return {
+            data: ref,
+            sref: ref[1],
+            pref: ref[3],
+            snippetmatch: snippetmatch,
+            snippetsmatch: snippetsmatch,
+            specifiersmatch: !!specifiers[ref[3]],
+            match: snippetmatch && snippetsmatch && !!specifiers[ref[3]]
+          };
+        });
         var pmatch = pmatches.every(function (m) {
+          return m.match;
+        });
+        var amatch = amatches.every(function (m) {
           return m.match;
         });
         var smatch = smatches.every(function (m) {
           return m.match;
         });
+        var dmatch = dmatches.every(function (m) {
+          return m.match;
+        });
         if (false) console.log(JSON.stringify({
           exp: exp,
           parameterMatches: parameterMatches,
+          arrayMatches: arrayMatches,
           snippetMatches: snippetMatches,
+          dynamicSnippetMatches: dynamicSnippetMatches,
           parameterReferences: parameterReferences,
+          arrayReferences: arrayReferences,
           snippetReferences: snippetReferences,
+          dynamicSnippetReferences: dynamicSnippetReferences,
           pmatches: pmatches,
+          amatches: amatches,
           smatches: smatches,
+          dmatches: dmatches,
           pmatch: pmatch,
-          smatch: smatch
+          amatch: amatch,
+          smatch: smatch,
+          dmatch: dmatch
         }, null, 2));
         var out;
-        if (pmatch && smatch) out = prefix + apply.call({ P: P, S: S }, exp);else out = touch ? prefix : match;
+        if (pmatch && amatch && smatch && dmatch) out = prefix + apply.call({
+          P: P,
+          A: A,
+          S: S,
+          D: D
+        }, exp);else out = touch ? prefix : match;
         if (false) console.log({
           exp: exp,
           pmatch: pmatch,
+          amatch: amatch,
           smatch: smatch,
+          dmatch: dmatch,
           out: out
         });
         return out;
       });
+      //console.log(out);
+      return out;
     }
 
     function objectify(params) {
@@ -438,7 +607,7 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
   }
 
   return Snippet;
-}]).factory('oaWebglShaderSource', function () {
+}]).factory('oaWebglShaderSnippet', ['oaWebglSnippet', function () {}]).factory('oaWebglShaderSource', function () {
   function oaWebglShaderSource(_source, _generator, _parameters) {
     var source = _source;
     var generator = _generator;
@@ -496,7 +665,7 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
   return oaWebglShaderSource;
 }).factory('oaWebglProgram', ['oaWebglHelpers', 'oaWebglShaderSource', function (oaWebglHelpers, oaWebglShaderSource) {
   function oaWebglProgram(_options) {
-    var _this2 = this;
+    var _this3 = this;
 
     var options = Object.assign({}, _options);
     var dirty = true;
@@ -578,7 +747,7 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
       }
     });
     this.initialize = function initialize(gl) {
-      var _this = this;
+      var _this2 = this;
 
       if (!dirty) return;
       console.log('program.initialize');
@@ -592,9 +761,9 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
         var attribute = gl.getAttribLocation(program, attributeName);
         var attributeKey = 'a' + attributeId.charAt(0).toUpperCase() + attributeId.substr(1, attributeId.length);
         var attributeSpeckey = attributeKey + 'Spec';
-        _this[attributeKey] = attribute;
+        _this2[attributeKey] = attribute;
         attributes[attributeKey] = attribute;
-        _this[attributeSpeckey] = attributeSpec;
+        _this2[attributeSpeckey] = attributeSpec;
       });
       Object.keys(uniformSpecs).forEach(function (uniformId) {
         var uniformSpec = uniformSpecs[uniformId];
@@ -603,9 +772,9 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
         var uniform = gl.getUniformLocation(program, uniformName);
         var uniformKey = 'u' + uniformId.charAt(0).toUpperCase() + uniformId.substr(1, uniformId.length);
         var uniformSpeckey = uniformKey + 'Spec';
-        _this[uniformKey] = uniform;
+        _this2[uniformKey] = uniform;
         uniforms[uniformKey] = uniform;
-        _this[uniformSpeckey] = uniformSpec;
+        _this2[uniformSpeckey] = uniformSpec;
       });
       Object.keys(bufferSpecs).forEach(function (bufferId) {
         var bufferSpec = bufferSpecs[bufferId];
@@ -620,9 +789,9 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
         gl.bindBuffer(gl[target], buffer);
         var bufferKey = 'b' + bufferId.charAt(0).toUpperCase() + bufferId.substr(1, bufferId.length);
         var bufferSpeckey = bufferKey + 'Spec';
-        _this[bufferKey] = buffer;
+        _this2[bufferKey] = buffer;
         buffers[bufferKey] = buffer;
-        _this[bufferSpeckey] = bufferSpec;
+        _this2[bufferSpeckey] = bufferSpec;
         switch (datatype) {
           case oaWebglHelpers.FLOAT32:
             bufferSpec.Data = new Float32Array(data);
@@ -670,7 +839,7 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
         if (attributeId) {
           var attributeKey = 'a' + attributeId.charAt(0).toUpperCase() + attributeId.substr(1, attributeId.length);
           var attributeSpeckey = attributeKey + 'Spec';
-          var attributeSpec = _this[attributeSpeckey];
+          var attributeSpec = _this2[attributeSpeckey];
           attributeSpec.buffer = bufferId;
         }
       });
@@ -689,9 +858,9 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl[type], image);
         var textureKey = 't' + textureId.charAt(0).toUpperCase() + textureId.substr(1, textureId.length);
         var textureSpeckey = textureKey + 'Spec';
-        _this[textureKey] = texture;
+        _this2[textureKey] = texture;
         textures[textureKey] = texture;
-        _this[textureSpeckey] = textureSpec;
+        _this2[textureSpeckey] = textureSpec;
       });
       dirty = false;
       console.log('program.initialized');
@@ -732,14 +901,14 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
     };
     this.draw = function (gl) {
       console.log('program.draw');
-      _this2.initialize(gl);
+      _this3.initialize(gl);
       Object.keys(bufferSpecs).forEach(function (bufferId) {
         var bufferSpec = bufferSpecs[bufferId];
         if (!bufferSpec.applied && bufferSpec.Data) gl.bufferData(gl[bufferSpec.target], bufferSpec.Data, gl[bufferSpec.usage]);
       });
       if (executor) {
         console.log('program.execute');
-        executor.call(_this2, gl);
+        executor.call(_this3, gl);
       } else console.log('!executor');
       console.log('program.drawn');
     };
