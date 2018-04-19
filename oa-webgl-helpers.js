@@ -172,6 +172,7 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
         parent = parent[ks[i]];
         if (!parent) parent = parent[ks[i]] = {};
       }
+      s = Object.assign({}, s);
       switch (t) {
         case 'o':
         case 'object':
@@ -264,11 +265,12 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
         var out = arrayElements && arrayElements.length ? arrayElements.map(function (e) {
           return e != null ? e : array.nullElement;
         }).join(array.delimiter) : array.nullArray;
-        if (false) console.log({
+        if (false) console.log(JSON.stringify({
           param: param,
+          array: array,
           arrayElements: arrayElements,
           out: out
-        });
+        }, null, 2));
         return out;
       }
 
@@ -287,7 +289,7 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
 
       function S(param, paramSet) {
         var ps = P(paramSet);
-        console.log(ps);
+        //console.log(ps);
         return snippets[param].generate(ps);
       }
 

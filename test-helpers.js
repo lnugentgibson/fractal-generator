@@ -9,7 +9,7 @@ global.window.mocha = {};
 global.window.beforeEach = beforeEach;
 global.window.afterEach = afterEach;
 
-var _ = require('./lib/js/underscore');
+var _ = require('./lib/js/underscore-min');
 require('./lib/js/jquery.min');
 require('./lib/js/angular.min');
 require('angular-mocks');

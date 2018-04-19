@@ -188,6 +188,7 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
           if (!parent)
             parent = parent[ks[i]] = {};
         }
+        s = Object.assign({}, s);
         switch (t) {
           case 'o':
           case 'object':
@@ -292,11 +293,12 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
           var arrayElements = params[param];
           var out = arrayElements && arrayElements.length ? arrayElements.map(e => e != null ? e : array.nullElement).join(array.delimiter) : array.nullArray;
           if (false)
-            console.log({
+            console.log(JSON.stringify({
               param,
+              array,
               arrayElements,
               out
-            });
+            }, null, 2));
           return out;
         }
 
@@ -317,7 +319,7 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
 
         function S(param, paramSet) {
           var ps = P(paramSet);
-          console.log(ps);
+          //console.log(ps);
           return snippets[param].generate(ps);
         }
 
