@@ -13,14 +13,17 @@ angular
       var _filters = _(filters);
       if(_filters.isArray())
         _filters.each(key => {
-          o[key] = obj[key];
+          if(obj[key])
+            o[key] = obj[key];
         });
       else
         _filters.each((value, key) => {
           var _value = _(value);
-          if(_value.isObject())
-            o[key] = obj.filter(obj[key], value);
-          else if(value)
+          if(_value.isObject()) {
+            if(obj[key])
+              o[key] = obj.filter(obj[key], value);
+          }
+          else if(value && obj[key])
             o[key] = obj[key];
         });
       return o;
@@ -28,7 +31,7 @@ angular
     Object.prototype.filter = function(filters) {
       return Object.filterObject(this, filters);
     };
-    Object.getKeys = function() {
+    Object.prototype.getKeys = function() {
       return Object.keys(this);
     };
     

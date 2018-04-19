@@ -12,17 +12,19 @@ angular.module('oaObject', []).service('oaObject', function () {
     var o = {};
     var _filters = _(filters);
     if (_filters.isArray()) _filters.each(function (key) {
-      o[key] = obj[key];
+      if (obj[key]) o[key] = obj[key];
     });else _filters.each(function (value, key) {
       var _value = _(value);
-      if (_value.isObject()) o[key] = obj.filter(obj[key], value);else if (value) o[key] = obj[key];
+      if (_value.isObject()) {
+        if (obj[key]) o[key] = obj.filter(obj[key], value);
+      } else if (value && obj[key]) o[key] = obj[key];
     });
     return o;
   };
   Object.prototype.filter = function (filters) {
     return Object.filterObject(this, filters);
   };
-  Object.getKeys = function () {
+  Object.prototype.getKeys = function () {
     return Object.keys(this);
   };
 

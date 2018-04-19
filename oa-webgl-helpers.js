@@ -114,33 +114,21 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
   return new oaWebglShaderHelpers();
 }).factory('oaWebglShaderSnippet', ['oaObject', function () {
   var parameterMarker = /(^|[^\$])\$/;
-  var keyPattern = /[a-z]([-_a-z0-9]*[a-z0-9])?/;
-  var valueModifiers = /(:([^}]+)?)?/;
-  var valueParameterRegexGlobal = new RegExp(parameterMarker.source + '{(' + keyPattern.source + ')' + valueModifiers.source + '}', 'ig');
-  var valueParameterRegex = new RegExp(parameterMarker.source + '{(' + keyPattern.source + ')' + valueModifiers.source + '}', 'i');
-  // array:delimiter:emptyString:nullValue:prefix:suffix
-  var arrayMarker = /(array|arr|a):/;
-  var arrayModifiers = /(:([^}:]+)?(:([^}:]+)?(:([^}:]+(:([^}:]+)?(:([^}:]+)?)?)?)?)?)?)?/;
-  var arrayParameterRegexGlobal = new RegExp(parameterMarker.source + '{' + arrayMarker.source + '(' + keyPattern.source + ')' + arrayModifiers.source + '}', 'ig');
-  var arrayParameterRegex = new RegExp(parameterMarker.source + '{' + arrayMarker.source + '(' + keyPattern.source + ')' + arrayModifiers.source + '}', 'i');
-  var snippetMarker = /(snippet|s):/;
-  var snippetModifiers = /(:([^}]+)(:([^}:]+)?)?)?/;
-  var snippetParameterRegexGlobal = new RegExp(parameterMarker.source + '{' + snippetMarker.source + '(' + keyPattern.source + ')' + snippetModifiers.source + '}', 'ig');
-  var snippetParameterRegex = new RegExp(parameterMarker.source + '{' + snippetMarker.source + '(' + keyPattern.source + ')' + snippetModifiers.source + '}', 'i');
+  var expressionRegexGlobal = new RegExp(parameterMarker.source + '{([^}]+)}', 'ig');
+  var parameterReferenceRegexString = /P\("([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)"\)/;
+  var parameterReferenceRegexGlobal = new RegExp(parameterReferenceRegexString.source, 'ig');
+  var parameterReferenceRegex = new RegExp(parameterReferenceRegexString.source, 'i');
+  var snippetReferenceRegexString = /S\("([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)", "([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)"\)/;
+  var snippetReferenceRegexGlobal = new RegExp(snippetReferenceRegexString.source, 'ig');
+  var snippetReferenceRegex = new RegExp(snippetReferenceRegexString.source, 'i');
   if (false) console.log(JSON.stringify({
-    parameterRegexGlobal: valueParameterRegexGlobal.toString(),
-    parameterRegex: valueParameterRegex.toString(),
-    arrayParameterRegexGlobal: arrayParameterRegexGlobal.toString(),
-    arrayParameterRegex: arrayParameterRegex.toString(),
-    snippetParameterRegexGlobal: snippetParameterRegexGlobal.toString(),
-    snippetParameterRegex: snippetParameterRegex.toString()
+    marker: parameterMarker.toString(),
+    expression: expressionRegexGlobal.toString(),
+    parameterGlobal: parameterReferenceRegexGlobal.toString(),
+    parameter: parameterReferenceRegex.toString(),
+    snippetGlobal: snippetReferenceRegexGlobal.toString(),
+    snippet: snippetReferenceRegex.toString()
   }, null, 2));
-  var expressionRegexGlobal = new RegExp(parameterMarker.source + '{([^}])}', 'ig');
-  //var expressionRegex = new RegExp(parameterMarker.source + '{([^}])}', 'i');
-  var parameterReferenceRegexGlobal = new RegExp('P\(([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)\)', 'ig');
-  var parameterReferenceRegex = new RegExp('P\(([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)\)', 'i');
-  var snippetReferenceRegexGlobal = new RegExp('S\("([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)", "([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)"\)', 'ig');
-  var snippetReferenceRegex = new RegExp('S\("([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)", "([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)"\)', 'i');
 
   function Snippet() {
     var source;
@@ -162,6 +150,12 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
         nullValue: 4
       }
     };
+    var objectKeys = {
+      indent: true,
+      indentationStr: true,
+      lineNumbers: true,
+      lineNumberWidth: true
+    };
     var parameters = {};
     var snippets = {};
 
@@ -172,15 +166,23 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
           replace = _Object$assign3.replace;
 
       if (specifiers[k] && !replace) throw 'parameter already exists';
+      var ks = k.split('.');
+      var parent = objectKeys;
+      for (var i = 0; i + 1 < ks.length; i++) {
+        parent = parent[ks[i]];
+        if (!parent) parent = parent[ks[i]] = {};
+      }
       switch (t) {
         case 'o':
         case 'object':
           {
             specifiers[k] = Object.assign({
+              parameterType: 'o',
               type: 'default',
               nullObject: '',
               nullProperty: ''
             }, s.filter(['type', 'nullObject', 'nullProperty']));
+            parent[ks[ks.length - 1]] = {};
             break;
           }
         case 'a':
@@ -188,6 +190,7 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
         case 'array':
           {
             specifiers[k] = Object.assign({
+              parameterType: 'a',
               type: 'default',
               nullArray: '',
               nullElement: '',
@@ -195,6 +198,7 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
               prefix: '',
               suffix: ''
             }, s.filter(['type', 'nullArray', 'nullElement', 'delimiter', 'prefix', 'suffix']));
+            parent[ks[ks.length - 1]] = true;
             break;
           }
         case 'v':
@@ -203,9 +207,11 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
         default:
           {
             specifiers[k] = Object.assign({
+              parameterType: 'v',
               type: 'default',
               nullValue: ''
             }, s);
+            parent[ks[ks.length - 1]] = true;
             break;
           }
       }
@@ -242,78 +248,177 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
       }).join('\n');
     }
 
-    function applyParams(string, _params) {
+    function applyParams(string, _params, touch) {
       var params = Object.assign({}, _params);
+      if (false) console.log(JSON.stringify({
+        specifiers: specifiers,
+        objectKeys: objectKeys,
+        parameters: parameters,
+        params: params,
+        snippets: snippets
+      }, null, 2));
 
       function A(param) {
         var array = specifiers[param];
         var arrayElements = params[param];
-        return arrayElements && arrayElements.length ? arrayElements.map(function (e) {
+        var out = arrayElements && arrayElements.length ? arrayElements.map(function (e) {
           return e != null ? e : array.nullElement;
         }).join(array.delimiter) : array.nullArray;
+        if (false) console.log({
+          param: param,
+          arrayElements: arrayElements,
+          out: out
+        });
+        return out;
       }
 
       function P(param) {
         var value = specifiers[param];
+        if (value.parameterType === 'a') return A(param);
         var paramValue = params[param];
-        if (value.type === 'a') return A(param);
-        return paramValue == undefined ? value.nullValue : paramValue;
+        var out = paramValue == undefined ? value.nullValue : paramValue;
+        if (false) console.log({
+          param: param,
+          paramValue: paramValue,
+          out: out
+        });
+        return out;
       }
 
       function S(param, paramSet) {
-        return snippets[param].generate(P(paramSet));
+        var ps = P(paramSet);
+        console.log(ps);
+        return snippets[param].generate(ps);
       }
 
       function apply(exp) {
         return eval(exp);
       }
 
-      return string.replace(expressionRegexGlobal, function (match, p1) {
-        if (true) console.log(JSON.stringify({
-          type: 'value',
+      if (false) console.log(string);
+      return string.replace(expressionRegexGlobal, function (match, p1, p2) {
+        if (false) console.log(JSON.stringify({
           match: match,
-          p1: p1
-        }));
-        var exp = p1;
-        var parameterReferences = exp.match(parameterReferenceRegexGlobal).map(function (match) {
+          p1: p1,
+          p2: p2
+        }, null, 2));
+        var prefix = p1,
+            exp = p2;
+
+        var parameterMatches = exp.match(parameterReferenceRegexGlobal) || [];
+        var snippetMatches = exp.match(snippetReferenceRegexGlobal) || [];
+        if (false) console.log(JSON.stringify({
+          exp: exp,
+          parameterMatches: parameterMatches,
+          snippetMatches: snippetMatches
+        }, null, 2));
+        var parameterReferences = parameterMatches.map(function (match) {
           return match.match(parameterReferenceRegex);
         });
-        var snippetReferences = exp.match(snippetReferenceRegexGlobal).map(function (match) {
+        var snippetReferences = snippetMatches.map(function (match) {
           return match.match(snippetReferenceRegex);
         });
         var pmatches = parameterReferences.map(function (ref) {
           return {
             data: ref,
             ref: ref[1],
-            match: specifiers[ref[1]]
+            match: !!specifiers[ref[1]]
           };
         });
         var smatches = snippetReferences.map(function (ref) {
           return {
             data: ref,
             sref: ref[1],
-            pref: ref[2],
-            match: snippets[ref[1]] && specifiers[ref[2]]
+            pref: ref[3],
+            snippetsmatch: !!snippets[ref[1]],
+            specifiersmatch: !!specifiers[ref[3]],
+            paramsmatch: !!params[ref[3]],
+            match: !!snippets[ref[1]] && !!specifiers[ref[3]]
           };
         });
-        console.log({
-          exp: exp,
-          pmatches: pmatches,
-          smatches: smatches
+        var pmatch = pmatches.every(function (m) {
+          return m.match;
         });
-        if (pmatches.every(function (m) {
+        var smatch = smatches.every(function (m) {
           return m.match;
-        }) && smatches.every(function (m) {
-          return m.match;
-        })) return apply.call({ P: P, S: S }, exp);
-        return match;
+        });
+        if (false) console.log(JSON.stringify({
+          exp: exp,
+          parameterMatches: parameterMatches,
+          snippetMatches: snippetMatches,
+          parameterReferences: parameterReferences,
+          snippetReferences: snippetReferences,
+          pmatches: pmatches,
+          smatches: smatches,
+          pmatch: pmatch,
+          smatch: smatch
+        }, null, 2));
+        var out;
+        if (pmatch && smatch) out = prefix + apply.call({ P: P, S: S }, exp);else out = touch ? prefix : match;
+        if (false) console.log({
+          exp: exp,
+          pmatch: pmatch,
+          smatch: smatch,
+          out: out
+        });
+        return out;
       });
     }
 
+    function objectify(params) {
+      if (!params) return {};
+
+      function obj(model, parent, parentKey) {
+        model.getKeys().map(function (key) {
+          return {
+            key: key,
+            full: parentKey + key
+          };
+        }).map(function (key) {
+          return Object.assign(key, {
+            spec: specifiers[key.full]
+          });
+        }).filter(function (key) {
+          return key.spec.parameterType === 'o';
+        }).forEach(function (key) {
+          var paramObj = parent[key.key];
+          var subparams = parent.getKeys().filter(function (subkey) {
+            return subkey.startsWith(key.key + '.');
+          });
+          if (subparams.length) {
+            if (!paramObj) paramObj = parent[key.key] = {};
+            subparams.forEach(function (subkey) {
+              var subparam = parent[subkey];
+              delete parent[subkey];
+              subkey = subkey.replace(key.key + '.', '');
+              paramObj[subkey] = subparam;
+            });
+            obj(model[key.key], paramObj, key.full + '.');
+          }
+        });
+      }
+      var out = Object.assign({}, params);
+      obj(objectKeys, out, '');
+      return out;
+    }
+
     this.generate = function (_params) {
-      var params = Object.assign({}, parameters, params ? params.filter(parameters.getKeys()) : null);
-      if (false) console.log(JSON.stringify(params, null, 2));
-      return render(applyParams(source, params), params);
+      var objectParameters = objectify(parameters);
+      var fparams1 = _params ? _params.filter(specifiers.getKeys()) : null;
+      var fparams2 = fparams1 ? fparams1.filter(objectKeys) : null;
+      var objectParams = fparams2 ? objectify(fparams2) : null;
+      var params = Object.assign({}, objectParameters, objectParams);
+      if (false) console.log(JSON.stringify({
+        _params: _params,
+        specifiers: specifiers,
+        objectKeys: objectKeys,
+        objectParameters: objectParameters,
+        fparams1: fparams1,
+        fparams2: fparams2,
+        objectParams: objectParams,
+        params: params
+      }, null, 2));
+      return render(applyParams(source, params, true), params);
     };
 
     this.applyParams = function (params) {

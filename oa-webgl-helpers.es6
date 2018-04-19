@@ -127,12 +127,22 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
   })
   .factory('oaWebglShaderSnippet', ['oaObject', function() {
     var parameterMarker = /(^|[^\$])\$/;
-    var expressionRegexGlobal = new RegExp(parameterMarker.source + '{([^}])}', 'ig');
-    //var expressionRegex = new RegExp(parameterMarker.source + '{([^}])}', 'i');
-    var parameterReferenceRegexGlobal = new RegExp('P\(([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)\)', 'ig');
-    var parameterReferenceRegex = new RegExp('P\(([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)\)', 'i');
-    var snippetReferenceRegexGlobal = new RegExp('S\("([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)", "([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)"\)', 'ig');
-    var snippetReferenceRegex = new RegExp('S\("([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)", "([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)"\)', 'i');
+    var expressionRegexGlobal = new RegExp(parameterMarker.source + '{([^}]+)}', 'ig');
+    var parameterReferenceRegexString = /P\("([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)"\)/;
+    var parameterReferenceRegexGlobal = new RegExp(parameterReferenceRegexString.source, 'ig');
+    var parameterReferenceRegex = new RegExp(parameterReferenceRegexString.source, 'i');
+    var snippetReferenceRegexString = /S\("([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)", "([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)"\)/;
+    var snippetReferenceRegexGlobal = new RegExp(snippetReferenceRegexString.source, 'ig');
+    var snippetReferenceRegex = new RegExp(snippetReferenceRegexString.source, 'i');
+    if (false)
+      console.log(JSON.stringify({
+        marker: parameterMarker.toString(),
+        expression: expressionRegexGlobal.toString(),
+        parameterGlobal: parameterReferenceRegexGlobal.toString(),
+        parameter: parameterReferenceRegex.toString(),
+        snippetGlobal: snippetReferenceRegexGlobal.toString(),
+        snippet: snippetReferenceRegex.toString()
+      }, null, 2));
 
     function Snippet() {
       var source;
@@ -154,6 +164,12 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
           nullValue: 4
         }
       };
+      var objectKeys = {
+        indent: true,
+        indentationStr: true,
+        lineNumbers: true,
+        lineNumberWidth: true
+      };
       var parameters = {};
       var snippets = {};
 
@@ -165,11 +181,19 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
         }, o);
         if (specifiers[k] && !replace)
           throw 'parameter already exists';
+        var ks = k.split('.');
+        var parent = objectKeys;
+        for (var i = 0; i + 1 < ks.length; i++) {
+          parent = parent[ks[i]];
+          if (!parent)
+            parent = parent[ks[i]] = {};
+        }
         switch (t) {
           case 'o':
           case 'object':
             {
               specifiers[k] = Object.assign({
+                parameterType: 'o',
                 type: 'default',
                 nullObject: '',
                 nullProperty: ''
@@ -178,6 +202,7 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
                 'nullObject',
                 'nullProperty'
               ]));
+              parent[ks[ks.length - 1]] = {};
               break;
             }
           case 'a':
@@ -185,6 +210,7 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
           case 'array':
             {
               specifiers[k] = Object.assign({
+                parameterType: 'a',
                 type: 'default',
                 nullArray: '',
                 nullElement: '',
@@ -199,6 +225,7 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
                 'prefix',
                 'suffix'
               ]));
+              parent[ks[ks.length - 1]] = true;
               break;
             }
           case 'v':
@@ -207,9 +234,11 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
           default:
             {
               specifiers[k] = Object.assign({
+                parameterType: 'v',
                 type: 'default',
                 nullValue: ''
               }, s);
+              parent[ks[ks.length - 1]] = true;
               break;
             }
         }
@@ -247,72 +276,176 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
         }).join('\n');
       }
 
-      function applyParams(string, _params) {
+      function applyParams(string, _params, touch) {
         var params = Object.assign({}, _params);
-        
+        if (false)
+          console.log(JSON.stringify({
+            specifiers,
+            objectKeys,
+            parameters,
+            params,
+            snippets
+          }, null, 2));
+
         function A(param) {
           var array = specifiers[param];
           var arrayElements = params[param];
-          return arrayElements && arrayElements.length ? arrayElements.map(e => e != null ? e : array.nullElement).join(array.delimiter) : array.nullArray;
+          var out = arrayElements && arrayElements.length ? arrayElements.map(e => e != null ? e : array.nullElement).join(array.delimiter) : array.nullArray;
+          if (false)
+            console.log({
+              param,
+              arrayElements,
+              out
+            });
+          return out;
         }
 
         function P(param) {
           var value = specifiers[param];
-          var paramValue = params[param];
-          if (value.type === 'a')
+          if (value.parameterType === 'a')
             return A(param);
-          return paramValue == undefined ? value.nullValue : paramValue;
+          var paramValue = params[param];
+          var out = paramValue == undefined ? value.nullValue : paramValue;
+          if (false)
+            console.log({
+              param,
+              paramValue,
+              out
+            });
+          return out;
         }
 
         function S(param, paramSet) {
-          return snippets[param].generate(P(paramSet));
+          var ps = P(paramSet);
+          console.log(ps);
+          return snippets[param].generate(ps);
         }
 
         function apply(exp) {
           return eval(exp);
         }
 
-        return string.replace(expressionRegexGlobal, (match, p1) => {
-          if (true)
+        if (false)
+          console.log(string);
+        return string.replace(expressionRegexGlobal, (match, p1, p2) => {
+          if (false)
             console.log(JSON.stringify({
-              type: 'value',
               match,
-              p1
-            }));
-          var exp = p1;
-          var parameterReferences = exp.match(parameterReferenceRegexGlobal).map(match => match.match(parameterReferenceRegex));
-          var snippetReferences = exp.match(snippetReferenceRegexGlobal).map(match => match.match(snippetReferenceRegex));
+              p1,
+              p2
+            }, null, 2));
+          let [prefix, exp] = [p1, p2];
+          var parameterMatches = exp.match(parameterReferenceRegexGlobal) || [];
+          var snippetMatches = exp.match(snippetReferenceRegexGlobal) || [];
+          if (false)
+            console.log(JSON.stringify({
+              exp,
+              parameterMatches,
+              snippetMatches
+            }, null, 2));
+          var parameterReferences = parameterMatches.map(match => match.match(parameterReferenceRegex));
+          var snippetReferences = snippetMatches.map(match => match.match(snippetReferenceRegex));
           var pmatches = parameterReferences.map(ref => {
             return {
               data: ref,
               ref: ref[1],
-              match: specifiers[ref[1]]
+              match: !!specifiers[ref[1]]
             };
           });
           var smatches = snippetReferences.map(ref => {
             return {
               data: ref,
               sref: ref[1],
-              pref: ref[2],
-              match: snippets[ref[1]] && specifiers[ref[2]]
+              pref: ref[3],
+              snippetsmatch: !!snippets[ref[1]],
+              specifiersmatch: !!specifiers[ref[3]],
+              paramsmatch: !!params[ref[3]],
+              match: !!snippets[ref[1]] && !!specifiers[ref[3]]
             };
           });
-          console.log({
-            exp,
-            pmatches,
-            smatches
-          });
-          if (pmatches.every(m => m.match) && smatches.every(m => m.match))
-            return apply.call({ P, S }, exp);
-          return match;
+          var pmatch = pmatches.every(m => m.match);
+          var smatch = smatches.every(m => m.match);
+          if (false)
+            console.log(JSON.stringify({
+              exp,
+              parameterMatches,
+              snippetMatches,
+              parameterReferences,
+              snippetReferences,
+              pmatches,
+              smatches,
+              pmatch,
+              smatch
+            }, null, 2));
+          var out;
+          if (pmatch && smatch)
+            out = prefix + apply.call({ P, S }, exp);
+          else
+            out = touch ? prefix : match;
+          if (false)
+            console.log({
+              exp,
+              pmatch,
+              smatch,
+              out
+            });
+          return out;
         });
       }
 
+      function objectify(params) {
+        if (!params)
+          return {};
+
+        function obj(model, parent, parentKey) {
+          model.getKeys().map(key => {
+            return {
+              key,
+              full: parentKey + key
+            };
+          }).map(key => {
+            return Object.assign(key, {
+              spec: specifiers[key.full]
+            });
+          }).filter(key => key.spec.parameterType === 'o').forEach(key => {
+            var paramObj = parent[key.key];
+            var subparams = parent.getKeys().filter(subkey => subkey.startsWith(key.key + '.'));
+            if (subparams.length) {
+              if (!paramObj)
+                paramObj = parent[key.key] = {};
+              subparams.forEach(subkey => {
+                var subparam = parent[subkey];
+                delete parent[subkey];
+                subkey = subkey.replace(key.key + '.', '');
+                paramObj[subkey] = subparam;
+              });
+              obj(model[key.key], paramObj, key.full + '.');
+            }
+          });
+        }
+        var out = Object.assign({}, params);
+        obj(objectKeys, out, '');
+        return out;
+      }
+
       this.generate = _params => {
-        var params = Object.assign({}, parameters, params ? params.filter(parameters.getKeys()) : null);
+        var objectParameters = objectify(parameters);
+        var fparams1 = _params ? _params.filter(specifiers.getKeys()) : null;
+        var fparams2 = fparams1 ? fparams1.filter(objectKeys) : null;
+        var objectParams = fparams2 ? objectify(fparams2) : null;
+        var params = Object.assign({}, objectParameters, objectParams);
         if (false)
-          console.log(JSON.stringify(params, null, 2));
-        return render(applyParams(source, params), params);
+          console.log(JSON.stringify({
+            _params,
+            specifiers,
+            objectKeys,
+            objectParameters,
+            fparams1,
+            fparams2,
+            objectParams,
+            params
+          }, null, 2));
+        return render(applyParams(source, params, true), params);
       };
 
       this.applyParams = params => {
