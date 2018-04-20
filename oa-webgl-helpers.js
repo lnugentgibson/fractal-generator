@@ -179,7 +179,8 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
 
       if (specifiers[k]) {
         if (ignore) return;
-        if (!replace) throw 'parameter already exists';
+        if (!replace) throw 'parameter ' + k + ' already exists';
+        //apples.thorwup();
       }
       var ks = k.split('.');
       var parent = objectKeys,
@@ -792,8 +793,10 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
 
   return FunctionSnippet;
 }]).factory('oaWebglShaderSnippet', ['oaWebglSnippet', function (oaWebglSnippet) {
-  function ShaderSnippet() {
-    oaWebglSnippet.call(this);
+  function ShaderSnippet(name) {
+    var _this3 = this;
+
+    oaWebglSnippet.call(this, name);
     this.source = 'precision ${P("precision")} float;\n${S("variable", "variables")}\n${D("functionDeclarations", "null")}\nvoid main() {\n${S("body", "body")}\n}\n${D("functionDefinitions", "null")}';
     this.addParameter('v', 'precision', {
       type: 'str',
@@ -802,7 +805,6 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
     this.addParameter('a', 'variables', {
       delimiter: '\n'
     });
-    this.addParameter('o', 'null');
     this.addParameter('a', 'functionDeclarations', {
       delimiter: '\n'
     });
@@ -815,16 +817,35 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
     });
     this.setParameter('body.indent', 1);
     var variables = {
-      names: []
+      names: [],
+      order: []
     };
-    variables.add = function (name, type, datatype) {
-      if (variables.names.indexOf(name) > -1) return;
-      variables.names.push(name);
-      variables[name] = {
-        type: type,
+    variables.add = function (varname, vartype, datatype, index) {
+      if (variables.names.indexOf(varname) > -1) throw 'parameter already exists';
+      if (variables.order[index]) throw 'index already in use';
+      variables.names.push(varname);
+      variables.order[index] = variables[varname] = {
+        vartype: vartype,
         datatype: datatype,
-        name: name
+        varname: varname,
+        index: index
       };
+    };
+    variables.addMultiple = function (vars) {
+      //console.log(JSON.stringify(vars, null, 2));
+      var I = variables.order.length;
+      vars.forEach(function (v, i) {
+        var varname = v.varname,
+            vartype = v.vartype,
+            datatype = v.datatype,
+            index = v.index;
+
+        variables.add(varname, vartype, datatype, index == undefined ? I + i : index);
+      });
+    };
+    variables.apply = function () {
+      //console.log(JSON.stringify(variables.order, null, 2));
+      _this3.setParameter('variables', variables.order);
     };
     var variableSnippet = new oaWebglSnippet();
     variableSnippet.source = '${P("vartype")} ${P("datatype")} ${P("varname")};';
@@ -840,10 +861,37 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
       type: 'str'
     });
     this.addSnippet('variable', variableSnippet);
+    var mainSnippet;
+    var functions = [];
+    this.addFunction = function (f) {
+      functions.push(f);
+      _this3.addSnippet('declaration' + functions.length, f.declarationSnippet);
+      _this3.addSnippet('definition' + functions.length, f);
+      _this3.setParameter('functionDeclarations', _.times(functions.length, function (i) {
+        return 'declaration' + (i + 1);
+      }));
+      _this3.setParameter('functionDefinitions', _.times(functions.length, function (i) {
+        return 'definition' + (i + 1);
+      }));
+    };
+    this.addFunctions = function (fs) {
+      fs.forEach(function (f) {
+        _this3.addFunction(f);
+      });
+    };
     Object.defineProperties(this, {
       variables: {
         get: function get() {
           return variables;
+        }
+      },
+      mainSnippet: {
+        get: function get() {
+          return mainSnippet;
+        },
+        set: function set(v) {
+          mainSnippet = v;
+          _this3.setSnippet('body', mainSnippet);
         }
       }
     });
@@ -908,7 +956,7 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
   return oaWebglShaderSource;
 }).factory('oaWebglProgram', ['oaWebglHelpers', 'oaWebglShaderSource', function (oaWebglHelpers, oaWebglShaderSource) {
   function oaWebglProgram(_options) {
-    var _this4 = this;
+    var _this5 = this;
 
     var options = Object.assign({}, _options);
     var dirty = true;
@@ -990,7 +1038,7 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
       }
     });
     this.initialize = function initialize(gl) {
-      var _this3 = this;
+      var _this4 = this;
 
       if (!dirty) return;
       console.log('program.initialize');
@@ -1004,9 +1052,9 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
         var attribute = gl.getAttribLocation(program, attributeName);
         var attributeKey = 'a' + attributeId.charAt(0).toUpperCase() + attributeId.substr(1, attributeId.length);
         var attributeSpeckey = attributeKey + 'Spec';
-        _this3[attributeKey] = attribute;
+        _this4[attributeKey] = attribute;
         attributes[attributeKey] = attribute;
-        _this3[attributeSpeckey] = attributeSpec;
+        _this4[attributeSpeckey] = attributeSpec;
       });
       Object.keys(uniformSpecs).forEach(function (uniformId) {
         var uniformSpec = uniformSpecs[uniformId];
@@ -1015,9 +1063,9 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
         var uniform = gl.getUniformLocation(program, uniformName);
         var uniformKey = 'u' + uniformId.charAt(0).toUpperCase() + uniformId.substr(1, uniformId.length);
         var uniformSpeckey = uniformKey + 'Spec';
-        _this3[uniformKey] = uniform;
+        _this4[uniformKey] = uniform;
         uniforms[uniformKey] = uniform;
-        _this3[uniformSpeckey] = uniformSpec;
+        _this4[uniformSpeckey] = uniformSpec;
       });
       Object.keys(bufferSpecs).forEach(function (bufferId) {
         var bufferSpec = bufferSpecs[bufferId];
@@ -1032,9 +1080,9 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
         gl.bindBuffer(gl[target], buffer);
         var bufferKey = 'b' + bufferId.charAt(0).toUpperCase() + bufferId.substr(1, bufferId.length);
         var bufferSpeckey = bufferKey + 'Spec';
-        _this3[bufferKey] = buffer;
+        _this4[bufferKey] = buffer;
         buffers[bufferKey] = buffer;
-        _this3[bufferSpeckey] = bufferSpec;
+        _this4[bufferSpeckey] = bufferSpec;
         switch (datatype) {
           case oaWebglHelpers.FLOAT32:
             bufferSpec.Data = new Float32Array(data);
@@ -1082,7 +1130,7 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
         if (attributeId) {
           var attributeKey = 'a' + attributeId.charAt(0).toUpperCase() + attributeId.substr(1, attributeId.length);
           var attributeSpeckey = attributeKey + 'Spec';
-          var attributeSpec = _this3[attributeSpeckey];
+          var attributeSpec = _this4[attributeSpeckey];
           attributeSpec.buffer = bufferId;
         }
       });
@@ -1101,9 +1149,9 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl[type], image);
         var textureKey = 't' + textureId.charAt(0).toUpperCase() + textureId.substr(1, textureId.length);
         var textureSpeckey = textureKey + 'Spec';
-        _this3[textureKey] = texture;
+        _this4[textureKey] = texture;
         textures[textureKey] = texture;
-        _this3[textureSpeckey] = textureSpec;
+        _this4[textureSpeckey] = textureSpec;
       });
       dirty = false;
       console.log('program.initialized');
@@ -1144,14 +1192,14 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
     };
     this.draw = function (gl) {
       console.log('program.draw');
-      _this4.initialize(gl);
+      _this5.initialize(gl);
       Object.keys(bufferSpecs).forEach(function (bufferId) {
         var bufferSpec = bufferSpecs[bufferId];
         if (!bufferSpec.applied && bufferSpec.Data) gl.bufferData(gl[bufferSpec.target], bufferSpec.Data, gl[bufferSpec.usage]);
       });
       if (executor) {
         console.log('program.execute');
-        executor.call(_this4, gl);
+        executor.call(_this5, gl);
       } else console.log('!executor');
       console.log('program.drawn');
     };

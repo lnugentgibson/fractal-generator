@@ -193,10 +193,12 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
           if (ignore)
             return;
           if (!replace)
-            throw 'parameter already exists';
+            throw `parameter ${k} already exists`;
+          //apples.thorwup();
         }
         var ks = k.split('.');
-        var parent = objectKeys, child;
+        var parent = objectKeys,
+          child;
         for (var i = 0; i + 1 < ks.length; i++) {
           child = parent[ks[i]];
           if (!child)
@@ -220,7 +222,7 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
                 'nullObject',
                 'nullProperty'
               ]));
-              if(parent[ks[ks.length - 1]] == undefined)
+              if (parent[ks[ks.length - 1]] == undefined)
                 parent[ks[ks.length - 1]] = {};
               break;
             }
@@ -811,8 +813,8 @@ ${bodyType === 'string' ? '${P("bodyString")}' : '${S("body", "body")}'}
     return FunctionSnippet;
   }])
   .factory('oaWebglShaderSnippet', ['oaWebglSnippet', function(oaWebglSnippet) {
-    function ShaderSnippet() {
-      oaWebglSnippet.call(this);
+    function ShaderSnippet(name) {
+      oaWebglSnippet.call(this, name);
       this.source = `precision \${P("precision")} float;
 \${S("variable", "variables")}
 \${D("functionDeclarations", "null")}
@@ -827,7 +829,6 @@ void main() {
       this.addParameter('a', 'variables', {
         delimiter: '\n'
       });
-      this.addParameter('o', 'null');
       this.addParameter('a', 'functionDeclarations', {
         delimiter: '\n'
       });
@@ -840,17 +841,38 @@ void main() {
       });
       this.setParameter('body.indent', 1);
       var variables = {
-        names: []
+        names: [],
+        order: []
       };
-      variables.add = (name, type, datatype) => {
-        if (variables.names.indexOf(name) > -1)
-          return;
-        variables.names.push(name);
-        variables[name] = {
-          type,
+      variables.add = (varname, vartype, datatype, index) => {
+        if (variables.names.indexOf(varname) > -1)
+          throw 'parameter already exists';
+        if (variables.order[index])
+          throw 'index already in use';
+        variables.names.push(varname);
+        variables.order[index] = variables[varname] = {
+          vartype,
           datatype,
-          name
+          varname,
+          index
         };
+      };
+      variables.addMultiple = vars => {
+        //console.log(JSON.stringify(vars, null, 2));
+        var I = variables.order.length;
+        vars.forEach((v, i) => {
+          let {
+            varname,
+            vartype,
+            datatype,
+            index
+          } = v;
+          variables.add(varname, vartype, datatype, index == undefined ? I + i : index);
+        });
+      };
+      variables.apply = () => {
+        //console.log(JSON.stringify(variables.order, null, 2));
+        this.setParameter('variables', variables.order);
       };
       var variableSnippet = new oaWebglSnippet();
       variableSnippet.source = '${P("vartype")} ${P("datatype")} ${P("varname")};';
@@ -866,9 +888,30 @@ void main() {
         type: 'str'
       });
       this.addSnippet('variable', variableSnippet);
+      var mainSnippet;
+      var functions = [];
+      this.addFunction = f => {
+        functions.push(f);
+        this.addSnippet('declaration' + functions.length, f.declarationSnippet);
+        this.addSnippet('definition' + functions.length, f);
+        this.setParameter('functionDeclarations', _.times(functions.length, i => `declaration${i + 1}`));
+        this.setParameter('functionDefinitions', _.times(functions.length, i => `definition${i + 1}`));
+      };
+      this.addFunctions = fs => {
+        fs.forEach(f => {
+          this.addFunction(f);
+        });
+      };
       Object.defineProperties(this, {
         variables: {
           get: () => variables
+        },
+        mainSnippet: {
+          get: () => mainSnippet,
+          set: v => {
+            mainSnippet = v;
+            this.setSnippet('body', mainSnippet);
+          }
         }
       });
     }
