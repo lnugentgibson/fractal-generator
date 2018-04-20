@@ -134,10 +134,10 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
     var arrayReferenceRegexString = /A\("([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)"\)/;
     var arrayReferenceRegexGlobal = new RegExp(arrayReferenceRegexString.source, 'ig');
     var arrayReferenceRegex = new RegExp(arrayReferenceRegexString.source, 'i');
-    var snippetReferenceRegexString = /S\("([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)", "([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)"\)/;
+    var snippetReferenceRegexString = /S\("([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)", *"([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)"\)/;
     var snippetReferenceRegexGlobal = new RegExp(snippetReferenceRegexString.source, 'ig');
     var snippetReferenceRegex = new RegExp(snippetReferenceRegexString.source, 'i');
-    var dynamicSnippetReferenceRegexString = /D\("([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)", "([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)"\)/;
+    var dynamicSnippetReferenceRegexString = /D\("([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)", *"([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)"\)/;
     var dynamicSnippetReferenceRegexGlobal = new RegExp(dynamicSnippetReferenceRegexString.source, 'ig');
     var dynamicSnippetReferenceRegex = new RegExp(dynamicSnippetReferenceRegexString.source, 'i');
     if (false)
@@ -150,9 +150,11 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
         snippet: snippetReferenceRegex.toString()
       }, null, 2));
 
-    function Snippet() {
-      var source;
+    function Snippet(name, source) {
       var specifiers = {
+        'null': {
+          type: 'o'
+        },
         indent: {
           type: 'int',
           nullValue: 0
@@ -171,6 +173,7 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
         }
       };
       var objectKeys = {
+        'null': {},
         indent: true,
         indentationStr: true,
         lineNumbers: true,
@@ -193,14 +196,14 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
             throw 'parameter already exists';
         }
         var ks = k.split('.');
-        var parent = objectKeys;
-        if (false)
-          for (var i = 0; i + 1 < ks.length; i++) {
-            parent = parent[ks[i]];
-            if (!parent)
-              parent = parent[ks[i]] = {};
-          }
-        else if (ks.length > 1)
+        var parent = objectKeys, child;
+        for (var i = 0; i + 1 < ks.length; i++) {
+          child = parent[ks[i]];
+          if (!child)
+            child = parent[ks[i]] = {};
+          parent = child;
+        }
+        if (ks.length > 1)
           this.addParameter('o', ks.slice(0, ks.length - 1).join('.'), null, { ignore: true });
         s = Object.assign({}, s);
         switch (t) {
@@ -217,7 +220,8 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
                 'nullObject',
                 'nullProperty'
               ]));
-              parent[ks[ks.length - 1]] = {};
+              if(parent[ks[ks.length - 1]] == undefined)
+                parent[ks[ks.length - 1]] = {};
               break;
             }
           case 'a':
@@ -263,7 +267,22 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
           parameters[k] = v;
       };
       this.addSnippet = (k, s) => {
+        if (snippets[k])
+          throw 'snippet already exists';
         snippets[k] = s;
+      };
+      this.addSnippets = ss => {
+        _(ss).each((s, k) => {
+          this.addSnippet(k, s);
+        });
+      };
+      this.setSnippet = (k, s) => {
+        snippets[k] = s;
+      };
+      this.sddSnippets = ss => {
+        _(ss).each((s, k) => {
+          this.sddSnippet(k, s);
+        });
       };
 
       function render(string, options) {
@@ -579,7 +598,11 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
             return Object.assign(key, {
               spec: specifiers[key.full]
             });
-          }).filter(key => key.spec.parameterType === 'o').forEach(key => {
+          }).filter(key => {
+            if (!key.spec)
+              console.log(JSON.stringify({ key }, null, 2));
+            return key.spec.parameterType === 'o';
+          }).forEach(key => {
             var paramObj = parent[key.key];
             var subparams = parent.getKeys().filter(subkey => subkey.startsWith(key.key + '.'));
             if (subparams.length) {
@@ -601,13 +624,29 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
       }
 
       this.generate = _params => {
+        //console.log(`generating ${name}.`);
+        if (!source)
+          throw `snippet ${name} does not have a non-null source.`;
+        //if (name === 'noiseDef' || name === 'noiseDec')
+        //if (name === 'noiseBody')
+        if (false)
+          console.log(JSON.stringify({
+            name,
+            _params,
+            parameters,
+            specifiers,
+            objectKeys
+          }, null, 2));
         var objectParameters = objectify(parameters);
         var fparams1 = _params ? _params.filter(specifiers.getKeys()) : null;
         var fparams2 = fparams1 ? fparams1.filter(objectKeys) : null;
         var objectParams = fparams2 ? objectify(fparams2) : null;
         var params = Object.assign({}, objectParameters, objectParams);
+        //if (name === 'noiseDef' || name === 'noiseDec')
+        //if (name === 'noiseBody')
         if (false)
           console.log(JSON.stringify({
+            name,
             _params,
             specifiers,
             objectKeys,
@@ -635,15 +674,17 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
     return Snippet;
   }])
   .factory('oaWebglFunctionSnippet', ['oaWebglSnippet', function(oaWebglSnippet) {
-    function FunctionSnippet() {
-      oaWebglSnippet.call(this);
-      var bodyType = 'string';
-      var sourceGen = () => `\${S("signiture", "null")} {
-${bodyType === 'string' ? '${P("body")}' : '${S("body", "null")}'}
+    function FunctionSnippet(funcName, returnType, bodyType) {
+      oaWebglSnippet.call(this, funcName + 'Def');
+      var bodySnippet, bodyString;
+      var sourceGen = () => `\${S("signiture", "signiture")} {
+${bodyType === 'string' ? '${P("bodyString")}' : '${S("body", "body")}'}
 }`;
       this.source = sourceGen();
-      var signitureSnippet = new oaWebglSnippet();
-      signitureSnippet.source = '\${P("returnType")} \${P("funcName")}()';
+      var declarationSnippet = new oaWebglSnippet(funcName + 'Dec');
+      declarationSnippet.source = '${S("signiture", "signiture")};';
+      var signitureSnippet = new oaWebglSnippet(funcName + 'Signiture');
+      signitureSnippet.source = '${P("returnType")} ${P("funcName")}(${S("parameter", "parameterList")})';
       signitureSnippet.addParameter('v', 'returnType', {
         type: 'str',
         nullValue: 'float'
@@ -651,18 +692,122 @@ ${bodyType === 'string' ? '${P("body")}' : '${S("body", "null")}'}
       signitureSnippet.addParameter('v', 'funcName', {
         type: 'str'
       });
-      var body;
+      signitureSnippet.addParameter('a', 'parameterList', {
+        delimiter: ', '
+      });
+      var parameterSnippet = new oaWebglSnippet(funcName + 'Parameter');
+      parameterSnippet.source = '${P("datatype")} ${P("paramname")}';
+      parameterSnippet.addParameter('v', 'datatype', {
+        type: 'str',
+        nullValue: 'float'
+      });
+      parameterSnippet.addParameter('v', 'paramname', {
+        type: 'str'
+      });
+      signitureSnippet.addSnippet('parameter', parameterSnippet);
+      this.addSnippet('signiture', signitureSnippet);
+      declarationSnippet.addSnippet('signiture', signitureSnippet);
+      var parameters = {
+        names: [],
+        order: []
+      };
+      parameters.add = (paramname, datatype, index) => {
+        if (parameters.names.indexOf(paramname) > -1)
+          throw 'parameter already exists';
+        if (parameters.order[index])
+          throw 'index already in use';
+        parameters.names.push(paramname);
+        parameters.order[index] = parameters[paramname] = {
+          datatype,
+          paramname,
+          index
+        };
+      };
+      parameters.apply = () => {
+        this.setParameter('signiture.parameterList', parameters.order);
+        declarationSnippet.setParameter('signiture.parameterList', parameters.order);
+      };
+      this.addParameter('v', 'signiture.returnType', {
+        type: 'str',
+        nullValue: 'float'
+      });
+      this.setParameter('signiture.returnType', returnType);
+      this.addParameter('v', 'signiture.funcName', {
+        type: 'str'
+      });
+      this.setParameter('signiture.funcName', funcName);
+      this.addParameter('a', 'signiture.parameterList', {
+        delimiter: ', '
+      });
+      declarationSnippet.addParameter('v', 'signiture.returnType', {
+        type: 'str',
+        nullValue: 'float'
+      });
+      declarationSnippet.setParameter('signiture.returnType', returnType);
+      declarationSnippet.addParameter('v', 'signiture.funcName', {
+        type: 'str'
+      });
+      declarationSnippet.setParameter('signiture.funcName', funcName);
+      declarationSnippet.addParameter('a', 'signiture.parameterList', {
+        delimiter: ', '
+      });
+      this.addParameter('v', 'bodyString', {
+        type: 'str'
+      });
+      this.addParameter('v', 'body.indent', {
+        type: 'int',
+        nullValue: 1
+      });
+      this.setParameter('body.indent', 1);
       Object.defineProperties(this, {
         bodySnippet: {
-          get: () => body,
+          get: () => bodySnippet,
           set: v => {
-            body = v;
-            this.setSnippet('body', body);
+            bodySnippet = v;
+            this.setSnippet('body', bodySnippet);
+          }
+        },
+        bodyString: {
+          get: () => bodyString,
+          set: v => {
+            bodyString = v;
+            this.setParameter('body', bodyString);
+          }
+        },
+        bodyType: {
+          get: () => bodyType,
+          set: v => {
+            if (v !== 'string' && v !== 'snippet')
+              return;
+            bodyType = v;
+            this.source = sourceGen();
+          }
+        },
+        parameters: {
+          get: () => parameters
+        },
+        declarationSnippet: {
+          get: () => declarationSnippet
+        },
+        returnType: {
+          get: () => returnType,
+          set: v => {
+            returnType = v;
+            this.setParameter('signiture.returnType', returnType);
+            declarationSnippet.setParameter('signiture.returnType', returnType);
+          }
+        },
+        funcName: {
+          get: () => funcName,
+          set: v => {
+            funcName = v;
+            this.setParameter('signiture.funcName', funcName);
+            declarationSnippet.setParameter('signiture.funcName', funcName);
           }
         }
       });
     }
-    
+
     return FunctionSnippet;
   }])
   .factory('oaWebglShaderSnippet', ['oaWebglSnippet', function(oaWebglSnippet) {
@@ -698,7 +843,7 @@ void main() {
         names: []
       };
       variables.add = (name, type, datatype) => {
-        if(variables.names.indexOf(name) > -1)
+        if (variables.names.indexOf(name) > -1)
           return;
         variables.names.push(name);
         variables[name] = {

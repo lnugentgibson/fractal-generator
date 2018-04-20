@@ -379,7 +379,7 @@ describe('oaWebglHelpers module', function () {
         vertexShaderSnippet.addParameter('a', 'variables', {
           delimiter: '\n'
         });
-        vertexShaderSnippet.addParameter('o', 'null');
+        //vertexShaderSnippet.addParameter('o', 'null');
         vertexShaderSnippet.addParameter('a', 'functionDeclarations', {
           delimiter: '\n'
         });
@@ -461,5 +461,126 @@ describe('oaWebglHelpers module', function () {
       });
       i++;
     });
+  });
+  describe('oaWebglFunctionSnippet factory', function () {
+    var $oaWebglFunctionSnippet;
+    var $oaWebglSnippet;
+
+    beforeEach(inject(function (oaWebglFunctionSnippet, oaWebglSnippet) {
+      $oaWebglFunctionSnippet = oaWebglFunctionSnippet;
+      $oaWebglSnippet = oaWebglSnippet;
+    }));
+
+    var i = 0;
+    var fragmentShaderSnippet;
+    var shaderVariableSnippet;
+    var fragmentShaderInnerSnippet;
+
+    beforeEach(function () {
+      fragmentShaderSnippet = new $oaWebglSnippet('fragmentShader');
+      fragmentShaderSnippet.source = 'precision ${P("precision")} float;\n${S("variable", "variables")}\n${D("functionDeclarations", "null")}\nvoid main() {\n${S("body", "body")}\n}\n${D("functionDefinitions", "null")}';
+      fragmentShaderSnippet.addParameter('v', 'precision', {
+        type: 'str',
+        nullValue: 'mediump'
+      });
+      fragmentShaderSnippet.addParameter('a', 'variables', {
+        delimiter: '\n'
+      });
+      //fragmentShaderSnippet.addParameter('o', 'null');
+      fragmentShaderSnippet.addParameter('a', 'functionDeclarations', {
+        delimiter: '\n'
+      });
+      fragmentShaderSnippet.addParameter('a', 'functionDefinitions', {
+        delimiter: '\n'
+      });
+      fragmentShaderSnippet.addParameter('v', 'body.indent', {
+        type: 'int',
+        nullValue: 1
+      });
+      shaderVariableSnippet = new $oaWebglSnippet('variable');
+      shaderVariableSnippet.source = '${P("vartype")} ${P("datatype")} ${P("varname")};';
+      shaderVariableSnippet.addParameter('v', 'datatype', {
+        type: 'str',
+        nullValue: 'float'
+      });
+      shaderVariableSnippet.addParameter('v', 'vartype', {
+        type: 'str',
+        nullValue: 'attribute'
+      });
+      shaderVariableSnippet.addParameter('v', 'varname', {
+        type: 'str'
+      });
+      fragmentShaderSnippet.addSnippet('variable', shaderVariableSnippet);
+    });
+
+    if (true) {
+      describe('parameter set #' + (i + 1) + ': snippet value', function () {
+        var generated;
+
+        beforeEach(function () {
+          fragmentShaderSnippet.setParameter('variables', [{
+            vartype: 'uniform',
+            datatype: 'vec4',
+            varname: 'u_seed'
+          }, {
+            vartype: 'uniform',
+            varname: 'u_resolution'
+          }]);
+          fragmentShaderSnippet.setParameter('body.indent', 1);
+          fragmentShaderInnerSnippet = new $oaWebglSnippet('fragmentMain');
+          fragmentShaderInnerSnippet.source = 'vec2 op = gl_FragCoord.xy / u_resolution;\ngl_FragColor = vec4(vec3(noise(op) * 0.5 + 0.5), 1.0);';
+          fragmentShaderSnippet.addSnippet('body', fragmentShaderInnerSnippet);
+          fragmentShaderSnippet.setParameter('functionDeclarations', ['randScalarDec', 'randVectorDec', 'randGradDec', 'noiseDec']);
+          fragmentShaderSnippet.setParameter('functionDefinitions', ['randScalarDef', 'randVectorDef', 'randGradDef', 'noiseDef']);
+          // randScalar
+          {
+            var randScalar = new $oaWebglFunctionSnippet('rand', 'float', 'snippet');
+            randScalar.parameters.add('f', 'float', 0);
+            randScalar.parameters.apply();
+            randScalar.bodySnippet = new $oaWebglSnippet('randScalarBody', 'return fract(sin(f + u_seed.z) * u_seed.w);');
+          }
+          // randVector
+          {
+            var randVector = new $oaWebglFunctionSnippet('rand', 'float', 'snippet');
+            randVector.parameters.add('v', 'vec2', 0);
+            randVector.parameters.apply();
+            randVector.bodySnippet = new $oaWebglSnippet('randVectorBody', 'return rand(dot(v, u_seed.xy));');
+          }
+          // randGrad
+          {
+            var randGrad = new $oaWebglFunctionSnippet('randGrad', 'vec2', 'snippet');
+            randGrad.parameters.add('v', 'vec2', 0);
+            randGrad.parameters.apply();
+            randGrad.bodySnippet = new $oaWebglSnippet('randGradBody', 'float a = 2.0 * 3.14159265358 * rand(dot(v, u_seed.xy));\nreturn vec2(cos(a), sin(a));');
+          }
+          // noise
+          {
+            var noise = new $oaWebglFunctionSnippet('noise', 'float', 'snippet');
+            noise.parameters.add('op', 'vec2', 0);
+            noise.parameters.apply();
+            noise.bodySnippet = new $oaWebglSnippet('noiseBody', 'mat2 t = mat2(1.0, 0.0, 0.5, sqrt(3.0 / 4.0));\nmat2 it = mat2(1.0, 0.0, -sqrt(1.0 / 3.0), 2.0 * sqrt(1.0 / 3.0));\nvec2 ip = it * op;\nvec2 il = floor(ip);\nvec2 f = fract(ip);\nvec2 ol = t * il;\nvec2 oc, oc1, oc2, oc3;\noc = ol + vec2(0.75, sqrt(3.0) / 4.0);\noc2 = ol + vec2(1.0, 0.0);\noc3 = ol + vec2(0.5, sqrt(3.0 / 4.0));\n//float y23 = -sqrt(3.0 / 4.0), x32 = -0.5, x13, y13;\nfloat y23 = oc2.y - oc3.y, x32 = oc3.x - oc2.x, x13, y13;\nfloat x03 = op.x - oc3.x, y03 = op.y - oc3.y;\nif(f.x + f.y < 1.0) {\n  oc1 = ol;\n  x13 = -0.5;\n  y13 = -sqrt(3.0 / 4.0);\n}\nelse {\n  oc1 = ol + vec2(1.5, sqrt(3.0 / 4.0));\n  x13 = 1.0;\n  y13 = 0.0;\n}\nx13 = oc1.x - oc3.x;\ny13 = oc1.y - oc3.y;\nvec3 r = vec3(dot(randGrad(oc1), op - oc1), dot(randGrad(oc2), op - oc2), dot(randGrad(oc3), op - oc3));\n//r = vec3(0.0, 0.0, 1.0);\n//vec3 d = vec3(length(op - oc1), length(op - oc2), length(op - oc3));\n//vec3 w = 1.0 / d;\nvec3 w = vec3((y23 * x03 + x32 * y03) / (y23 * x13 + x32 * y13), (-y13 * x03 + x13 * y03) / (y23 * x13 + x32 * y13), 0.0);\nw.z = 1.0 - w.x - w.y;\nvec3 w3 = w * w * (3.0 - 2.0 * w);\nvec3 w5 = w * w * w * (6.0 * w * w - 15.0 * w + 10.0);\nvec3 rv = r * w5;\nreturn (rv.x + rv.y + rv.z) / (w5.x + w5.y + w5.z);');
+          }
+          fragmentShaderSnippet.addSnippets({
+            randScalarDec: randScalar.declarationSnippet,
+            randScalarDef: randScalar,
+            randVectorDec: randVector.declarationSnippet,
+            randVectorDef: randVector,
+            randGradDec: randGrad.declarationSnippet,
+            randGradDef: randGrad,
+            noiseDec: noise.declarationSnippet,
+            noiseDef: noise
+          });
+
+          generated = function () {
+            return 'precision mediump float;\nuniform vec4 u_seed;\nuniform float u_resolution;\nfloat rand(float f);\nfloat rand(vec2 v);\nvec2 randGrad(vec2 v);\nfloat noise(vec2 op);\nvoid main() {\n  vec2 op = gl_FragCoord.xy / u_resolution;\n  gl_FragColor = vec4(vec3(noise(op) * 0.5 + 0.5), 1.0);\n}\nfloat rand(float f) {\n  return fract(sin(f + u_seed.z) * u_seed.w);\n}\nfloat rand(vec2 v) {\n  return rand(dot(v, u_seed.xy));\n}\nvec2 randGrad(vec2 v) {\n  float a = 2.0 * 3.14159265358 * rand(dot(v, u_seed.xy));\n  return vec2(cos(a), sin(a));\n}\nfloat noise(vec2 op) {\n  mat2 t = mat2(1.0, 0.0, 0.5, sqrt(3.0 / 4.0));\n  mat2 it = mat2(1.0, 0.0, -sqrt(1.0 / 3.0), 2.0 * sqrt(1.0 / 3.0));\n  vec2 ip = it * op;\n  vec2 il = floor(ip);\n  vec2 f = fract(ip);\n  vec2 ol = t * il;\n  vec2 oc, oc1, oc2, oc3;\n  oc = ol + vec2(0.75, sqrt(3.0) / 4.0);\n  oc2 = ol + vec2(1.0, 0.0);\n  oc3 = ol + vec2(0.5, sqrt(3.0 / 4.0));\n  //float y23 = -sqrt(3.0 / 4.0), x32 = -0.5, x13, y13;\n  float y23 = oc2.y - oc3.y, x32 = oc3.x - oc2.x, x13, y13;\n  float x03 = op.x - oc3.x, y03 = op.y - oc3.y;\n  if(f.x + f.y < 1.0) {\n    oc1 = ol;\n    x13 = -0.5;\n    y13 = -sqrt(3.0 / 4.0);\n  }\n  else {\n    oc1 = ol + vec2(1.5, sqrt(3.0 / 4.0));\n    x13 = 1.0;\n    y13 = 0.0;\n  }\n  x13 = oc1.x - oc3.x;\n  y13 = oc1.y - oc3.y;\n  vec3 r = vec3(dot(randGrad(oc1), op - oc1), dot(randGrad(oc2), op - oc2), dot(randGrad(oc3), op - oc3));\n  //r = vec3(0.0, 0.0, 1.0);\n  //vec3 d = vec3(length(op - oc1), length(op - oc2), length(op - oc3));\n  //vec3 w = 1.0 / d;\n  vec3 w = vec3((y23 * x03 + x32 * y03) / (y23 * x13 + x32 * y13), (-y13 * x03 + x13 * y03) / (y23 * x13 + x32 * y13), 0.0);\n  w.z = 1.0 - w.x - w.y;\n  vec3 w3 = w * w * (3.0 - 2.0 * w);\n  vec3 w5 = w * w * w * (6.0 * w * w - 15.0 * w + 10.0);\n  vec3 rv = r * w5;\n  return (rv.x + rv.y + rv.z) / (w5.x + w5.y + w5.z);\n}';
+          }();
+        });
+
+        it('should generate correct string', function () {
+          assert.equal(fragmentShaderSnippet.generate(), generated);
+        });
+      });
+      i++;
+    }
   });
 });

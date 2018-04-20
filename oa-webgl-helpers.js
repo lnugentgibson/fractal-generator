@@ -121,10 +121,10 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
   var arrayReferenceRegexString = /A\("([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)"\)/;
   var arrayReferenceRegexGlobal = new RegExp(arrayReferenceRegexString.source, 'ig');
   var arrayReferenceRegex = new RegExp(arrayReferenceRegexString.source, 'i');
-  var snippetReferenceRegexString = /S\("([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)", "([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)"\)/;
+  var snippetReferenceRegexString = /S\("([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)", *"([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)"\)/;
   var snippetReferenceRegexGlobal = new RegExp(snippetReferenceRegexString.source, 'ig');
   var snippetReferenceRegex = new RegExp(snippetReferenceRegexString.source, 'i');
-  var dynamicSnippetReferenceRegexString = /D\("([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)", "([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)"\)/;
+  var dynamicSnippetReferenceRegexString = /D\("([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)", *"([a-z][_a-z0-9]*(\.[a-z][_a-z0-9]*)*)"\)/;
   var dynamicSnippetReferenceRegexGlobal = new RegExp(dynamicSnippetReferenceRegexString.source, 'ig');
   var dynamicSnippetReferenceRegex = new RegExp(dynamicSnippetReferenceRegexString.source, 'i');
   if (false) console.log(JSON.stringify({
@@ -136,11 +136,13 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
     snippet: snippetReferenceRegex.toString()
   }, null, 2));
 
-  function Snippet() {
+  function Snippet(name, source) {
     var _this = this;
 
-    var source;
     var specifiers = {
+      'null': {
+        type: 'o'
+      },
       indent: {
         type: 'int',
         nullValue: 0
@@ -159,6 +161,7 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
       }
     };
     var objectKeys = {
+      'null': {},
       indent: true,
       indentationStr: true,
       lineNumbers: true,
@@ -179,11 +182,14 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
         if (!replace) throw 'parameter already exists';
       }
       var ks = k.split('.');
-      var parent = objectKeys;
-      if (false) for (var i = 0; i + 1 < ks.length; i++) {
-        parent = parent[ks[i]];
-        if (!parent) parent = parent[ks[i]] = {};
-      } else if (ks.length > 1) _this.addParameter('o', ks.slice(0, ks.length - 1).join('.'), null, { ignore: true });
+      var parent = objectKeys,
+          child;
+      for (var i = 0; i + 1 < ks.length; i++) {
+        child = parent[ks[i]];
+        if (!child) child = parent[ks[i]] = {};
+        parent = child;
+      }
+      if (ks.length > 1) _this.addParameter('o', ks.slice(0, ks.length - 1).join('.'), null, { ignore: true });
       s = Object.assign({}, s);
       switch (t) {
         case 'o':
@@ -195,7 +201,7 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
               nullObject: '',
               nullProperty: ''
             }, s.filter(['type', 'nullObject', 'nullProperty']));
-            parent[ks[ks.length - 1]] = {};
+            if (parent[ks[ks.length - 1]] == undefined) parent[ks[ks.length - 1]] = {};
             break;
           }
         case 'a':
@@ -233,7 +239,21 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
       if (specifiers[k]) parameters[k] = v;
     };
     this.addSnippet = function (k, s) {
+      if (snippets[k]) throw 'snippet already exists';
       snippets[k] = s;
+    };
+    this.addSnippets = function (ss) {
+      _(ss).each(function (s, k) {
+        _this.addSnippet(k, s);
+      });
+    };
+    this.setSnippet = function (k, s) {
+      snippets[k] = s;
+    };
+    this.sddSnippets = function (ss) {
+      _(ss).each(function (s, k) {
+        _this.sddSnippet(k, s);
+      });
     };
 
     function render(string, options) {
@@ -550,6 +570,7 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
             spec: specifiers[key.full]
           });
         }).filter(function (key) {
+          if (!key.spec) console.log(JSON.stringify({ key: key }, null, 2));
           return key.spec.parameterType === 'o';
         }).forEach(function (key) {
           var paramObj = parent[key.key];
@@ -574,12 +595,26 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
     }
 
     this.generate = function (_params) {
+      //console.log(`generating ${name}.`);
+      if (!source) throw 'snippet ' + name + ' does not have a non-null source.';
+      //if (name === 'noiseDef' || name === 'noiseDec')
+      //if (name === 'noiseBody')
+      if (false) console.log(JSON.stringify({
+        name: name,
+        _params: _params,
+        parameters: parameters,
+        specifiers: specifiers,
+        objectKeys: objectKeys
+      }, null, 2));
       var objectParameters = objectify(parameters);
       var fparams1 = _params ? _params.filter(specifiers.getKeys()) : null;
       var fparams2 = fparams1 ? fparams1.filter(objectKeys) : null;
       var objectParams = fparams2 ? objectify(fparams2) : null;
       var params = Object.assign({}, objectParameters, objectParams);
+      //if (name === 'noiseDef' || name === 'noiseDec')
+      //if (name === 'noiseBody')
       if (false) console.log(JSON.stringify({
+        name: name,
         _params: _params,
         specifiers: specifiers,
         objectKeys: objectKeys,
@@ -607,7 +642,215 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
   }
 
   return Snippet;
-}]).factory('oaWebglShaderSnippet', ['oaWebglSnippet', function () {}]).factory('oaWebglShaderSource', function () {
+}]).factory('oaWebglFunctionSnippet', ['oaWebglSnippet', function (oaWebglSnippet) {
+  function FunctionSnippet(funcName, returnType, bodyType) {
+    var _this2 = this;
+
+    oaWebglSnippet.call(this, funcName + 'Def');
+    var bodySnippet, bodyString;
+    var sourceGen = function sourceGen() {
+      return '${S("signiture", "signiture")} {\n' + (bodyType === 'string' ? '${P("bodyString")}' : '${S("body", "body")}') + '\n}';
+    };
+    this.source = sourceGen();
+    var declarationSnippet = new oaWebglSnippet(funcName + 'Dec');
+    declarationSnippet.source = '${S("signiture", "signiture")};';
+    var signitureSnippet = new oaWebglSnippet(funcName + 'Signiture');
+    signitureSnippet.source = '${P("returnType")} ${P("funcName")}(${S("parameter", "parameterList")})';
+    signitureSnippet.addParameter('v', 'returnType', {
+      type: 'str',
+      nullValue: 'float'
+    });
+    signitureSnippet.addParameter('v', 'funcName', {
+      type: 'str'
+    });
+    signitureSnippet.addParameter('a', 'parameterList', {
+      delimiter: ', '
+    });
+    var parameterSnippet = new oaWebglSnippet(funcName + 'Parameter');
+    parameterSnippet.source = '${P("datatype")} ${P("paramname")}';
+    parameterSnippet.addParameter('v', 'datatype', {
+      type: 'str',
+      nullValue: 'float'
+    });
+    parameterSnippet.addParameter('v', 'paramname', {
+      type: 'str'
+    });
+    signitureSnippet.addSnippet('parameter', parameterSnippet);
+    this.addSnippet('signiture', signitureSnippet);
+    declarationSnippet.addSnippet('signiture', signitureSnippet);
+    var parameters = {
+      names: [],
+      order: []
+    };
+    parameters.add = function (paramname, datatype, index) {
+      if (parameters.names.indexOf(paramname) > -1) throw 'parameter already exists';
+      if (parameters.order[index]) throw 'index already in use';
+      parameters.names.push(paramname);
+      parameters.order[index] = parameters[paramname] = {
+        datatype: datatype,
+        paramname: paramname,
+        index: index
+      };
+    };
+    parameters.apply = function () {
+      _this2.setParameter('signiture.parameterList', parameters.order);
+      declarationSnippet.setParameter('signiture.parameterList', parameters.order);
+    };
+    this.addParameter('v', 'signiture.returnType', {
+      type: 'str',
+      nullValue: 'float'
+    });
+    this.setParameter('signiture.returnType', returnType);
+    this.addParameter('v', 'signiture.funcName', {
+      type: 'str'
+    });
+    this.setParameter('signiture.funcName', funcName);
+    this.addParameter('a', 'signiture.parameterList', {
+      delimiter: ', '
+    });
+    declarationSnippet.addParameter('v', 'signiture.returnType', {
+      type: 'str',
+      nullValue: 'float'
+    });
+    declarationSnippet.setParameter('signiture.returnType', returnType);
+    declarationSnippet.addParameter('v', 'signiture.funcName', {
+      type: 'str'
+    });
+    declarationSnippet.setParameter('signiture.funcName', funcName);
+    declarationSnippet.addParameter('a', 'signiture.parameterList', {
+      delimiter: ', '
+    });
+    this.addParameter('v', 'bodyString', {
+      type: 'str'
+    });
+    this.addParameter('v', 'body.indent', {
+      type: 'int',
+      nullValue: 1
+    });
+    this.setParameter('body.indent', 1);
+    Object.defineProperties(this, {
+      bodySnippet: {
+        get: function get() {
+          return bodySnippet;
+        },
+        set: function set(v) {
+          bodySnippet = v;
+          _this2.setSnippet('body', bodySnippet);
+        }
+      },
+      bodyString: {
+        get: function get() {
+          return bodyString;
+        },
+        set: function set(v) {
+          bodyString = v;
+          _this2.setParameter('body', bodyString);
+        }
+      },
+      bodyType: {
+        get: function get() {
+          return bodyType;
+        },
+        set: function set(v) {
+          if (v !== 'string' && v !== 'snippet') return;
+          bodyType = v;
+          _this2.source = sourceGen();
+        }
+      },
+      parameters: {
+        get: function get() {
+          return parameters;
+        }
+      },
+      declarationSnippet: {
+        get: function get() {
+          return declarationSnippet;
+        }
+      },
+      returnType: {
+        get: function get() {
+          return returnType;
+        },
+        set: function set(v) {
+          returnType = v;
+          _this2.setParameter('signiture.returnType', returnType);
+          declarationSnippet.setParameter('signiture.returnType', returnType);
+        }
+      },
+      funcName: {
+        get: function get() {
+          return funcName;
+        },
+        set: function set(v) {
+          funcName = v;
+          _this2.setParameter('signiture.funcName', funcName);
+          declarationSnippet.setParameter('signiture.funcName', funcName);
+        }
+      }
+    });
+  }
+
+  return FunctionSnippet;
+}]).factory('oaWebglShaderSnippet', ['oaWebglSnippet', function (oaWebglSnippet) {
+  function ShaderSnippet() {
+    oaWebglSnippet.call(this);
+    this.source = 'precision ${P("precision")} float;\n${S("variable", "variables")}\n${D("functionDeclarations", "null")}\nvoid main() {\n${S("body", "body")}\n}\n${D("functionDefinitions", "null")}';
+    this.addParameter('v', 'precision', {
+      type: 'str',
+      nullValue: 'mediump'
+    });
+    this.addParameter('a', 'variables', {
+      delimiter: '\n'
+    });
+    this.addParameter('o', 'null');
+    this.addParameter('a', 'functionDeclarations', {
+      delimiter: '\n'
+    });
+    this.addParameter('a', 'functionDefinitions', {
+      delimiter: '\n'
+    });
+    this.addParameter('v', 'body.indent', {
+      type: 'int',
+      nullValue: 1
+    });
+    this.setParameter('body.indent', 1);
+    var variables = {
+      names: []
+    };
+    variables.add = function (name, type, datatype) {
+      if (variables.names.indexOf(name) > -1) return;
+      variables.names.push(name);
+      variables[name] = {
+        type: type,
+        datatype: datatype,
+        name: name
+      };
+    };
+    var variableSnippet = new oaWebglSnippet();
+    variableSnippet.source = '${P("vartype")} ${P("datatype")} ${P("varname")};';
+    variableSnippet.addParameter('v', 'datatype', {
+      type: 'str',
+      nullValue: 'float'
+    });
+    variableSnippet.addParameter('v', 'vartype', {
+      type: 'str',
+      nullValue: 'attribute'
+    });
+    variableSnippet.addParameter('v', 'varname', {
+      type: 'str'
+    });
+    this.addSnippet('variable', variableSnippet);
+    Object.defineProperties(this, {
+      variables: {
+        get: function get() {
+          return variables;
+        }
+      }
+    });
+  }
+
+  return ShaderSnippet;
+}]).factory('oaWebglShaderSource', function () {
   function oaWebglShaderSource(_source, _generator, _parameters) {
     var source = _source;
     var generator = _generator;
@@ -665,7 +908,7 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
   return oaWebglShaderSource;
 }).factory('oaWebglProgram', ['oaWebglHelpers', 'oaWebglShaderSource', function (oaWebglHelpers, oaWebglShaderSource) {
   function oaWebglProgram(_options) {
-    var _this3 = this;
+    var _this4 = this;
 
     var options = Object.assign({}, _options);
     var dirty = true;
@@ -747,7 +990,7 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
       }
     });
     this.initialize = function initialize(gl) {
-      var _this2 = this;
+      var _this3 = this;
 
       if (!dirty) return;
       console.log('program.initialize');
@@ -761,9 +1004,9 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
         var attribute = gl.getAttribLocation(program, attributeName);
         var attributeKey = 'a' + attributeId.charAt(0).toUpperCase() + attributeId.substr(1, attributeId.length);
         var attributeSpeckey = attributeKey + 'Spec';
-        _this2[attributeKey] = attribute;
+        _this3[attributeKey] = attribute;
         attributes[attributeKey] = attribute;
-        _this2[attributeSpeckey] = attributeSpec;
+        _this3[attributeSpeckey] = attributeSpec;
       });
       Object.keys(uniformSpecs).forEach(function (uniformId) {
         var uniformSpec = uniformSpecs[uniformId];
@@ -772,9 +1015,9 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
         var uniform = gl.getUniformLocation(program, uniformName);
         var uniformKey = 'u' + uniformId.charAt(0).toUpperCase() + uniformId.substr(1, uniformId.length);
         var uniformSpeckey = uniformKey + 'Spec';
-        _this2[uniformKey] = uniform;
+        _this3[uniformKey] = uniform;
         uniforms[uniformKey] = uniform;
-        _this2[uniformSpeckey] = uniformSpec;
+        _this3[uniformSpeckey] = uniformSpec;
       });
       Object.keys(bufferSpecs).forEach(function (bufferId) {
         var bufferSpec = bufferSpecs[bufferId];
@@ -789,9 +1032,9 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
         gl.bindBuffer(gl[target], buffer);
         var bufferKey = 'b' + bufferId.charAt(0).toUpperCase() + bufferId.substr(1, bufferId.length);
         var bufferSpeckey = bufferKey + 'Spec';
-        _this2[bufferKey] = buffer;
+        _this3[bufferKey] = buffer;
         buffers[bufferKey] = buffer;
-        _this2[bufferSpeckey] = bufferSpec;
+        _this3[bufferSpeckey] = bufferSpec;
         switch (datatype) {
           case oaWebglHelpers.FLOAT32:
             bufferSpec.Data = new Float32Array(data);
@@ -839,7 +1082,7 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
         if (attributeId) {
           var attributeKey = 'a' + attributeId.charAt(0).toUpperCase() + attributeId.substr(1, attributeId.length);
           var attributeSpeckey = attributeKey + 'Spec';
-          var attributeSpec = _this2[attributeSpeckey];
+          var attributeSpec = _this3[attributeSpeckey];
           attributeSpec.buffer = bufferId;
         }
       });
@@ -858,9 +1101,9 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl[type], image);
         var textureKey = 't' + textureId.charAt(0).toUpperCase() + textureId.substr(1, textureId.length);
         var textureSpeckey = textureKey + 'Spec';
-        _this2[textureKey] = texture;
+        _this3[textureKey] = texture;
         textures[textureKey] = texture;
-        _this2[textureSpeckey] = textureSpec;
+        _this3[textureSpeckey] = textureSpec;
       });
       dirty = false;
       console.log('program.initialized');
@@ -901,14 +1144,14 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
     };
     this.draw = function (gl) {
       console.log('program.draw');
-      _this3.initialize(gl);
+      _this4.initialize(gl);
       Object.keys(bufferSpecs).forEach(function (bufferId) {
         var bufferSpec = bufferSpecs[bufferId];
         if (!bufferSpec.applied && bufferSpec.Data) gl.bufferData(gl[bufferSpec.target], bufferSpec.Data, gl[bufferSpec.usage]);
       });
       if (executor) {
         console.log('program.execute');
-        executor.call(_this3, gl);
+        executor.call(_this4, gl);
       } else console.log('!executor');
       console.log('program.drawn');
     };
