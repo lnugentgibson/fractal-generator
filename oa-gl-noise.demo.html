@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html></html>
+<head>
+<meta charset='UTF-8'>
+<title>OAlpha GLSL Noise Check</title>
+<link href='lib/css/normalize.min.css' rel='stylesheet'>
+<link href='oa-gl-noise.demo.min.css' rel='stylesheet'>
+</head>
+<body>
+<div id='app' ng-app='oaGLSLNoiseDemo' ng-controller='NoiseTestCtrl'>
+<div class='canvas'>
+<h2>Sine Noise</h2>
+<canvas id='sine-noise'></canvas>
+</div>
+<div class='canvas'>
+<h2>Sine Gradient Noise</h2>
+<canvas id='sine-gradient-noise'></canvas>
+</div>
+<div class='canvas'>
+<h2>Perlin Sine Noise</h2>
+<canvas id='perlin-sine-noise'></canvas>
+</div>
+<div class='canvas'>
+<h2>Perlin Sine Gradient Noise</h2>
+<canvas id='perlin-sine-gradient-noise'></canvas>
+</div>
+<div class='canvas' ng-if='false'>
+<h2>Simplices</h2>
+<canvas id='simplices'></canvas>
+</div>
+<div class='canvas'>
+<h2>Simplex Sine Noise</h2>
+<canvas id='simplex-sine-noise'></canvas>
+</div>
+<div class='canvas'>
+<h2>Simplex Sine Gradient Noise</h2>
+<canvas id='simplex-sine-gradient-noise'></canvas>
+</div>
+<div class='canvas'>
+<h2>Wood</h2>
+<canvas id='wood'></canvas>
+</div>
+<div class='canvas'>
+<h2>Splatter</h2>
+<canvas id='splatter'></canvas>
+</div>
+<div class='canvas'>
+<h2>Fractal Simplex Sine Gradient Noise</h2>
+<canvas id='fractal-simplex-sine-gradient-noise'></canvas>
+</div>
+</div>
+<script src='lib/js/decimal.min.js'></script>
+<script src='lib/js/underscore-min.js'></script>
+<script src='lib/js/angular.min.js'></script>
+<script src='lib/js/angular-messages.min.js'></script>
+<script src='lib/js/jquery.min.js'></script>
+<script src='oa-object.min.js'></script>
+<script src='oa-webgl-helpers.min.js'></script>
+<script src='oa-gl-noise.min.js'></script>
+<script src='oa-gl-noise.demo.min.js'></script>
+</body>

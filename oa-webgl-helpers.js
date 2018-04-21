@@ -488,7 +488,7 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
             snippetsmatch = parameters[ref[1]].every(function (s) {
               return !!snippets[s];
             });
-            if (!snippetsmatch) console.log(JSON.stringify(parameters[ref[1]].map(function (s) {
+            if (false && !snippetsmatch) console.log(JSON.stringify(parameters[ref[1]].map(function (s) {
               return {
                 s: s,
                 match: !!snippets[s]
@@ -685,13 +685,24 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
     };
     parameters.add = function (paramname, datatype, index) {
       if (parameters.names.indexOf(paramname) > -1) throw 'parameter already exists';
-      if (parameters.order[index]) throw 'index already in use';
+      if (index == undefined) index = parameters.order.length;else if (parameters.order[index]) throw 'index already in use';
       parameters.names.push(paramname);
       parameters.order[index] = parameters[paramname] = {
         datatype: datatype,
         paramname: paramname,
         index: index
       };
+    };
+    parameters.addMultiple = function (vars) {
+      //console.log(JSON.stringify(vars, null, 2));
+      var I = parameters.order.length;
+      vars.forEach(function (v, i) {
+        var paramname = v.paramname,
+            datatype = v.datatype,
+            index = v.index;
+
+        parameters.add(paramname, datatype, index == undefined ? I + i : index);
+      });
     };
     parameters.apply = function () {
       _this2.setParameter('signiture.parameterList', parameters.order);
@@ -822,7 +833,7 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
     };
     variables.add = function (varname, vartype, datatype, index) {
       if (variables.names.indexOf(varname) > -1) throw 'parameter already exists';
-      if (variables.order[index]) throw 'index already in use';
+      if (index == undefined) index = variables.order.length;else if (variables.order[index]) throw 'index already in use';
       variables.names.push(varname);
       variables.order[index] = variables[varname] = {
         vartype: vartype,
@@ -1041,7 +1052,7 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
       var _this4 = this;
 
       if (!dirty) return;
-      console.log('program.initialize');
+      //console.log('program.initialize');
       var vertexSourceCode = vertexSource.generate();
       var fragmentSourceCode = fragmentSource.generate();
       program = oaWebglHelpers.loadProgram(gl, vertexSourceCode, fragmentSourceCode);
@@ -1093,7 +1104,7 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
           default:
             console.error('invalid datatype');
         }
-        console.log({
+        if (false) console.log({
           bufferId: bufferId,
           data: data,
           Data: bufferSpec.Data
@@ -1118,7 +1129,7 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
                 default:
                   console.error('invalid datatype');
               }
-              console.log({
+              if (false) console.log({
                 bufferId: bufferId,
                 data: data,
                 Data: bufferSpec.Data
@@ -1154,15 +1165,15 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
         _this4[textureSpeckey] = textureSpec;
       });
       dirty = false;
-      console.log('program.initialized');
+      if (false) console.log('program.initialized');
     };
     this.pushAttribute = function pushAttribute(gl, attributeId) {
-      console.log(Object.keys(this));
+      if (false) console.log(Object.keys(this));
       var attributeKey = 'a' + attributeId.charAt(0).toUpperCase() + attributeId.substr(1, attributeId.length);
       var attributeSpeckey = attributeKey + 'Spec';
       var attribute = this[attributeKey];
       var attributeSpec = this[attributeSpeckey];
-      console.log({
+      if (false) console.log({
         attributeId: attributeId,
         attributeKey: attributeKey,
         attributeSpeckey: attributeSpeckey,
@@ -1173,7 +1184,7 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
       var bufferSpeckey = bufferKey + 'Spec';
       var buffer = this[bufferKey];
       var bufferSpec = this[bufferSpeckey];
-      console.log({
+      if (false) console.log({
         bufferId: bufferId,
         bufferKey: bufferKey,
         bufferSpeckey: bufferSpeckey,
@@ -1191,17 +1202,17 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
       gl.enableVertexAttribArray(attribute);
     };
     this.draw = function (gl) {
-      console.log('program.draw');
+      if (false) console.log('program.draw');
       _this5.initialize(gl);
       Object.keys(bufferSpecs).forEach(function (bufferId) {
         var bufferSpec = bufferSpecs[bufferId];
         if (!bufferSpec.applied && bufferSpec.Data) gl.bufferData(gl[bufferSpec.target], bufferSpec.Data, gl[bufferSpec.usage]);
       });
       if (executor) {
-        console.log('program.execute');
+        if (false) console.log('program.execute');
         executor.call(_this5, gl);
-      } else console.log('!executor');
-      console.log('program.drawn');
+      } else if (false) console.log('!executor');
+      if (false) console.log('program.drawn');
     };
   }
 
@@ -1253,7 +1264,7 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
       }
     };
     this.draw = function (name) {
-      console.log('canvas.draw');
+      if (false) console.log('canvas.draw');
       if (gl) {
         if (!name) {
           if (main) name = main;else name = 'main';
@@ -1261,7 +1272,7 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
         var program = programs[name];
         if (program) program.draw(gl);
       }
-      console.log('canvas.drawn');
+      if (false) console.log('canvas.drawn');
     };
   }
   return oaWebglCanvas;

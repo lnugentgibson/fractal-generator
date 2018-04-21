@@ -519,7 +519,7 @@ mat4 ${m} = inverse(mat4(cx, cy, cz, vec4(vec3(0.0), 1.0))) * mat4(vec4(1.0, vec
             var snippetsmatch = true;
             if (snippetmatch && !!parameters[ref[1]]) {
               snippetsmatch = parameters[ref[1]].every(s => !!snippets[s]);
-              if (!snippetsmatch)
+              if (false && !snippetsmatch)
                 console.log(JSON.stringify(parameters[ref[1]].map(s => {
                   return {
                     s,
@@ -716,7 +716,9 @@ ${bodyType === 'string' ? '${P("bodyString")}' : '${S("body", "body")}'}
       parameters.add = (paramname, datatype, index) => {
         if (parameters.names.indexOf(paramname) > -1)
           throw 'parameter already exists';
-        if (parameters.order[index])
+        if (index == undefined)
+          index = parameters.order.length;
+        else if (parameters.order[index])
           throw 'index already in use';
         parameters.names.push(paramname);
         parameters.order[index] = parameters[paramname] = {
@@ -724,6 +726,18 @@ ${bodyType === 'string' ? '${P("bodyString")}' : '${S("body", "body")}'}
           paramname,
           index
         };
+      };
+      parameters.addMultiple = vars => {
+        //console.log(JSON.stringify(vars, null, 2));
+        var I = parameters.order.length;
+        vars.forEach((v, i) => {
+          let {
+            paramname,
+            datatype,
+            index
+          } = v;
+          parameters.add(paramname, datatype, index == undefined ? I + i : index);
+        });
       };
       parameters.apply = () => {
         this.setParameter('signiture.parameterList', parameters.order);
@@ -847,7 +861,9 @@ void main() {
       variables.add = (varname, vartype, datatype, index) => {
         if (variables.names.indexOf(varname) > -1)
           throw 'parameter already exists';
-        if (variables.order[index])
+        if (index == undefined)
+          index = variables.order.length;
+        else if (variables.order[index])
           throw 'index already in use';
         variables.names.push(varname);
         variables.order[index] = variables[varname] = {
@@ -1054,7 +1070,7 @@ void main() {
         });
         this.initialize = function initialize(gl) {
           if (!dirty) return;
-          console.log('program.initialize');
+          //console.log('program.initialize');
           var vertexSourceCode = vertexSource.generate();
           var fragmentSourceCode = fragmentSource.generate();
           program = oaWebglHelpers.loadProgram(
@@ -1115,11 +1131,12 @@ void main() {
               default:
                 console.error('invalid datatype');
             }
-            console.log({
-              bufferId,
-              data,
-              Data: bufferSpec.Data
-            });
+            if (false)
+              console.log({
+                bufferId,
+                data,
+                Data: bufferSpec.Data
+              });
             gl.bufferData(gl[target], bufferSpec.Data, gl[usage]);
             bufferSpec.applied = true;
             bufferSpec._data = bufferSpec.data;
@@ -1138,11 +1155,12 @@ void main() {
                     default:
                       console.error('invalid datatype');
                   }
-                  console.log({
-                    bufferId,
-                    data,
-                    Data: bufferSpec.Data
-                  });
+                  if (false)
+                    console.log({
+                      bufferId,
+                      data,
+                      Data: bufferSpec.Data
+                    });
                   bufferSpec.applied = false;
                 }
               }
@@ -1198,22 +1216,25 @@ void main() {
             this[textureSpeckey] = textureSpec;
           });
           dirty = false;
-          console.log('program.initialized');
+          if (false)
+            console.log('program.initialized');
         };
         this.pushAttribute = function pushAttribute(gl, attributeId) {
-          console.log(Object.keys(this));
+          if (false)
+            console.log(Object.keys(this));
           var attributeKey = `a${attributeId
               .charAt(0)
               .toUpperCase()}${attributeId.substr(1, attributeId.length)}`;
           var attributeSpeckey = `${attributeKey}Spec`;
           var attribute = this[attributeKey];
           var attributeSpec = this[attributeSpeckey];
-          console.log({
-            attributeId,
-            attributeKey,
-            attributeSpeckey,
-            attributeSpec
-          });
+          if (false)
+            console.log({
+              attributeId,
+              attributeKey,
+              attributeSpeckey,
+              attributeSpec
+            });
           var bufferId = attributeSpec.buffer;
           var bufferKey = `b${bufferId
                 .charAt(0)
@@ -1221,12 +1242,13 @@ void main() {
           var bufferSpeckey = `${bufferKey}Spec`;
           var buffer = this[bufferKey];
           var bufferSpec = this[bufferSpeckey];
-          console.log({
-            bufferId,
-            bufferKey,
-            bufferSpeckey,
-            bufferSpec
-          });
+          if (false)
+            console.log({
+              bufferId,
+              bufferKey,
+              bufferSpeckey,
+              bufferSpec
+            });
           const {
             numComponents,
             type,
@@ -1247,7 +1269,8 @@ void main() {
           gl.enableVertexAttribArray(attribute);
         };
         this.draw = gl => {
-          console.log('program.draw');
+          if (false)
+            console.log('program.draw');
           this.initialize(gl);
           Object.keys(bufferSpecs).forEach(bufferId => {
             var bufferSpec = bufferSpecs[bufferId];
@@ -1259,12 +1282,15 @@ void main() {
               );
           });
           if (executor) {
-            console.log('program.execute');
+            if (false)
+              console.log('program.execute');
             executor.call(this, gl);
           }
           else
+          if (false)
             console.log('!executor');
-          console.log('program.drawn');
+          if (false)
+            console.log('program.drawn');
         };
       }
 
@@ -1313,7 +1339,8 @@ void main() {
         }
       };
       this.draw = name => {
-        console.log('canvas.draw');
+        if (false)
+          console.log('canvas.draw');
         if (gl) {
           if (!name) {
             if (main) name = main;
@@ -1322,7 +1349,8 @@ void main() {
           var program = programs[name];
           if (program) program.draw(gl);
         }
-        console.log('canvas.drawn');
+        if (false)
+          console.log('canvas.drawn');
       };
     }
     return oaWebglCanvas;

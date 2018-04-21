@@ -170,13 +170,13 @@ containers: appcontainers checkcontainers democontainers
 all: containers
 
 
-oa-validator.check.html oa-validator.demo.html: oa-util.js
-oa-blender-input.check.html oa-blender-input.demo.html: oa-validator.js
-oa-linear-algebra.check.html oa-linear-algebra.demo.html: oa-util.js
-oa-sylvester.check.html oa-sylvester.demo.html: oa-util.js
-oa-webgl-helpers.check.html oa-webgl-helpers.demo.html: oa-object.js
-oa-mesh.check.html oa-mesh.demo.html: oa-linear-algebra.js oa-sylvester.js
-oa-gl-noise.check.html oa-gl-noise.demo.html: oa-webgl-helpers.js
-oa-blender-view.check.html oa-blender-view.demo.html: oa-mesh.js oa-webgl-helpers.js
-oa-vector-picker.check.html oa-vector-picker.demo.html: oa-blender-input.js oa-blender-input.css oa-blender-view.js oa-blender-view.css
-oa-fractal-generator.check.html oa-fractal-generator.demo.html: oa-vector-picker.js oa-vector-picker.css
+oa-validator.check.html oa-validator.demo.html: oa-util.min.js
+oa-blender-input.check.html oa-blender-input.demo.html: oa-validator.min.js
+oa-linear-algebra.check.html oa-linear-algebra.demo.html: oa-util.min.js
+oa-sylvester.check.html oa-sylvester.demo.html: oa-util.min.js
+oa-webgl-helpers.check.html oa-webgl-helpers.demo.html: oa-object.min.js
+oa-mesh.check.html oa-mesh.demo.html: oa-linear-algebra.min.js oa-sylvester.min.js
+oa-gl-noise.check.html oa-gl-noise.demo.html: oa-webgl-helpers.min.js
+oa-blender-view.check.html oa-blender-view.demo.html: oa-mesh.min.js oa-webgl-helpers.min.js
+oa-vector-picker.check.html oa-vector-picker.demo.html: oa-blender-input.min.js oa-blender-input.min.css oa-blender-view.min.js oa-blender-view.min.css
+oa-fractal-generator.check.html oa-fractal-generator.demo.html: oa-vector-picker.min.js oa-vector-picker.min.css

@@ -844,20 +844,17 @@ float noise(vec2 op) {
     var $oaWebglShaderSnippet
     var $oaWebglFunctionSnippet;
     var $oaWebglSnippet;
+    var fragmentShader;
+    var fragmentShaderInnerSnippet;
 
     beforeEach(inject((oaWebglShaderSnippet, oaWebglFunctionSnippet, oaWebglSnippet) => {
       $oaWebglShaderSnippet = oaWebglShaderSnippet;
       $oaWebglFunctionSnippet = oaWebglFunctionSnippet;
       $oaWebglSnippet = oaWebglSnippet;
+      fragmentShader = new $oaWebglShaderSnippet('perlinNoiseFragment');
     }));
 
     var i = 0;
-    var fragmentShader;
-    var fragmentShaderInnerSnippet;
-
-    beforeEach(function() {
-      fragmentShader = new $oaWebglShaderSnippet('perlinNoiseFragment');
-    });
 
     if (true) {
       describe('parameter set #' + (i + 1) + ': snippet value', function() {
