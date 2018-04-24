@@ -684,7 +684,9 @@ angular.module('oaWebglHelpers', ['oaObject']).service('oaWebglHelpers', functio
       order: []
     };
     parameters.add = function (paramname, datatype, index) {
-      if (parameters.names.indexOf(paramname) > -1) throw 'parameter already exists';
+      if (parameters.names.indexOf(paramname) > -1)
+        //throw 'parameter already exists';
+        apples.throw();
       if (index == undefined) index = parameters.order.length;else if (parameters.order[index]) throw 'index already in use';
       parameters.names.push(paramname);
       parameters.order[index] = parameters[paramname] = {

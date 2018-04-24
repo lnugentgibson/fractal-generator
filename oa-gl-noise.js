@@ -13,130 +13,447 @@ angular.module('oaGLSLNoise', ['oaWebglHelpers']).service('oaNoiseShaderFunction
     standardVertexShader.mainSnippet = new oaWebglSnippet('body', 'gl_Position = a_position;');
   }
 
-  // randScalarFunction
+  // random functions
   {
-    var randScalarFunction = new oaWebglFunctionSnippet('rand', 'float', 'snippet');
-    randScalarFunction.parameters.add('f', 'float');
-    randScalarFunction.parameters.apply();
-    randScalarFunction.bodySnippet = new oaWebglSnippet('body', 'return fract(sin(f + u_seed.z) * u_seed.w);');
+    // rand11Function
+    {
+      var rand11Function = new oaWebglFunctionSnippet('rand', 'float', 'snippet');
+      rand11Function.parameters.add('f', 'float');
+      rand11Function.parameters.apply();
+      rand11Function.bodySnippet = new oaWebglSnippet('body', 'return fract(sin(f * u_sineseed[0].x + u_sineseed[0].y) * u_sineseed[0].z + u_sineseed[0].w);');
+    }
+
+    // rand11SeededFunction
+    {
+      var rand11SeededFunction = new oaWebglFunctionSnippet('rand', 'float', 'snippet');
+      rand11SeededFunction.parameters.add('f', 'float');
+      rand11SeededFunction.parameters.add('s', 'vec4');
+      rand11SeededFunction.parameters.apply();
+      rand11SeededFunction.bodySnippet = new oaWebglSnippet('body', 'return fract(sin(f * s.x + s.y) * s.z + s.w);');
+    }
+
+    // rand12Function
+    {
+      var rand12Function = new oaWebglFunctionSnippet('rand', 'float', 'snippet');
+      rand12Function.parameters.add('v', 'vec2');
+      rand12Function.parameters.apply();
+      rand12Function.bodySnippet = new oaWebglSnippet('body', 'return rand(dot(v, u_dotseed[0].xy));');
+    }
+
+    // rand12SeededFunction
+    {
+      var rand12SeededFunction = new oaWebglFunctionSnippet('rand', 'float', 'snippet');
+      rand12SeededFunction.parameters.add('v', 'vec2');
+      rand12SeededFunction.parameters.add('d', 'mat4');
+      rand12SeededFunction.parameters.add('s', 'vec4');
+      rand12SeededFunction.parameters.apply();
+      rand12SeededFunction.bodySnippet = new oaWebglSnippet('body', 'return rand(dot(v, d[0].xy), s);');
+    }
+
+    // rand13Function
+    {
+      var rand13Function = new oaWebglFunctionSnippet('rand', 'float', 'snippet');
+      rand13Function.parameters.add('v', 'vec3');
+      rand13Function.parameters.apply();
+      rand13Function.bodySnippet = new oaWebglSnippet('body', 'return rand(dot(v, u_dotseed[0].xyz));');
+    }
+
+    // rand13SeededFunction
+    {
+      var rand13SeededFunction = new oaWebglFunctionSnippet('rand', 'float', 'snippet');
+      rand13SeededFunction.parameters.add('v', 'vec3');
+      rand13SeededFunction.parameters.add('d', 'mat4');
+      rand13SeededFunction.parameters.add('s', 'vec4');
+      rand13SeededFunction.parameters.apply();
+      rand13SeededFunction.bodySnippet = new oaWebglSnippet('body', 'return rand(dot(v, d[0].xyz), s);');
+    }
+
+    // rand14Function
+    {
+      var rand14Function = new oaWebglFunctionSnippet('rand', 'float', 'snippet');
+      rand14Function.parameters.add('v', 'vec4');
+      rand14Function.parameters.apply();
+      rand14Function.bodySnippet = new oaWebglSnippet('body', 'return rand(dot(v, u_dotseed[0]));');
+    }
+
+    // rand14SeededFunction
+    {
+      var rand14SeededFunction = new oaWebglFunctionSnippet('rand', 'float', 'snippet');
+      rand14SeededFunction.parameters.add('v', 'vec4');
+      rand14SeededFunction.parameters.add('d', 'mat4');
+      rand14SeededFunction.parameters.add('s', 'vec4');
+      rand14SeededFunction.parameters.apply();
+      rand14SeededFunction.bodySnippet = new oaWebglSnippet('body', 'return rand(dot(v, d[0]), s);');
+    }
+
+    // rand22Function
+    {
+      var rand22Function = new oaWebglFunctionSnippet('rand2', 'vec2', 'snippet');
+      rand22Function.parameters.add('v', 'vec2');
+      rand22Function.parameters.apply();
+      rand22Function.bodySnippet = new oaWebglSnippet('body', 'return vec2(rand(dot(v, u_dotseed[0].xy)), rand(dot(v, u_dotseed[1].xy)));');
+    }
+
+    // rand22SeededFunction
+    {
+      var rand22SeededFunction = new oaWebglFunctionSnippet('rand2', 'vec2', 'snippet');
+      rand22SeededFunction.parameters.add('v', 'vec2');
+      rand22SeededFunction.parameters.add('d', 'mat4');
+      rand22SeededFunction.parameters.add('s', 'vec4');
+      rand22SeededFunction.parameters.apply();
+      rand22SeededFunction.bodySnippet = new oaWebglSnippet('body', 'return vec2(rand(dot(v, d[0].xy), s), rand(dot(v, d[1].xy), s));');
+    }
+
+    // rand22RotFunction
+    {
+      var rand22RotFunction = new oaWebglFunctionSnippet('rand2Rot', 'vec2', 'snippet');
+      rand22RotFunction.parameters.add('v', 'vec2');
+      rand22RotFunction.parameters.apply();
+      rand22RotFunction.bodySnippet = new oaWebglSnippet('body', 'float a = 2.0 * 3.14159265358 * rand(dot(v, u_dotseed[0].xy));\n  return vec2(cos(a), sin(a));');
+    }
+
+    // rand22RotSeededFunction
+    {
+      var rand22RotSeededFunction = new oaWebglFunctionSnippet('rand2Rot', 'vec2', 'snippet');
+      rand22RotSeededFunction.parameters.add('v', 'vec2');
+      rand22RotSeededFunction.parameters.add('d', 'mat4');
+      rand22RotSeededFunction.parameters.add('s', 'vec4');
+      rand22RotSeededFunction.parameters.apply();
+      rand22RotSeededFunction.bodySnippet = new oaWebglSnippet('body', 'float a = 2.0 * 3.14159265358 * rand(dot(v, d[0].xy), s);\n  return vec2(cos(a), sin(a));');
+    }
+
+    // rand22UnitFunction
+    {
+      var rand22UnitFunction = new oaWebglFunctionSnippet('rand2Unit', 'vec2', 'snippet');
+      rand22UnitFunction.parameters.add('v', 'vec2');
+      rand22UnitFunction.parameters.apply();
+      rand22UnitFunction.bodySnippet = new oaWebglSnippet('body', 'vec2 r = rand2(v);\n  if(length(r) < 0.00001)\n    return r = rand2(v.yx);\n  return r / length(v);');
+    }
+
+    // rand22UnitSeededFunction
+    {
+      var rand22UnitSeededFunction = new oaWebglFunctionSnippet('rand2Unit', 'vec2', 'snippet');
+      rand22UnitSeededFunction.parameters.add('v', 'vec2');
+      rand22UnitSeededFunction.parameters.add('d', 'mat4');
+      rand22UnitSeededFunction.parameters.add('s', 'mat4');
+      rand22UnitSeededFunction.parameters.apply();
+      rand22UnitSeededFunction.bodySnippet = new oaWebglSnippet('body', 'vec2 r = rand2(v, d, s[0]);\n  if(length(r) < 0.00001)\n    return r = rand2(v, d, s[1]);\n  if(length(r) < 0.00001)\n    return r = rand2(v, d, s[2]);\n  if(length(r) < 0.00001)\n    return r = rand2(v, d, s[3]);\n  return r / length(v);');
+    }
+
+    // rand33Function
+    {
+      var rand33Function = new oaWebglFunctionSnippet('rand3', 'vec3', 'snippet');
+      rand33Function.parameters.add('v', 'vec3');
+      rand33Function.parameters.apply();
+      rand33Function.bodySnippet = new oaWebglSnippet('body', 'return vec3(rand(dot(v, d[0].xyz)), rand(dot(v, d[1].xyz)), rand(dot(v, d[2].xyz)));');
+    }
+
+    // rand33SeededFunction
+    {
+      var rand33SeededFunction = new oaWebglFunctionSnippet('rand3', 'vec3', 'snippet');
+      rand33SeededFunction.parameters.add('v', 'vec3');
+      rand33SeededFunction.parameters.add('d', 'mat4');
+      rand33SeededFunction.parameters.add('s', 'vec4');
+      rand33SeededFunction.parameters.apply();
+      rand33SeededFunction.bodySnippet = new oaWebglSnippet('body', 'return vec2(rand(dot(v, d[0].xyz), s), rand(dot(v, d[1].xyz), s), rand(dot(v, d[2].xyz), s));');
+    }
+
+    // rand33RotFunction
+    {
+      var rand33RotFunction = new oaWebglFunctionSnippet('rand3Rot', 'vec3', 'snippet');
+      rand33RotFunction.parameters.add('v', 'vec3');
+      rand33RotFunction.parameters.apply();
+      rand33RotFunction.bodySnippet = new oaWebglSnippet('body', 'float x = 2.0 * 3.14159265358 * rand(dot(v, dotseed[0].xyz));\n  float y = 2.0 * 3.14159265358 * rand(dot(v, dotseed[1].xyz));\n  float z = 2.0 * 3.14159265358 * rand(dot(v, dotseed[2].xyz));\n  return mat3(\n    1.0, 0.0, 0.0,\n    0.0, cos(x), -sin(x),\n    0.0, sin(x), cos(x)\n  ) * mat3(\n    cos(y), 0.0, sin(y),\n    0.0, 1.0, 0.0,\n    -sin(y), 0.0, cos(y)\n  ) * mat3(\n    cos(z), -sin(z), 0.0,\n    sin(z), cos(z), 0.0,\n    0.0, 0.0, 1.0\n  ) * vec3(1.0, 0.0, 0.0);');
+    }
+
+    // rand33RotSeededFunction
+    {
+      var rand33RotSeededFunction = new oaWebglFunctionSnippet('rand3Rot', 'vec3', 'snippet');
+      rand33RotSeededFunction.parameters.add('v', 'vec3');
+      rand33RotSeededFunction.parameters.add('d', 'mat4');
+      rand33RotSeededFunction.parameters.add('s', 'vec4');
+      rand33RotSeededFunction.parameters.apply();
+      rand33RotSeededFunction.bodySnippet = new oaWebglSnippet('body', 'float x = 2.0 * 3.14159265358 * rand(dot(v, d[0].xyz), s);\n  float y = 2.0 * 3.14159265358 * rand(dot(v, d[1].xyz), s);\n  float z = 2.0 * 3.14159265358 * rand(dot(v, d[2].xyz), s);\n  return mat3(\n    1.0, 0.0, 0.0,\n    0.0, cos(x), -sin(x),\n    0.0, sin(x), cos(x)\n  ) * mat3(\n    cos(y), 0.0, sin(y),\n    0.0, 1.0, 0.0,\n    -sin(y), 0.0, cos(y)\n  ) * mat3(\n    cos(z), -sin(z), 0.0,\n    sin(z), cos(z), 0.0,\n    0.0, 0.0, 1.0\n  ) * vec3(1.0, 0.0, 0.0);');
+    }
+
+    // rand33UnitFunction
+    {
+      var rand33UnitFunction = new oaWebglFunctionSnippet('rand3Unit', 'vec3', 'snippet');
+      rand33UnitFunction.parameters.add('v', 'vec3');
+      rand33UnitFunction.parameters.apply();
+      rand33UnitFunction.bodySnippet = new oaWebglSnippet('body', 'vec2 r = rand3(v);\n  if(length(r) < 0.00001)\n    return r = rand3(v.yzx);\n  if(length(r) < 0.00001)\n    return r = rand3(v.zxy);\n  if(length(r) < 0.00001)\n    return r = rand3(v.zyx);\n  if(length(r) < 0.00001)\n    return r = rand3(v.yxz);\n  if(length(r) < 0.00001)\n    return r = rand3(v.xzy);\n  return r / length(v);');
+    }
+
+    // rand33UnitSeededFunction
+    {
+      var rand33UnitSeededFunction = new oaWebglFunctionSnippet('rand3Unit', 'vec3', 'snippet');
+      rand33UnitSeededFunction.parameters.add('v', 'vec3');
+      rand33UnitSeededFunction.parameters.add('d', 'mat4');
+      rand33UnitSeededFunction.parameters.add('s', 'mat4');
+      rand33UnitSeededFunction.parameters.apply();
+      rand33UnitSeededFunction.bodySnippet = new oaWebglSnippet('body', 'vec2 r = rand3(v, d, s[0]);\n  if(length(r) < 0.00001)\n    return r = rand3(v, d, s[1]);\n  if(length(r) < 0.00001)\n    return r = rand3(v, d, s[2]);\n  if(length(r) < 0.00001)\n    return r = rand3(v, d, s[3]);\n  return r / length(v);');
+    }
+
+    // rand44Function
+    {
+      var rand44Function = new oaWebglFunctionSnippet('rand4', 'vec4', 'snippet');
+      rand44Function.parameters.add('v', 'vec4');
+      rand44Function.parameters.apply();
+      rand44Function.bodySnippet = new oaWebglSnippet('body', 'return vec2(rand(dot(v, d[0])), rand(dot(v, d[1])), rand(dot(v, d[2])), rand(dot(v, d[3])));');
+    }
+
+    // rand44SeededFunction
+    {
+      var rand44SeededFunction = new oaWebglFunctionSnippet('rand4', 'vec4', 'snippet');
+      rand44SeededFunction.parameters.add('v', 'vec4');
+      rand44SeededFunction.parameters.add('d', 'mat4');
+      rand44SeededFunction.parameters.add('s', 'vec4');
+      rand44SeededFunction.parameters.apply();
+      rand44SeededFunction.bodySnippet = new oaWebglSnippet('body', 'return vec2(rand(dot(v, d[0]), s), rand(dot(v, d[1]), s), rand(dot(v, d[2]), s), rand(dot(v, d[3]), s));');
+    }
+
+    // rand44RotFunction
+    {
+      var rand44RotFunction = new oaWebglFunctionSnippet('rand4Rot', 'vec4', 'snippet');
+      rand44RotFunction.parameters.add('v', 'vec4');
+      rand44RotFunction.parameters.apply();
+      rand44RotFunction.bodySnippet = new oaWebglSnippet('body', 'float x = 2.0 * 3.14159265358 * rand(dot(v, dotseed[0]));\n  float y = 2.0 * 3.14159265358 * rand(dot(v, dotseed[1]));\n  float z = 2.0 * 3.14159265358 * rand(dot(v, dotseed[2]));\n  float w = 2.0 * 3.14159265358 * rand(dot(v, dotseed[3]));\n  return mat3(\n    1.0, 0.0, 0.0, 0.0,\n    0.0, cos(x), -sin(x), 0.0,\n    0.0, sin(x), cos(x) 0.0,\n    0.0, 0.0, 0.0, 1.0\n  ) * mat3(\n    1.0, 0.0, 0.0, 0.0,\n    0.0, 1.0, 0.0, 0.0,\n    0.0, 0.0, cos(y), -sin(y),\n    0.0, 0.0, sin(y), cos(y)\n  ) * mat3(\n    cos(z), 0.0, 0.0, sin(z),\n    0.0, 1.0, 0.0, 0.0,\n    0.0, 0.0, 1.0, 0.0,\n    -sin(z), 0.0, 0.0, cos(z)\n  ) * mat3(\n    cos(w), -sin(w), 0.0, 0.0,\n    sin(w), cos(w), 0.0, 0.0,\n    0.0, 0.0, 1.0, 0.0,\n    0.0, 0.0, 0.0, 1.0\n  ) * vec3(1.0, 0.0, 0.0);');
+    }
+
+    // rand44RotSeededFunction
+    {
+      var rand44RotSeededFunction = new oaWebglFunctionSnippet('rand4Rot', 'vec4', 'snippet');
+      rand44RotSeededFunction.parameters.add('v', 'vec4');
+      rand44RotSeededFunction.parameters.add('d', 'mat4');
+      rand44RotSeededFunction.parameters.add('s', 'vec4');
+      rand44RotSeededFunction.parameters.apply();
+      rand44RotSeededFunction.bodySnippet = new oaWebglSnippet('body', 'float x = 2.0 * 3.14159265358 * rand(dot(v, d[0]), s);\n  float y = 2.0 * 3.14159265358 * rand(dot(v, d[1]), s);\n  float z = 2.0 * 3.14159265358 * rand(dot(v, d[2]), s);\n  float w = 2.0 * 3.14159265358 * rand(dot(v, d[3]), s);\n  return mat3mat3(\n    1.0, 0.0, 0.0, 0.0,\n    0.0, cos(x), -sin(x), 0.0,\n    0.0, sin(x), cos(x) 0.0,\n    0.0, 0.0, 0.0, 1.0\n  ) * mat3(\n    1.0, 0.0, 0.0, 0.0,\n    0.0, 1.0, 0.0, 0.0,\n    0.0, 0.0, cos(y), -sin(y),\n    0.0, 0.0, sin(y), cos(y)\n  ) * mat3(\n    cos(z), 0.0, 0.0, sin(z),\n    0.0, 1.0, 0.0, 0.0,\n    0.0, 0.0, 1.0, 0.0,\n    -sin(z), 0.0, 0.0, cos(z)\n  ) * mat3(\n    cos(w), -sin(w), 0.0, 0.0,\n    sin(w), cos(w), 0.0, 0.0,\n    0.0, 0.0, 1.0, 0.0,\n    0.0, 0.0, 0.0, 1.0\n  ) * vec3(1.0, 0.0, 0.0);');
+    }
+
+    // rand44UnitFunction
+    {
+      var rand44UnitFunction = new oaWebglFunctionSnippet('rand4Unit', 'vec4', 'snippet');
+      rand44UnitFunction.parameters.add('v', 'vec4');
+      rand44UnitFunction.parameters.apply();
+      rand44UnitFunction.bodySnippet = new oaWebglSnippet('body', 'vec4 r = rand4(v);\n  if(length(r) < 0.00001)\n    return r = rand4(v.yzwx);\n  if(length(r) < 0.00001)\n    return r = rand4(v.zwxy);\n  if(length(r) < 0.00001)\n    return r = rand4(v.wxyz);\n  return r / length(v);');
+    }
+
+    // rand44UnitSeededFunction
+    {
+      var rand44UnitSeededFunction = new oaWebglFunctionSnippet('rand4Unit', 'vec4', 'snippet');
+      rand44UnitSeededFunction.parameters.add('v', 'vec4');
+      rand44UnitSeededFunction.parameters.add('d', 'mat4');
+      rand44UnitSeededFunction.parameters.add('s', 'mat4');
+      rand44UnitSeededFunction.parameters.apply();
+      rand44UnitSeededFunction.bodySnippet = new oaWebglSnippet('body', 'vec2 r = rand4(v, d, s[0]);\n  if(length(r) < 0.00001)\n    return r = rand4(v, d, s[1]);\n  if(length(r) < 0.00001)\n    return r = rand4(v, d, s[2]);\n  if(length(r) < 0.00001)\n    return r = rand4(v, d, s[3]);\n  return r / length(v);');
+    }
   }
 
-  // randScalarSeededFunction
+  // mix functions
   {
-    var randScalarSeededFunction = new oaWebglFunctionSnippet('rand', 'float', 'snippet');
-    randScalarSeededFunction.parameters.add('f', 'float');
-    randScalarSeededFunction.parameters.add('s', 'vec4');
-    randScalarSeededFunction.parameters.apply();
-    randScalarSeededFunction.bodySnippet = new oaWebglSnippet('body', 'return fract(sin(f + s.z) * s.w);');
+    // mix1Function
+    {
+      var mix1Function = new oaWebglFunctionSnippet('mix1', 'float', 'snippet');
+      mix1Function.parameters.addMultiple([{
+        paramname: 'x',
+        datatype: 'float'
+      }, {
+        paramname: 'y',
+        datatype: 'float'
+      }, {
+        paramname: 'a',
+        datatype: 'float'
+      }]);
+      mix1Function.parameters.apply();
+      mix1Function.bodySnippet = new oaWebglSnippet('body', 'return (1.0 - a) * x + a * y;');
+    }
+
+    // curve3Function
+    {
+      var curve3Function = new oaWebglFunctionSnippet('curve3', 'float', 'snippet');
+      curve3Function.parameters.add('a', 'float');
+      curve3Function.parameters.apply();
+      curve3Function.bodySnippet = new oaWebglSnippet('body', 'return a * a * (3.0 - 2.0 * a);');
+    }
+
+    // mix3Function
+    {
+      var mix3Function = new oaWebglFunctionSnippet('mix3', 'float', 'snippet');
+      mix3Function.parameters.addMultiple([{
+        paramname: 'x',
+        datatype: 'float'
+      }, {
+        paramname: 'y',
+        datatype: 'float'
+      }, {
+        paramname: 'a',
+        datatype: 'float'
+      }]);
+      mix3Function.parameters.apply();
+      mix3Function.bodySnippet = new oaWebglSnippet('body', 'return mix1(x, y, curve3(a));');
+    }
+
+    // curve3Function
+    {
+      var curve5Function = new oaWebglFunctionSnippet('curve5', 'float', 'snippet');
+      curve5Function.parameters.add('a', 'float');
+      curve5Function.parameters.apply();
+      curve5Function.bodySnippet = new oaWebglSnippet('body', 'return a * a * a * (a * (6.0 * a - 15.0) + 10.0);');
+    }
+
+    // mix5Function
+    {
+      var mix5Function = new oaWebglFunctionSnippet('mix5', 'float', 'snippet');
+      mix5Function.parameters.addMultiple([{
+        paramname: 'x',
+        datatype: 'float'
+      }, {
+        paramname: 'y',
+        datatype: 'float'
+      }, {
+        paramname: 'a',
+        datatype: 'float'
+      }]);
+      mix5Function.parameters.apply();
+      mix5Function.bodySnippet = new oaWebglSnippet('body', 'return mix1(x, y, curve5(a));');
+    }
   }
 
-  // randVectorFunction
+  // noise functions
   {
-    var randVectorFunction = new oaWebglFunctionSnippet('rand', 'float', 'snippet');
-    randVectorFunction.parameters.add('v', 'vec2');
-    randVectorFunction.parameters.apply();
-    randVectorFunction.bodySnippet = new oaWebglSnippet('body', 'return rand(dot(v, u_seed.xy));');
+
+    // perlin2NoiseFunction
+    {
+      var perlin2NoiseFunction = new oaWebglFunctionSnippet('perlin', 'float', 'snippet');
+      perlin2NoiseFunction.parameters.add('p', 'vec2');
+      perlin2NoiseFunction.parameters.apply();
+      perlin2NoiseFunction.bodySnippet = new oaWebglSnippet('body', 'vec2 l = floor(p);\n  vec2 u = ceil(p);\n  vec2 f = fract(p);\n  float sw = rand(l), se = rand(vec2(u.x, l.y));\n  float nw = rand(vec2(l.x, u.y)), ne = rand(u);\n  float n = mix5(nw, ne, f.x), s = mix5(sw, se, f.x);\n  return mix5(s, n, f.y);');
+    }
+
+    // perlin2NoiseSeededFunction
+    {
+      var perlin2NoiseSeededFunction = new oaWebglFunctionSnippet('perlin', 'float', 'snippet');
+      perlin2NoiseSeededFunction.parameters.add('p', 'vec2');
+      perlin2NoiseSeededFunction.parameters.add('ds', 'mat4');
+      perlin2NoiseSeededFunction.parameters.add('ss', 'vec4');
+      perlin2NoiseSeededFunction.parameters.apply();
+      perlin2NoiseSeededFunction.bodySnippet = new oaWebglSnippet('body', 'vec2 l = floor(p);\n  vec2 u = ceil(p);\n  vec2 f = fract(p);\n  float sw = rand(l, ds, ss), se = rand(vec2(u.x, l.y), ds, ss);\n  float nw = rand(vec2(l.x, u.y), ds, ss), ne = rand(u, ds, ss);\n  float n = mix5(nw, ne, f.x), s = mix5(sw, se, f.x);\n  return mix5(s, n, f.y);');
+    }
+
+    // fractalPerlin2NoiseFunction
+    {
+      var fractalPerlin2NoiseFunction = new oaWebglFunctionSnippet('fperlin', 'float', 'snippet');
+      fractalPerlin2NoiseFunction.parameters.addMultiple([{
+        paramname: 'p',
+        datatype: 'vec2'
+      }, {
+        paramname: 'r',
+        datatype: 'float'
+      }, {
+        paramname: 's',
+        datatype: 'float'
+      }, {
+        paramname: 'l',
+        datatype: 'float'
+      }, {
+        paramname: 'ds',
+        datatype: 'mat4'
+      }, {
+        paramname: 'ss',
+        datatype: 'vec4'
+      }]);
+      fractalPerlin2NoiseFunction.parameters.apply();
+      fractalPerlin2NoiseFunction.bodySnippet = new oaWebglSnippet('body', 'float value = 0.0;\n  vec4 c = ss;\n  for(int i = 0; i < 7; i++) {\n      c.xy = rand2(c.xy, ds, ss) * 32109.8765432 + 12345.6789012;\n      value += (perlin(p / r, ds, c) * 2.0 - 1.0) / s;\n      s = s * l;\n      r = r / l;\n  }\n  return value * 0.5 + 0.5;');
+    }
+
+    // perlin2GradientNoiseFunction
+    {
+      var perlin2GradientNoiseFunction = new oaWebglFunctionSnippet('perlinGradient', 'float', 'snippet');
+      perlin2GradientNoiseFunction.parameters.add('p', 'vec2');
+      perlin2GradientNoiseFunction.parameters.apply();
+      perlin2GradientNoiseFunction.bodySnippet = new oaWebglSnippet('body', 'vec2 l = floor(p);\n  vec2 u = ceil(p);\n  vec2 f = fract(p);\n  vec2 vse = vec2(u.x, l.y), vnw = vec2(l.x, u.y);\n  float sw = dot(rand2Rot(l), p - l), se = dot(rand2Rot(vse), p - vse);\n  float nw = dot(rand2Rot(vnw), p - vnw), ne = dot(rand2Rot(u), p - u);\n  float n = mix5(nw, ne, f.x), s = mix5(sw, se, f.x);\n  return mix5(s, n, f.y);');
+    }
+
+    // perlin2GradientNoiseSeededFunction
+    {
+      var perlin2GradientNoiseSeededFunction = new oaWebglFunctionSnippet('perlinGradient', 'float', 'snippet');
+      perlin2GradientNoiseSeededFunction.parameters.add('p', 'vec2');
+      perlin2GradientNoiseSeededFunction.parameters.add('ds', 'mat4');
+      perlin2GradientNoiseSeededFunction.parameters.add('ss', 'vec4');
+      perlin2GradientNoiseSeededFunction.parameters.apply();
+      perlin2GradientNoiseSeededFunction.bodySnippet = new oaWebglSnippet('body', 'vec2 l = floor(p);\n  vec2 u = ceil(p);\n  vec2 f = fract(p);\n  vec2 vse = vec2(u.x, l.y), vnw = vec2(l.x, u.y);\n  float sw = dot(rand2Rot(l, ds, ss), p - l), se = dot(rand2Rot(vse, ds, ss), p - vse);\n  float nw = dot(rand2Rot(vnw, ds, ss), p - vnw), ne = dot(rand2Rot(u, ds, ss), p - u);\n  float n = mix5(nw, ne, f.x), s = mix5(sw, se, f.x);\n  return mix5(s, n, f.y);');
+    }
+
+    // fractalPerlin2GradientNoiseFunction
+    {
+      var fractalPerlin2GradientNoiseFunction = new oaWebglFunctionSnippet('fperlinGradient', 'float', 'snippet');
+      fractalPerlin2GradientNoiseFunction.parameters.addMultiple([{
+        paramname: 'p',
+        datatype: 'vec2'
+      }, {
+        paramname: 'r',
+        datatype: 'float'
+      }, {
+        paramname: 's',
+        datatype: 'float'
+      }, {
+        paramname: 'l',
+        datatype: 'float'
+      }, {
+        paramname: 'ds',
+        datatype: 'mat4'
+      }, {
+        paramname: 'ss',
+        datatype: 'vec4'
+      }]);
+      fractalPerlin2GradientNoiseFunction.parameters.apply();
+      fractalPerlin2GradientNoiseFunction.bodySnippet = new oaWebglSnippet('body', 'float value = 0.0;\n  vec4 c = ss;\n  for(int i = 0; i < 7; i++) {\n      c.xy = rand2(c.xy, ds, ss) * 32109.8765432 + 12345.6789012;\n      value += perlinGradient(p / r, ds, c) / s;\n      s = s * l;\n      r = r / l;\n  }\n  return value * 0.5 + 0.5;');
+    }
+
+    // simplex2NoiseFunction
+    {
+      var simplex2NoiseFunction = new oaWebglFunctionSnippet('simplex', 'float', 'snippet');
+      simplex2NoiseFunction.parameters.add('p', 'vec2');
+      simplex2NoiseFunction.parameters.apply();
+      simplex2NoiseFunction.bodySnippet = new oaWebglSnippet('body', 'mat2 t = mat2(1.0, 0.0, 0.5, sqrt(3.0 / 4.0));\n  mat2 it = mat2(1.0, 0.0, -sqrt(1.0 / 3.0), 2.0 * sqrt(1.0 / 3.0));\n  vec2 op = gl_FragCoord.xy / u_resolution;\n  vec2 ip = it * op;\n  vec2 il = floor(ip);\n  vec2 f = fract(ip);\n  vec2 ol = t * il;\n  vec2 oc, oc1, oc2, oc3;\n  oc = ol + vec2(0.75, sqrt(3.0) / 4.0);\n  oc2 = ol + vec2(1.0, 0.0);\n  oc3 = ol + vec2(0.5, sqrt(3.0 / 4.0));\n  //float y23 = -sqrt(3.0 / 4.0), x32 = -0.5, x13, y13;\n  float y23 = oc2.y - oc3.y, x32 = oc3.x - oc2.x, x13, y13;\n  float x03 = op.x - oc3.x, y03 = op.y - oc3.y;\n  if(f.x + f.y < 1.0) {\n    oc1 = ol;\n    x13 = -0.5;\n    y13 = -sqrt(3.0 / 4.0);\n  }\n  else {\n    oc1 = ol + vec2(1.5, sqrt(3.0 / 4.0));\n    x13 = 1.0;\n    y13 = 0.0;\n  }\n  x13 = oc1.x - oc3.x;\n  y13 = oc1.y - oc3.y;\n  vec3 r = vec3(rand(oc1), rand(oc2), rand(oc3));\n  //r = vec3(0.0, 0.0, 1.0);\n  //vec3 d = vec3(length(op - oc1), length(op - oc2), length(op - oc3));\n  //vec3 w = 1.0 / d;\n  vec3 w = vec3((y23 * x03 + x32 * y03) / (y23 * x13 + x32 * y13), (-y13 * x03 + x13 * y03) / (y23 * x13 + x32 * y13), 0.0);\n  w.z = 1.0 - w.x - w.y;\n  vec3 w3 = w * w * (3.0 - 2.0 * w);\n  vec3 w5 = w * w * w * (6.0 * w * w - 15.0 * w + 10.0);\n  vec3 rv = r * w5;\n  return (rv.x + rv.y + rv.z) / (w5.x + w5.y + w5.z);');
+    }
+
+    // simplex2NoiseSeededFunction
+    {
+      var simplex2NoiseSeededFunction = new oaWebglFunctionSnippet('simplex', 'float', 'snippet');
+      simplex2NoiseSeededFunction.parameters.add('p', 'vec2');
+      simplex2NoiseSeededFunction.parameters.add('ds', 'mat4');
+      simplex2NoiseSeededFunction.parameters.add('ss', 'vec4');
+      simplex2NoiseSeededFunction.parameters.apply();
+      simplex2NoiseSeededFunction.bodySnippet = new oaWebglSnippet('body', 'mat2 t = mat2(1.0, 0.0, 0.5, sqrt(3.0 / 4.0));\n  mat2 it = mat2(1.0, 0.0, -sqrt(1.0 / 3.0), 2.0 * sqrt(1.0 / 3.0));\n  vec2 op = gl_FragCoord.xy / u_resolution;\n  vec2 ip = it * op;\n  vec2 il = floor(ip);\n  vec2 f = fract(ip);\n  vec2 ol = t * il;\n  vec2 oc, oc1, oc2, oc3;\n  oc = ol + vec2(0.75, sqrt(3.0) / 4.0);\n  oc2 = ol + vec2(1.0, 0.0);\n  oc3 = ol + vec2(0.5, sqrt(3.0 / 4.0));\n  //float y23 = -sqrt(3.0 / 4.0), x32 = -0.5, x13, y13;\n  float y23 = oc2.y - oc3.y, x32 = oc3.x - oc2.x, x13, y13;\n  float x03 = op.x - oc3.x, y03 = op.y - oc3.y;\n  if(f.x + f.y < 1.0) {\n    oc1 = ol;\n    x13 = -0.5;\n    y13 = -sqrt(3.0 / 4.0);\n  }\n  else {\n    oc1 = ol + vec2(1.5, sqrt(3.0 / 4.0));\n    x13 = 1.0;\n    y13 = 0.0;\n  }\n  x13 = oc1.x - oc3.x;\n  y13 = oc1.y - oc3.y;\n  vec3 r = vec3(rand(oc1, ds, ss), rand(oc2, ds, ss), rand(oc3, ds, ss));\n  //r = vec3(0.0, 0.0, 1.0);\n  //vec3 d = vec3(length(op - oc1), length(op - oc2), length(op - oc3));\n  //vec3 w = 1.0 / d;\n  vec3 w = vec3((y23 * x03 + x32 * y03) / (y23 * x13 + x32 * y13), (-y13 * x03 + x13 * y03) / (y23 * x13 + x32 * y13), 0.0);\n  w.z = 1.0 - w.x - w.y;\n  vec3 w3 = w * w * (3.0 - 2.0 * w);\n  vec3 w5 = w * w * w * (6.0 * w * w - 15.0 * w + 10.0);\n  vec3 rv = r * w5;\n  return (rv.x + rv.y + rv.z) / (w5.x + w5.y + w5.z);');
+    }
+
+    // simplex2GradientNoiseFunction
+    {
+      var simplex2GradientNoiseFunction = new oaWebglFunctionSnippet('simplexGradient', 'float', 'snippet');
+      simplex2GradientNoiseFunction.parameters.add('p', 'vec2');
+      simplex2GradientNoiseFunction.parameters.apply();
+      simplex2GradientNoiseFunction.bodySnippet = new oaWebglSnippet('body', 'mat2 t = mat2(1.0, 0.0, 0.5, sqrt(3.0 / 4.0));\n  mat2 it = mat2(1.0, 0.0, -sqrt(1.0 / 3.0), 2.0 * sqrt(1.0 / 3.0));\n  vec2 ip = it * p;\n  vec2 il = floor(ip);\n  vec2 f = fract(ip);\n  vec2 l = t * il;\n  vec2 c, c1, c2, c3;\n  c = l + vec2(0.75, sqrt(3.0) / 4.0);\n  c2 = l + vec2(1.0, 0.0);\n  c3 = l + vec2(0.5, sqrt(3.0 / 4.0));\n  //float y23 = -sqrt(3.0 / 4.0), x32 = -0.5, x13, y13;\n  float y23 = c2.y - c3.y, x32 = c3.x - c2.x, x13, y13;\n  float x03 = p.x - c3.x, y03 = p.y - c3.y;\n  if(f.x + f.y < 1.0) {\n    c1 = l;\n    x13 = -0.5;\n    y13 = -sqrt(3.0 / 4.0);\n  }\n  else {\n    c1 = l + vec2(1.5, sqrt(3.0 / 4.0));\n    x13 = 1.0;\n    y13 = 0.0;\n  }\n  x13 = c1.x - c3.x;\n  y13 = c1.y - c3.y;\n  vec3 r = vec3(dot(rand2Rot(c1), p - c1), dot(rand2Rot(c2), p - c2), dot(rand2Rot(c3), p - c3));\n  //r = vec3(0.0, 0.0, 1.0);\n  //vec3 d = vec3(length(op - oc1), length(op - oc2), length(op - oc3));\n  //vec3 w = 1.0 / d;\n  vec3 w = vec3((y23 * x03 + x32 * y03) / (y23 * x13 + x32 * y13), (-y13 * x03 + x13 * y03) / (y23 * x13 + x32 * y13), 0.0);\n  w.z = 1.0 - w.x - w.y;\n  vec3 w3 = w * w * (3.0 - 2.0 * w);\n  vec3 w5 = w * w * w * (6.0 * w * w - 15.0 * w + 10.0);\n  vec3 rv = r * w5;\n  return (rv.x + rv.y + rv.z) / (w5.x + w5.y + w5.z) * 0.5 + 0.5;');
+    }
+
+    // simplex2GradientNoiseSeededFunction
+    {
+      var simplex2GradientNoiseSeededFunction = new oaWebglFunctionSnippet('simplexGradient', 'float', 'snippet');
+      simplex2GradientNoiseSeededFunction.parameters.add('p', 'vec2');
+      simplex2GradientNoiseSeededFunction.parameters.add('ds', 'mat4');
+      simplex2GradientNoiseSeededFunction.parameters.add('ss', 'vec4');
+      simplex2GradientNoiseSeededFunction.parameters.apply();
+      simplex2GradientNoiseSeededFunction.bodySnippet = new oaWebglSnippet('body', 'mat2 t = mat2(1.0, 0.0, 0.5, sqrt(3.0 / 4.0));\n  mat2 it = mat2(1.0, 0.0, -sqrt(1.0 / 3.0), 2.0 * sqrt(1.0 / 3.0));\n  vec2 ip = it * p;\n  vec2 il = floor(ip);\n  vec2 f = fract(ip);\n  vec2 l = t * il;\n  vec2 c, c1, c2, c3;\n  c = l + vec2(0.75, sqrt(3.0) / 4.0);\n  c2 = l + vec2(1.0, 0.0);\n  c3 = l + vec2(0.5, sqrt(3.0 / 4.0));\n  //float y23 = -sqrt(3.0 / 4.0), x32 = -0.5, x13, y13;\n  float y23 = c2.y - c3.y, x32 = c3.x - c2.x, x13, y13;\n  float x03 = p.x - c3.x, y03 = p.y - c3.y;\n  if(f.x + f.y < 1.0) {\n    c1 = l;\n    x13 = -0.5;\n    y13 = -sqrt(3.0 / 4.0);\n  }\n  else {\n    c1 = l + vec2(1.5, sqrt(3.0 / 4.0));\n    x13 = 1.0;\n    y13 = 0.0;\n  }\n  x13 = c1.x - c3.x;\n  y13 = c1.y - c3.y;\n  vec3 r = vec3(dot(rand2Rot(c1, ds, ss), p - c1), dot(rand2Rot(c2, ds, ss), p - c2), dot(rand2Rot(c3, ds, ss), p - c3));\n  //r = vec3(0.0, 0.0, 1.0);\n  //vec3 d = vec3(length(op - oc1), length(op - oc2), length(op - oc3));\n  //vec3 w = 1.0 / d;\n  vec3 w = vec3((y23 * x03 + x32 * y03) / (y23 * x13 + x32 * y13), (-y13 * x03 + x13 * y03) / (y23 * x13 + x32 * y13), 0.0);\n  w.z = 1.0 - w.x - w.y;\n  vec3 w3 = w * w * (3.0 - 2.0 * w);\n  vec3 w5 = w * w * w * (6.0 * w * w - 15.0 * w + 10.0);\n  vec3 rv = r * w5;\n  return (rv.x + rv.y + rv.z) / (w5.x + w5.y + w5.z) * 0.5 + 0.5;');
+    }
   }
 
-  // randVectorSeededFunction
+  // ridgeFunction
   {
-    var randVectorSeededFunction = new oaWebglFunctionSnippet('rand', 'float', 'snippet');
-    randVectorSeededFunction.parameters.add('v', 'vec2');
-    randVectorSeededFunction.parameters.add('s', 'vec4');
-    randVectorSeededFunction.parameters.apply();
-    randVectorSeededFunction.bodySnippet = new oaWebglSnippet('body', 'return rand(dot(v, s.xy), s);');
-  }
-
-  // randGradFunction
-  {
-    var randGradFunction = new oaWebglFunctionSnippet('randGrad', 'vec2', 'snippet');
-    randGradFunction.parameters.add('v', 'vec2');
-    randGradFunction.parameters.apply();
-    randGradFunction.bodySnippet = new oaWebglSnippet('body', 'float a = 2.0 * 3.14159265358 * rand(dot(v, u_seed.xy));\nreturn vec2(cos(a), sin(a));');
-  }
-
-  // randGradSeededFunction
-  {
-    var randGradSeededFunction = new oaWebglFunctionSnippet('randGrad', 'vec2', 'snippet');
-    randGradSeededFunction.parameters.add('v', 'vec2');
-    randGradSeededFunction.parameters.add('s', 'vec4');
-    randGradSeededFunction.parameters.apply();
-    randGradSeededFunction.bodySnippet = new oaWebglSnippet('body', 'float a = 2.0 * 3.14159265358 * rand(dot(v, s.xy), s);\nreturn vec2(cos(a), sin(a));');
-  }
-
-  // mix3Function
-  {
-    var mix3Function = new oaWebglFunctionSnippet('mix3', 'float', 'snippet');
-    mix3Function.parameters.addMultiple([{
-      paramname: 'x',
-      datatype: 'float'
-    }, {
-      paramname: 'y',
-      datatype: 'float'
-    }, {
-      paramname: 'a',
-      datatype: 'float'
-    }]);
-    mix3Function.parameters.apply();
-    mix3Function.bodySnippet = new oaWebglSnippet('body', 'float a3 = a * a * (3.0 - 2.0 * a);\nreturn mix(x, y, a3);');
-  }
-
-  // mix5Function
-  {
-    var mix5Function = new oaWebglFunctionSnippet('mix5', 'float', 'snippet');
-    mix5Function.parameters.addMultiple([{
-      paramname: 'x',
-      datatype: 'float'
-    }, {
-      paramname: 'y',
-      datatype: 'float'
-    }, {
-      paramname: 'a',
-      datatype: 'float'
-    }]);
-    mix5Function.parameters.apply();
-    mix5Function.bodySnippet = new oaWebglSnippet('body', 'float a5 = a * a * a * (6.0 * a * a - 15.0 * a + 10.0);\nreturn mix(x, y, a5);');
-  }
-
-  // perlinNoiseFunction
-  {
-    var perlinNoiseFunction = new oaWebglFunctionSnippet('perlin', 'float', 'snippet');
-    perlinNoiseFunction.parameters.add('p', 'vec2');
-    perlinNoiseFunction.parameters.apply();
-    perlinNoiseFunction.bodySnippet = new oaWebglSnippet('body', 'vec2 l = floor(p);\nvec2 u = ceil(p);\nvec2 f = fract(p);\nfloat sw = rand(l), se = rand(vec2(u.x, l.y));\nfloat nw = rand(vec2(l.x, u.y)), ne = rand(u);\nfloat n = mix5(nw, ne, f.x), s = mix5(sw, se, f.x);\nreturn mix5(s, n, f.y);');
-  }
-
-  // perlinGradientNoiseFunction
-  {
-    var perlinGradientNoiseFunction = new oaWebglFunctionSnippet('perlinGradient', 'float', 'snippet');
-    perlinGradientNoiseFunction.parameters.add('p', 'vec2');
-    perlinGradientNoiseFunction.parameters.apply();
-    perlinGradientNoiseFunction.bodySnippet = new oaWebglSnippet('body', 'vec2 l = floor(p);\nvec2 u = ceil(p);\nvec2 f = fract(p);\nvec2 vse = vec2(u.x, l.y), vnw = vec2(l.x, u.y);\nfloat sw = dot(randGrad(l), p - l), se = dot(randGrad(vse), p - vse);\nfloat nw = dot(randGrad(vnw), p - vnw), ne = dot(randGrad(u), p - u);\nfloat n = mix5(nw, ne, f.x), s = mix5(sw, se, f.x);\nreturn mix5(s, n, f.y) * 0.5 + 0.5;');
-  }
-
-  // simplexNoiseFunction
-  {
-    var simplexNoiseFunction = new oaWebglFunctionSnippet('simplex', 'float', 'snippet');
-    simplexNoiseFunction.parameters.add('p', 'vec2');
-    simplexNoiseFunction.parameters.apply();
-    simplexNoiseFunction.bodySnippet = new oaWebglSnippet('body', 'mat2 t = mat2(1.0, 0.0, 0.5, sqrt(3.0 / 4.0));\nmat2 it = mat2(1.0, 0.0, -sqrt(1.0 / 3.0), 2.0 * sqrt(1.0 / 3.0));\nvec2 op = gl_FragCoord.xy / u_resolution;\nvec2 ip = it * op;\nvec2 il = floor(ip);\nvec2 f = fract(ip);\nvec2 ol = t * il;\nvec2 oc, oc1, oc2, oc3;\noc = ol + vec2(0.75, sqrt(3.0) / 4.0);\noc2 = ol + vec2(1.0, 0.0);\noc3 = ol + vec2(0.5, sqrt(3.0 / 4.0));\n//float y23 = -sqrt(3.0 / 4.0), x32 = -0.5, x13, y13;\nfloat y23 = oc2.y - oc3.y, x32 = oc3.x - oc2.x, x13, y13;\nfloat x03 = op.x - oc3.x, y03 = op.y - oc3.y;\nif(f.x + f.y < 1.0) {\n  oc1 = ol;\n  x13 = -0.5;\n  y13 = -sqrt(3.0 / 4.0);\n}\nelse {\n  oc1 = ol + vec2(1.5, sqrt(3.0 / 4.0));\n  x13 = 1.0;\n  y13 = 0.0;\n}\nx13 = oc1.x - oc3.x;\ny13 = oc1.y - oc3.y;\nvec3 r = vec3(rand(oc1), rand(oc2), rand(oc3));\n//r = vec3(0.0, 0.0, 1.0);\n//vec3 d = vec3(length(op - oc1), length(op - oc2), length(op - oc3));\n//vec3 w = 1.0 / d;\nvec3 w = vec3((y23 * x03 + x32 * y03) / (y23 * x13 + x32 * y13), (-y13 * x03 + x13 * y03) / (y23 * x13 + x32 * y13), 0.0);\nw.z = 1.0 - w.x - w.y;\nvec3 w3 = w * w * (3.0 - 2.0 * w);\nvec3 w5 = w * w * w * (6.0 * w * w - 15.0 * w + 10.0);\nvec3 rv = r * w5;\nreturn (rv.x + rv.y + rv.z) / (w5.x + w5.y + w5.z);');
-  }
-
-  // simplexGradientNoiseFunction
-  {
-    var simplexGradientNoiseFunction = new oaWebglFunctionSnippet('simplexGradient', 'float', 'snippet');
-    simplexGradientNoiseFunction.parameters.add('p', 'vec2');
-    simplexGradientNoiseFunction.parameters.apply();
-    simplexGradientNoiseFunction.bodySnippet = new oaWebglSnippet('body', 'mat2 t = mat2(1.0, 0.0, 0.5, sqrt(3.0 / 4.0));\nmat2 it = mat2(1.0, 0.0, -sqrt(1.0 / 3.0), 2.0 * sqrt(1.0 / 3.0));\nvec2 ip = it * p;\nvec2 il = floor(ip);\nvec2 f = fract(ip);\nvec2 l = t * il;\nvec2 c, c1, c2, c3;\nc = l + vec2(0.75, sqrt(3.0) / 4.0);\nc2 = l + vec2(1.0, 0.0);\nc3 = l + vec2(0.5, sqrt(3.0 / 4.0));\n//float y23 = -sqrt(3.0 / 4.0), x32 = -0.5, x13, y13;\nfloat y23 = c2.y - c3.y, x32 = c3.x - c2.x, x13, y13;\nfloat x03 = p.x - c3.x, y03 = p.y - c3.y;\nif(f.x + f.y < 1.0) {\n  c1 = l;\n  x13 = -0.5;\n  y13 = -sqrt(3.0 / 4.0);\n}\nelse {\n  c1 = l + vec2(1.5, sqrt(3.0 / 4.0));\n  x13 = 1.0;\n  y13 = 0.0;\n}\nx13 = c1.x - c3.x;\ny13 = c1.y - c3.y;\nvec3 r = vec3(dot(randGrad(c1), p - c1), dot(randGrad(c2), p - c2), dot(randGrad(c3), p - c3));\n//r = vec3(0.0, 0.0, 1.0);\n//vec3 d = vec3(length(op - oc1), length(op - oc2), length(op - oc3));\n//vec3 w = 1.0 / d;\nvec3 w = vec3((y23 * x03 + x32 * y03) / (y23 * x13 + x32 * y13), (-y13 * x03 + x13 * y03) / (y23 * x13 + x32 * y13), 0.0);\nw.z = 1.0 - w.x - w.y;\nvec3 w3 = w * w * (3.0 - 2.0 * w);\nvec3 w5 = w * w * w * (6.0 * w * w - 15.0 * w + 10.0);\nvec3 rv = r * w5;\nreturn (rv.x + rv.y + rv.z) / (w5.x + w5.y + w5.z) * 0.5 + 0.5;');
-  }
-
-  // simplexGradientNoiseSeededFunction
-  {
-    var simplexGradientNoiseSeededFunction = new oaWebglFunctionSnippet('simplexGradient', 'float', 'snippet');
-    simplexGradientNoiseSeededFunction.parameters.add('p', 'vec2');
-    simplexGradientNoiseSeededFunction.parameters.add('s', 'vec4');
-    simplexGradientNoiseSeededFunction.parameters.apply();
-    simplexGradientNoiseSeededFunction.bodySnippet = new oaWebglSnippet('body', 'mat2 t = mat2(1.0, 0.0, 0.5, sqrt(3.0 / 4.0));\nmat2 it = mat2(1.0, 0.0, -sqrt(1.0 / 3.0), 2.0 * sqrt(1.0 / 3.0));\nvec2 ip = it * p;\nvec2 il = floor(ip);\nvec2 f = fract(ip);\nvec2 l = t * il;\nvec2 c, c1, c2, c3;\nc = l + vec2(0.75, sqrt(3.0) / 4.0);\nc2 = l + vec2(1.0, 0.0);\nc3 = l + vec2(0.5, sqrt(3.0 / 4.0));\n//float y23 = -sqrt(3.0 / 4.0), x32 = -0.5, x13, y13;\nfloat y23 = c2.y - c3.y, x32 = c3.x - c2.x, x13, y13;\nfloat x03 = p.x - c3.x, y03 = p.y - c3.y;\nif(f.x + f.y < 1.0) {\n  c1 = l;\n  x13 = -0.5;\n  y13 = -sqrt(3.0 / 4.0);\n}\nelse {\n  c1 = l + vec2(1.5, sqrt(3.0 / 4.0));\n  x13 = 1.0;\n  y13 = 0.0;\n}\nx13 = c1.x - c3.x;\ny13 = c1.y - c3.y;\nvec3 r = vec3(dot(randGrad(c1, s), p - c1), dot(randGrad(c2, s), p - c2), dot(randGrad(c3, s), p - c3));\n//r = vec3(0.0, 0.0, 1.0);\n//vec3 d = vec3(length(op - oc1), length(op - oc2), length(op - oc3));\n//vec3 w = 1.0 / d;\nvec3 w = vec3((y23 * x03 + x32 * y03) / (y23 * x13 + x32 * y13), (-y13 * x03 + x13 * y03) / (y23 * x13 + x32 * y13), 0.0);\nw.z = 1.0 - w.x - w.y;\nvec3 w3 = w * w * (3.0 - 2.0 * w);\nvec3 w5 = w * w * w * (6.0 * w * w - 15.0 * w + 10.0);\nvec3 rv = r * w5;\nreturn (rv.x + rv.y + rv.z) / (w5.x + w5.y + w5.z) * 0.5 + 0.5;');
+    var ridgeFunction = new oaWebglFunctionSnippet('ridge', 'float', 'snippet');
+    ridgeFunction.parameters.add('h', 'float');
+    ridgeFunction.parameters.add('offset', 'float');
+    ridgeFunction.parameters.apply();
+    ridgeFunction.bodySnippet = new oaWebglSnippet('body', 'h = abs(h);\nh = offset - h;\nh = h * h;\nreturn h;');
   }
 
   var grayscaleSnippet = function grayscaleSnippet() {
@@ -148,22 +465,258 @@ angular.module('oaGLSLNoise', ['oaWebglHelpers']).service('oaNoiseShaderFunction
     });
     return snippet;
   };
+  var direction2Snippet = function direction2Snippet() {
+    var snippet = new oaWebglSnippet('direction2');
+    snippet.source = 'vec4(${S("dir", "null")} * 0.5 + 0.5, ${P("blue")}, ${P("alpha")})';
+    snippet.addParameter('v', 'alpha', {
+      type: 'float',
+      nullValue: 1.0
+    });
+    snippet.addParameter('v', 'blue', {
+      type: 'float',
+      nullValue: 0.5
+    });
+    return snippet;
+  };
+  var direction3Snippet = function direction3Snippet() {
+    var snippet = new oaWebglSnippet('direction2');
+    snippet.source = 'vec4(${S("dir", "null")} * 0.5 + 0.5, ${P("alpha")})';
+    snippet.addParameter('v', 'alpha', {
+      type: 'float',
+      nullValue: 1.0
+    });
+    return snippet;
+  };
+
+  // noise fragments
+  {
+    // sineNoiseFragmentShader
+    {
+      var sineNoiseFragment = new oaWebglShaderSnippet('sineNoiseFragment');
+      sineNoiseFragment.variables.addMultiple([{
+        varname: 'u_sineseed',
+        datatype: 'mat4',
+        vartype: 'uniform'
+      }, {
+        varname: 'u_dotseed',
+        datatype: 'mat4',
+        vartype: 'uniform'
+      }, {
+        varname: 'u_resolution',
+        datatype: 'float',
+        vartype: 'uniform'
+      }]);
+      sineNoiseFragment.variables.apply();
+      sineNoiseFragment.addFunctions([rand11Function, rand12Function]);
+      var grayscale = grayscaleSnippet();
+      grayscale.addSnippet('value', new oaWebglSnippet('sinenoise', 'rand(floor(gl_FragCoord.xy / u_resolution))'));
+      grayscale.setParameter('alpha', '1.0');
+      var sineNoiseFragmentBody = new oaWebglSnippet('sineNoiseFragmentBody');
+      sineNoiseFragmentBody.source = 'gl_FragColor = ${S("grayscale", "null")};';
+      sineNoiseFragmentBody.addSnippet('grayscale', grayscale);
+      sineNoiseFragment.mainSnippet = sineNoiseFragmentBody;
+    }
+
+    // sineRotNoiseFragmentShader
+    {
+      var sine2RotNoiseFragment = new oaWebglShaderSnippet('sineNoiseFragment');
+      sine2RotNoiseFragment.variables.addMultiple([{
+        varname: 'u_sineseed',
+        datatype: 'mat4',
+        vartype: 'uniform'
+      }, {
+        varname: 'u_dotseed',
+        datatype: 'mat4',
+        vartype: 'uniform'
+      }, {
+        varname: 'u_resolution',
+        datatype: 'float',
+        vartype: 'uniform'
+      }]);
+      sine2RotNoiseFragment.variables.apply();
+      sine2RotNoiseFragment.addFunctions([rand11Function, rand22RotFunction]);
+      var direction = direction2Snippet();
+      direction.addSnippet('dir', new oaWebglSnippet('sinenoise', 'rand2Rot(floor(gl_FragCoord.xy / u_resolution))'));
+      direction.setParameter('blue', '1.0');
+      direction.setParameter('alpha', '1.0');
+      var sine2RotNoiseFragmentBody = new oaWebglSnippet('sineNoiseFragmentBody');
+      sine2RotNoiseFragmentBody.source = 'gl_FragColor = ${S("direction", "null")};';
+      sine2RotNoiseFragmentBody.addSnippet('direction', direction);
+      sine2RotNoiseFragment.mainSnippet = sine2RotNoiseFragmentBody;
+    }
+
+    // perlin2NoiseFragmentShader
+    {
+      var perlin2NoiseFragment = new oaWebglShaderSnippet('perlinNoiseFragment');
+      perlin2NoiseFragment.variables.addMultiple([{
+        varname: 'u_sineseed',
+        datatype: 'mat4',
+        vartype: 'uniform'
+      }, {
+        varname: 'u_dotseed',
+        datatype: 'mat4',
+        vartype: 'uniform'
+      }, {
+        varname: 'u_resolution',
+        datatype: 'float',
+        vartype: 'uniform'
+      }]);
+      perlin2NoiseFragment.variables.apply();
+      perlin2NoiseFragment.addFunctions([rand11Function, rand12Function, mix1Function, curve5Function, mix5Function, perlin2NoiseFunction]);
+      grayscale = grayscaleSnippet();
+      grayscale.addSnippet('value', new oaWebglSnippet('perlinnoise', 'perlin(gl_FragCoord.xy / u_resolution)'));
+      grayscale.setParameter('alpha', '1.0');
+      var perlin2NoiseFragmentBody = new oaWebglSnippet('sineNoiseFragmentBody');
+      perlin2NoiseFragmentBody.source = 'gl_FragColor = ${S("grayscale", "null")};';
+      perlin2NoiseFragmentBody.addSnippet('grayscale', grayscale);
+      perlin2NoiseFragment.mainSnippet = perlin2NoiseFragmentBody;
+    }
+
+    // fractalPerlin2NoiseFragmentShader
+    {
+      var fractalPerlin2NoiseFragment = new oaWebglShaderSnippet('fractalPerlinNoiseFragment');
+      fractalPerlin2NoiseFragment.variables.addMultiple([{
+        varname: 'u_sineseed',
+        datatype: 'mat4',
+        vartype: 'uniform'
+      }, {
+        varname: 'u_dotseed',
+        datatype: 'mat4',
+        vartype: 'uniform'
+      }, {
+        varname: 'u_resolution',
+        datatype: 'float',
+        vartype: 'uniform'
+      }]);
+      fractalPerlin2NoiseFragment.variables.apply();
+      fractalPerlin2NoiseFragment.addFunctions([rand11SeededFunction, rand12SeededFunction, rand22SeededFunction, mix1Function, curve5Function, mix5Function, perlin2NoiseSeededFunction, fractalPerlin2NoiseFunction]);
+      grayscale = grayscaleSnippet();
+      grayscale.addSnippet('value', new oaWebglSnippet('fractalperlinnoise', 'fperlin(gl_FragCoord.xy, u_resolution, 1.0, 2.0, u_dotseed, u_sineseed[0])'));
+      grayscale.setParameter('alpha', '1.0');
+      var fractalPerlin2NoiseFragmentBody = new oaWebglSnippet('sineNoiseFragmentBody');
+      fractalPerlin2NoiseFragmentBody.source = 'gl_FragColor = ${S("grayscale", "null")};';
+      fractalPerlin2NoiseFragmentBody.addSnippet('grayscale', grayscale);
+      fractalPerlin2NoiseFragment.mainSnippet = fractalPerlin2NoiseFragmentBody;
+    }
+
+    // perlin2GradientNoiseFragmentShader
+    {
+      var perlin2GradientNoiseFragment = new oaWebglShaderSnippet('perlinNoiseFragment');
+      perlin2GradientNoiseFragment.variables.addMultiple([{
+        varname: 'u_sineseed',
+        datatype: 'mat4',
+        vartype: 'uniform'
+      }, {
+        varname: 'u_dotseed',
+        datatype: 'mat4',
+        vartype: 'uniform'
+      }, {
+        varname: 'u_resolution',
+        datatype: 'float',
+        vartype: 'uniform'
+      }]);
+      perlin2GradientNoiseFragment.variables.apply();
+      perlin2GradientNoiseFragment.addFunctions([rand11Function, rand22RotFunction, mix1Function, curve5Function, mix5Function, perlin2GradientNoiseFunction]);
+      grayscale = grayscaleSnippet();
+      grayscale.addSnippet('value', new oaWebglSnippet('perlinnoise', 'perlinGradient(gl_FragCoord.xy / u_resolution) * 0.5 + 0.5'));
+      grayscale.setParameter('alpha', '1.0');
+      var perlin2GradientNoiseFragmentBody = new oaWebglSnippet('sineNoiseFragmentBody');
+      perlin2GradientNoiseFragmentBody.source = 'gl_FragColor = ${S("grayscale", "null")};';
+      perlin2GradientNoiseFragmentBody.addSnippet('grayscale', grayscale);
+      perlin2GradientNoiseFragment.mainSnippet = perlin2GradientNoiseFragmentBody;
+    }
+
+    // fractalPerlin2GradientNoiseFragmentShader
+    {
+      var fractalPerlin2GradientNoiseFragment = new oaWebglShaderSnippet('fractalPerlinNoiseFragment');
+      fractalPerlin2GradientNoiseFragment.variables.addMultiple([{
+        varname: 'u_sineseed',
+        datatype: 'mat4',
+        vartype: 'uniform'
+      }, {
+        varname: 'u_dotseed',
+        datatype: 'mat4',
+        vartype: 'uniform'
+      }, {
+        varname: 'u_resolution',
+        datatype: 'float',
+        vartype: 'uniform'
+      }]);
+      fractalPerlin2GradientNoiseFragment.variables.apply();
+      fractalPerlin2GradientNoiseFragment.addFunctions([rand11SeededFunction, rand22RotSeededFunction, rand22SeededFunction, mix1Function, curve5Function, mix5Function, perlin2GradientNoiseSeededFunction, fractalPerlin2GradientNoiseFunction]);
+      grayscale = grayscaleSnippet();
+      grayscale.addSnippet('value', new oaWebglSnippet('fractalperlinnoise', 'fperlinGradient(gl_FragCoord.xy, u_resolution, 1.0, 2.0, u_dotseed, u_sineseed[0])'));
+      grayscale.setParameter('alpha', '1.0');
+      var fractalPerlin2GradientNoiseFragmentBody = new oaWebglSnippet('sineNoiseFragmentBody');
+      fractalPerlin2GradientNoiseFragmentBody.source = 'gl_FragColor = ${S("grayscale", "null")};';
+      fractalPerlin2GradientNoiseFragmentBody.addSnippet('grayscale', grayscale);
+      fractalPerlin2GradientNoiseFragment.mainSnippet = fractalPerlin2GradientNoiseFragmentBody;
+    }
+  }
 
   return {
-    standardVertexShader: standardVertexShader,
-    randScalarFunction: randScalarFunction,
-    randScalarSeededFunction: randScalarSeededFunction,
-    randVectorFunction: randVectorFunction,
-    randVectorSeededFunction: randVectorSeededFunction,
-    randGradFunction: randGradFunction,
-    randGradSeededFunction: randGradSeededFunction,
-    mix3Function: mix3Function,
-    mix5Function: mix5Function,
-    perlinNoiseFunction: perlinNoiseFunction,
-    perlinGradientNoiseFunction: perlinGradientNoiseFunction,
-    simplexNoiseFunction: simplexNoiseFunction,
-    simplexGradientNoiseFunction: simplexGradientNoiseFunction,
-    simplexGradientNoiseSeededFunction: simplexGradientNoiseSeededFunction,
-    grayscaleSnippet: grayscaleSnippet
+    snippets: {
+      grayscaleSnippet: grayscaleSnippet,
+      direction2Snippet: direction2Snippet,
+      direction3Snippet: direction3Snippet
+    },
+    functions: {
+      rand11Function: rand11Function,
+      rand11SeededFunction: rand11SeededFunction,
+      rand12Function: rand12Function,
+      rand12SeededFunction: rand12SeededFunction,
+      rand13Function: rand13Function,
+      rand13SeededFunction: rand13SeededFunction,
+      rand14Function: rand14Function,
+      rand14SeededFunction: rand14SeededFunction,
+      rand22Function: rand22Function,
+      rand22SeededFunction: rand22SeededFunction,
+      rand22RotFunction: rand22RotFunction,
+      rand22RotSeededFunction: rand22RotSeededFunction,
+      rand22UnitFunction: rand22UnitFunction,
+      rand22UnitSeededFunction: rand22UnitSeededFunction,
+      rand33Function: rand33Function,
+      rand33SeededFunction: rand33SeededFunction,
+      rand33RotFunction: rand33RotFunction,
+      rand33RotSeededFunction: rand33RotSeededFunction,
+      rand33UnitFunction: rand33UnitFunction,
+      rand33UnitSeededFunction: rand33UnitSeededFunction,
+      rand44Function: rand44Function,
+      rand44SeededFunction: rand44SeededFunction,
+      rand44RotFunction: rand44RotFunction,
+      rand44RotSeededFunction: rand44RotSeededFunction,
+      rand44UnitFunction: rand44UnitFunction,
+      rand44UnitSeededFunction: rand44UnitSeededFunction,
+      mix1Function: mix1Function,
+      curve3Function: curve3Function,
+      mix3Function: mix3Function,
+      curve5Function: curve5Function,
+      mix5Function: mix5Function,
+      perlin2NoiseFunction: perlin2NoiseFunction,
+      perlin2NoiseSeededFunction: perlin2NoiseSeededFunction,
+      perlin2GradientNoiseFunction: perlin2GradientNoiseFunction,
+      perlin2GradientNoiseSeededFunction: perlin2GradientNoiseSeededFunction,
+      simplex2NoiseFunction: simplex2NoiseFunction,
+      simplex2NoiseSeededFunction: simplex2NoiseSeededFunction,
+      simplex2GradientNoiseFunction: simplex2GradientNoiseFunction,
+      simplex2GradientNoiseSeededFunction: simplex2GradientNoiseSeededFunction,
+      fractalPerlin2NoiseFunction: fractalPerlin2NoiseFunction,
+      fractalPerlin2GradientNoiseFunction: fractalPerlin2GradientNoiseFunction,
+      ridgeFunction: ridgeFunction,
+      all: [rand11Function, rand11SeededFunction, rand12Function, rand12SeededFunction, rand13Function, rand13SeededFunction, rand14Function, rand14SeededFunction, rand22Function, rand22SeededFunction, rand22RotFunction, rand22RotSeededFunction, rand22UnitFunction, rand22UnitSeededFunction, rand33Function, rand33SeededFunction, rand33RotFunction, rand33RotSeededFunction, rand33UnitFunction, rand33UnitSeededFunction, rand44Function, rand44SeededFunction, rand44RotFunction, rand44RotSeededFunction, rand44UnitFunction, rand44UnitSeededFunction, mix1Function, curve3Function, mix3Function, curve5Function, mix5Function, perlin2NoiseFunction, perlin2NoiseSeededFunction, perlin2GradientNoiseFunction, perlin2GradientNoiseSeededFunction, simplex2NoiseFunction, simplex2NoiseSeededFunction, simplex2GradientNoiseFunction, simplex2GradientNoiseSeededFunction, fractalPerlin2NoiseFunction, fractalPerlin2GradientNoiseFunction, ridgeFunction]
+    },
+    shaders: {
+      vertex: {
+        standardVertexShader: standardVertexShader
+      },
+      fragment: {
+        sineNoiseFragment: sineNoiseFragment,
+        sine2RotNoiseFragment: sine2RotNoiseFragment,
+        perlin2NoiseFragment: perlin2NoiseFragment,
+        fractalPerlin2NoiseFragment: fractalPerlin2NoiseFragment,
+        perlin2GradientNoiseFragment: perlin2GradientNoiseFragment,
+        fractalPerlin2GradientNoiseFragment: fractalPerlin2GradientNoiseFragment
+      }
+    }
   };
 }]);

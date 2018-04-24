@@ -715,7 +715,8 @@ ${bodyType === 'string' ? '${P("bodyString")}' : '${S("body", "body")}'}
       };
       parameters.add = (paramname, datatype, index) => {
         if (parameters.names.indexOf(paramname) > -1)
-          throw 'parameter already exists';
+          //throw 'parameter already exists';
+          apples.throw();
         if (index == undefined)
           index = parameters.order.length;
         else if (parameters.order[index])

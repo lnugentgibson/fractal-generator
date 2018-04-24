@@ -7,48 +7,94 @@
 <link href='oa-gl-noise.check.min.css' rel='stylesheet'>
 </head>
 <body>
-<div id='app' ng-app='oaGLSLNoise' ng-controller='NoiseTestCtrl'>
+<div id='app' ng-app='oaGLSLNoiseCheck' ng-controller='NoiseCheckCtrl'>
 <div class='canvas'>
 <h2>Sine Noise</h2>
 <canvas id='sine-noise'></canvas>
 </div>
 <div class='canvas'>
-<h2>Sine Gradient Noise</h2>
-<canvas id='sine-gradient-noise'></canvas>
+<h2>Sine 3 Noise</h2>
+<canvas id='sine-3-noise'></canvas>
 </div>
 <div class='canvas'>
-<h2>Perlin Sine Noise</h2>
-<canvas id='perlin-sine-noise'></canvas>
+<h2>Sine Gradient 2 Noise</h2>
+<canvas id='sine-rot-2-noise'></canvas>
 </div>
 <div class='canvas'>
-<h2>Perlin Sine Gradient Noise</h2>
-<canvas id='perlin-sine-gradient-noise'></canvas>
-</div>
-<div class='canvas' ng-if='false'>
-<h2>Simplices</h2>
-<canvas id='simplices'></canvas>
+<h2>Sine Gradient 3 Noise</h2>
+<canvas id='sine-rot-3-noise'></canvas>
 </div>
 <div class='canvas'>
-<h2>Simplex Sine Noise</h2>
-<canvas id='simplex-sine-noise'></canvas>
+<h2>Perlin 2 Noise</h2>
+<canvas id='perlin-2-noise'></canvas>
 </div>
 <div class='canvas'>
-<h2>Simplex Sine Gradient Noise</h2>
-<canvas id='simplex-sine-gradient-noise'></canvas>
+<h2>Fractal Perlin 2 Noise</h2>
+<canvas id='fractal-perlin-2-noise'></canvas>
 </div>
 <div class='canvas'>
-<h2>Wood</h2>
-<canvas id='wood'></canvas>
+<h2>Perlin 3 Noise</h2>
+<canvas id='perlin-3-noise'></canvas>
 </div>
 <div class='canvas'>
-<h2>Splatter</h2>
-<canvas id='splatter'></canvas>
+<h2>Fractal Perlin 3 Noise</h2>
+<canvas id='fractal-perlin-3-noise'></canvas>
+</div>
+<div class='canvas'>
+<h2>Perlin 2 Gradient Noise</h2>
+<canvas id='perlin-2-gradient-noise'></canvas>
+</div>
+<div class='canvas'>
+<h2>Fractal Perlin 2 Gradient Noise</h2>
+<canvas id='fractal-perlin-2-gradient-noise'></canvas>
+</div>
+<div class='canvas'>
+<h2>Perlin 3 Gradient Noise</h2>
+<canvas id='perlin-3-gradient-noise'></canvas>
+</div>
+<div class='canvas'>
+<h2>Fractal Perlin 3 Gradient Noise</h2>
+<canvas id='fractal-perlin-3-gradient-noise'></canvas>
+</div>
+<div class='canvas'>
+<h2>Simplex 2 Noise</h2>
+<canvas id='simplex-2-noise'></canvas>
+</div>
+<div class='canvas'>
+<h2>Fractal Simplex 2 Noise</h2>
+<canvas id='fractal-simplex-2-noise'></canvas>
+</div>
+<div class='canvas'>
+<h2>Simplex 3 Noise</h2>
+<canvas id='simplex-3-noise'></canvas>
+</div>
+<div class='canvas'>
+<h2>Fractal Simplex 3 Noise</h2>
+<canvas id='fractal-simplex-3-noise'></canvas>
+</div>
+<div class='canvas'>
+<h2>Simplex 2 Gradient Noise</h2>
+<canvas id='simplex-2-gradient-noise'></canvas>
+</div>
+<div class='canvas'>
+<h2>Fractal Simplex 2 Gradient Noise</h2>
+<canvas id='fractal-simplex-2-gradient-noise'></canvas>
+</div>
+<div class='canvas'>
+<h2>Simplex 3 Gradient Noise</h2>
+<canvas id='simplex-3-gradient-noise'></canvas>
+</div>
+<div class='canvas'>
+<h2>Fractal Simplex 3 Gradient Noise</h2>
+<canvas id='fractal-simplex-3-gradient-noise'></canvas>
 </div>
 </div>
 <script src='lib/js/decimal.min.js'></script>
+<script src='lib/js/underscore-min.js'></script>
 <script src='lib/js/angular.min.js'></script>
 <script src='lib/js/angular-messages.min.js'></script>
 <script src='lib/js/jquery.min.js'></script>
+<script src='oa-object.min.js'></script>
 <script src='oa-webgl-helpers.min.js'></script>
 <script src='oa-gl-noise.min.js'></script>
 <script src='oa-gl-noise.check.min.js'></script>
