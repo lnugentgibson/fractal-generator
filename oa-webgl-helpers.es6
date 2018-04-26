@@ -821,6 +821,9 @@ ${bodyType === 'string' ? '${P("bodyString")}' : '${S("body", "body")}'}
             this.setParameter('signiture.funcName', funcName);
             declarationSnippet.setParameter('signiture.funcName', funcName);
           }
+        },
+        sname: {
+          get: () => funcName + '-' + parameters.order.map(p => p.datatype.charAt(0)).join('')
         }
       });
     }
@@ -832,11 +835,11 @@ ${bodyType === 'string' ? '${P("bodyString")}' : '${S("body", "body")}'}
       oaWebglSnippet.call(this, name);
       this.source = `precision \${P("precision")} float;
 \${S("variable", "variables")}
-\${D("functionDeclarations", "null")}
+\${D("functionDeclarations", "functionDeclarationParams")}
 void main() {
 \${S("body", "body")}
 }
-\${D("functionDefinitions", "null")}`;
+\${D("functionDefinitions", "functionDefinitionParams")}`;
       this.addParameter('v', 'precision', {
         type: 'str',
         nullValue: 'mediump'
@@ -907,12 +910,16 @@ void main() {
       this.addSnippet('variable', variableSnippet);
       var mainSnippet;
       var functions = [];
+      var functionNames = {};
       this.addFunction = f => {
+        if(functionNames[f.sname])
+          apples.throw();
+        functionNames[f.sname] = f;
         functions.push(f);
-        this.addSnippet('declaration' + functions.length, f.declarationSnippet);
-        this.addSnippet('definition' + functions.length, f);
-        this.setParameter('functionDeclarations', _.times(functions.length, i => `declaration${i + 1}`));
-        this.setParameter('functionDefinitions', _.times(functions.length, i => `definition${i + 1}`));
+        this.addSnippet(f.sname + 'Declaration', f.declarationSnippet);
+        this.addSnippet(f.sname + 'Definition', f);
+        this.setParameter('functionDeclarations', functions.map(f => f.sname + 'Declaration'));
+        this.setParameter('functionDefinitions', functions.map(f => f.sname + 'Definition'));
       };
       this.addFunctions = fs => {
         fs.forEach(f => {

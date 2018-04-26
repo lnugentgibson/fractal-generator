@@ -53,6 +53,10 @@ angular
             resolution: {
               name: 'u_resolution',
               value: 1
+            },
+            time: {
+              name: 'u_time',
+              value: 0
             }
           };
           var buffers = {
@@ -84,6 +88,7 @@ angular
             }
           };
           var textures = {};
+          var epoch = Date.now();
           var executor = function(gl) {
             //console.log('executing');
             gl.clearColor(0, 0, 0, 1);
@@ -114,6 +119,10 @@ angular
               68.9614210, 33.3000043, 38.8602285, 67.0907920
             ]));
             gl.uniform1f(this.uResolution, this.uResolutionSpec.value);
+            var time = (Date.now() - epoch) / 5 / 1000;
+            //time = 0;
+            //console.log('now: ' + time);
+            gl.uniform1f(this.uTime, time);
             const offset = 0;
             const vertexCount = 3 * 2;
             //gl.drawArrays(gl.TRIANGLE_STRIP, offset, vertexCount);
@@ -126,6 +135,8 @@ angular
         var $canvas;
         var Canvas;
         var fragmentSource;
+        var printShaders = false;
+        var update = [];
         // sine-noise
         {
           name = 'sine-noise';
@@ -136,8 +147,10 @@ angular
               return oaNoiseShaderFunctions.shaders.fragment.sineNoiseFragment.generate();
             })()
           );
-          console.log(name);
-          fragmentSource.printShader();
+          if (printShaders) {
+            console.log(name);
+            fragmentSource.printShader();
+          }
           program = new oaWebglProgram({
             vertexSource,
             fragmentSource,
@@ -160,8 +173,10 @@ angular
               return oaNoiseShaderFunctions.shaders.fragment.sine2RotNoiseFragment.generate();
             })()
           );
-          console.log(name);
-          fragmentSource.printShader();
+          if (printShaders) {
+            console.log(name);
+            fragmentSource.printShader();
+          }
           program = new oaWebglProgram({
             vertexSource,
             fragmentSource,
@@ -184,8 +199,10 @@ angular
               return oaNoiseShaderFunctions.shaders.fragment.perlin2NoiseFragment.generate();
             })()
           );
-          console.log(name);
-          fragmentSource.printShader();
+          if (printShaders) {
+            console.log(name);
+            fragmentSource.printShader();
+          }
           program = new oaWebglProgram({
             vertexSource,
             fragmentSource,
@@ -209,8 +226,10 @@ angular
               return oaNoiseShaderFunctions.shaders.fragment.fractalPerlin2NoiseFragment.generate();
             })()
           );
-          console.log(name);
-          fragmentSource.printShader();
+          if (printShaders) {
+            console.log(name);
+            fragmentSource.printShader();
+          }
           program = new oaWebglProgram({
             vertexSource,
             fragmentSource,
@@ -224,6 +243,68 @@ angular
           uniforms.resolution.value = 512;
           Canvas.draw();
         }
+        // perlin-3-noise
+        {
+          name = 'perlin-3-noise';
+          $canvas = $('#perlin-3-noise');
+          Canvas = new oaWebglCanvas(name, $canvas[0], options);
+          fragmentSource = new oaWebglShaderSource(
+            (() => {
+              return oaNoiseShaderFunctions.shaders.fragment.perlin3NoiseFragment.generate();
+            })()
+          );
+          if (printShaders) {
+            console.log(name);
+            fragmentSource.printShader();
+          }
+          program = new oaWebglProgram({
+            vertexSource,
+            fragmentSource,
+            attributes,
+            uniforms,
+            buffers,
+            textures,
+            executor
+          });
+          Canvas.registerProgram('main', program);
+          //*
+          update.push({
+            name,
+            resolution: 16,
+            Canvas
+          });
+          //*/
+        }
+        // fractal-perlin-3-noise
+        {
+          name = 'fractal-perlin-3-noise';
+          $canvas = $('#fractal-perlin-3-noise');
+          Canvas = new oaWebglCanvas(name, $canvas[0], options);
+          fragmentSource = new oaWebglShaderSource(
+            (() => {
+              return oaNoiseShaderFunctions.shaders.fragment.fractalPerlin3NoiseFragment.generate();
+            })()
+          );
+          if (printShaders) {
+            console.log(name);
+            fragmentSource.printShader();
+          }
+          program = new oaWebglProgram({
+            vertexSource,
+            fragmentSource,
+            attributes,
+            uniforms,
+            buffers,
+            textures,
+            executor
+          });
+          Canvas.registerProgram('main', program);
+          update.push({
+            name,
+            resolution: 512,
+            Canvas
+          });
+        }
         // perlin-2-gradient-noise
         {
           name = 'perlin-2-gradient-noise';
@@ -234,8 +315,10 @@ angular
               return oaNoiseShaderFunctions.shaders.fragment.perlin2GradientNoiseFragment.generate();
             })()
           );
-          console.log(name);
-          fragmentSource.printShader();
+          if (printShaders) {
+            console.log(name);
+            fragmentSource.printShader();
+          }
           program = new oaWebglProgram({
             vertexSource,
             fragmentSource,
@@ -259,8 +342,10 @@ angular
               return oaNoiseShaderFunctions.shaders.fragment.fractalPerlin2GradientNoiseFragment.generate();
             })()
           );
-          console.log(name);
-          fragmentSource.printShader();
+          if (printShaders) {
+            console.log(name);
+            fragmentSource.printShader();
+          }
           program = new oaWebglProgram({
             vertexSource,
             fragmentSource,
@@ -274,6 +359,135 @@ angular
           uniforms.resolution.value = 512;
           Canvas.draw();
         }
+        // simplex-2-noise
+        {
+          name = 'simplex-2-noise';
+          $canvas = $('#simplex-2-noise');
+          Canvas = new oaWebglCanvas(name, $canvas[0], options);
+          fragmentSource = new oaWebglShaderSource(
+            (() => {
+              return oaNoiseShaderFunctions.shaders.fragment.simplex2NoiseFragment.generate();
+            })()
+          );
+          if (printShaders) {
+            console.log(name);
+            fragmentSource.printShader();
+          }
+          program = new oaWebglProgram({
+            vertexSource,
+            fragmentSource,
+            attributes,
+            uniforms,
+            buffers,
+            textures,
+            executor
+          });
+          Canvas.registerProgram('main', program);
+          uniforms.resolution.value = 16;
+          Canvas.draw();
+        }
+        // fractal-simplex-2-noise
+        {
+          name = 'fractal-simplex-2-noise';
+          $canvas = $('#fractal-simplex-2-noise');
+          Canvas = new oaWebglCanvas(name, $canvas[0], options);
+          fragmentSource = new oaWebglShaderSource(
+            (() => {
+              return oaNoiseShaderFunctions.shaders.fragment.fractalSimplex2NoiseFragment.generate();
+            })()
+          );
+          if (printShaders) {
+            console.log(name);
+            fragmentSource.printShader();
+          }
+          program = new oaWebglProgram({
+            vertexSource,
+            fragmentSource,
+            attributes,
+            uniforms,
+            buffers,
+            textures,
+            executor
+          });
+          Canvas.registerProgram('main', program);
+          uniforms.resolution.value = 128;
+          uniforms.resolution.value = 32;
+          Canvas.draw();
+        }
+        // simplex-2-gradient-noise
+        {
+          name = 'simplex-2-gradient-noise';
+          $canvas = $('#simplex-2-gradient-noise');
+          Canvas = new oaWebglCanvas(name, $canvas[0], options);
+          fragmentSource = new oaWebglShaderSource(
+            (() => {
+              return oaNoiseShaderFunctions.shaders.fragment.simplex2GradientNoiseFragment.generate();
+            })()
+          );
+          if (printShaders) {
+            console.log(name);
+            fragmentSource.printShader();
+          }
+          program = new oaWebglProgram({
+            vertexSource,
+            fragmentSource,
+            attributes,
+            uniforms,
+            buffers,
+            textures,
+            executor
+          });
+          Canvas.registerProgram('main', program);
+          uniforms.resolution.value = 16;
+          Canvas.draw();
+        }
+        // fractal-simplex-2-gradient-noise
+        {
+          name = 'fractal-simplex-2-gradient-noise';
+          $canvas = $('#fractal-simplex-2-gradient-noise');
+          Canvas = new oaWebglCanvas(name, $canvas[0], options);
+          fragmentSource = new oaWebglShaderSource(
+            (() => {
+              return oaNoiseShaderFunctions.shaders.fragment.fractalSimplex2GradientNoiseFragment.generate();
+            })()
+          );
+          if (printShaders) {
+            console.log(name);
+            fragmentSource.printShader();
+          }
+          program = new oaWebglProgram({
+            vertexSource,
+            fragmentSource,
+            attributes,
+            uniforms,
+            buffers,
+            textures,
+            executor
+          });
+          Canvas.registerProgram('main', program);
+          uniforms.resolution.value = 512;
+          uniforms.resolution.value = 128;
+          Canvas.draw();
+        }
+        var render = () => {
+          update.forEach(c => {
+            let {
+              Canvas,
+              resolution,
+              //name
+            } = c;
+            uniforms.resolution.value = resolution;
+            //console.log('drawing ' + name);
+            Canvas.draw();
+          });
+        };
+        var renderLoop = () => {
+          render();
+          requestAnimationFrame(renderLoop());
+        };
+        //renderLoop();
+        window.setInterval(render, 60);
+        //render();
       }
     ]
   );

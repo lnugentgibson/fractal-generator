@@ -155,7 +155,7 @@ angular.module('oaGLSLNoise', ['oaWebglHelpers']).service('oaNoiseShaderFunction
       rand33SeededFunction.parameters.add('d', 'mat4');
       rand33SeededFunction.parameters.add('s', 'vec4');
       rand33SeededFunction.parameters.apply();
-      rand33SeededFunction.bodySnippet = new oaWebglSnippet('body', 'return vec2(rand(dot(v, d[0].xyz), s), rand(dot(v, d[1].xyz), s), rand(dot(v, d[2].xyz), s));');
+      rand33SeededFunction.bodySnippet = new oaWebglSnippet('body', 'return vec3(rand(dot(v, d[0].xyz), s), rand(dot(v, d[1].xyz), s), rand(dot(v, d[2].xyz), s));');
     }
 
     // rand33RotFunction
@@ -199,7 +199,7 @@ angular.module('oaGLSLNoise', ['oaWebglHelpers']).service('oaNoiseShaderFunction
       var rand44Function = new oaWebglFunctionSnippet('rand4', 'vec4', 'snippet');
       rand44Function.parameters.add('v', 'vec4');
       rand44Function.parameters.apply();
-      rand44Function.bodySnippet = new oaWebglSnippet('body', 'return vec2(rand(dot(v, d[0])), rand(dot(v, d[1])), rand(dot(v, d[2])), rand(dot(v, d[3])));');
+      rand44Function.bodySnippet = new oaWebglSnippet('body', 'return vec4(rand(dot(v, d[0])), rand(dot(v, d[1])), rand(dot(v, d[2])), rand(dot(v, d[3])));');
     }
 
     // rand44SeededFunction
@@ -209,7 +209,7 @@ angular.module('oaGLSLNoise', ['oaWebglHelpers']).service('oaNoiseShaderFunction
       rand44SeededFunction.parameters.add('d', 'mat4');
       rand44SeededFunction.parameters.add('s', 'vec4');
       rand44SeededFunction.parameters.apply();
-      rand44SeededFunction.bodySnippet = new oaWebglSnippet('body', 'return vec2(rand(dot(v, d[0]), s), rand(dot(v, d[1]), s), rand(dot(v, d[2]), s), rand(dot(v, d[3]), s));');
+      rand44SeededFunction.bodySnippet = new oaWebglSnippet('body', 'return vec4(rand(dot(v, d[0]), s), rand(dot(v, d[1]), s), rand(dot(v, d[2]), s), rand(dot(v, d[3]), s));');
     }
 
     // rand44RotFunction
@@ -363,7 +363,57 @@ angular.module('oaGLSLNoise', ['oaWebglHelpers']).service('oaNoiseShaderFunction
         datatype: 'vec4'
       }]);
       fractalPerlin2NoiseFunction.parameters.apply();
-      fractalPerlin2NoiseFunction.bodySnippet = new oaWebglSnippet('body', 'float value = 0.0;\n  vec4 c = ss;\n  for(int i = 0; i < 7; i++) {\n      c.xy = rand2(c.xy, ds, ss) * 32109.8765432 + 12345.6789012;\n      value += (perlin(p / r, ds, c) * 2.0 - 1.0) / s;\n      s = s * l;\n      r = r / l;\n  }\n  return value * 0.5 + 0.5;');
+      fractalPerlin2NoiseFunction.bodySnippet = new oaWebglSnippet('body', 'float value = 0.0;\nvec4 c = ss;\nfor(int i = 0; i < 7; i++) {\n  c = rand4(c, ds, ss) * 32109.8765432 + 12345.6789012;\n  value += (perlin(p / r, ds, c) * 2.0 - 1.0) / s;\n  s = s * l;\n  r = r / l;\n}\nreturn value * 0.5 + 0.5;');
+    }
+
+    // perlin3NoiseFunction
+    {
+      var perlin3NoiseFunction = new oaWebglFunctionSnippet('perlin', 'float', 'snippet');
+      perlin3NoiseFunction.parameters.add('pos', 'vec3');
+      perlin3NoiseFunction.parameters.apply();
+      perlin3NoiseFunction.bodySnippet = new oaWebglSnippet('body', 'vec3 l = floor(pos);\n  vec3 u = ceil(pos);\n  vec3 f = fract(pos);\n  float nnn = rand(l),                   nnp = rand(vec3(l.xy, u.z));\n  float npn = rand(vec3(l.x, u.y, l.z)), npp = rand(vec3(l.x, u.yz));\n  float pnn = rand(vec3(u.x, l.yz)),     pnp = rand(vec3(u.x, l.y, u.z));\n  float ppn = rand(vec3(u.xy, l.z)),     ppp = rand(u);\n  float nn = mix5(nnn, nnp, f.z), np = mix5(npn, npp, f.z);\n  float pn = mix5(pnn, pnp, f.z), pp = mix5(ppn, ppp, f.z);\n  float n = mix5(nn, np, f.y), p = mix5(pn, pp, f.y);\n  return mix5(n, p, f.x);');
+    }
+
+    // perlin3NoiseSeededFunction
+    {
+      var perlin3NoiseSeededFunction = new oaWebglFunctionSnippet('perlin', 'float', 'snippet');
+      perlin3NoiseSeededFunction.parameters.add('pos', 'vec3');
+      perlin3NoiseSeededFunction.parameters.add('ds', 'mat4');
+      perlin3NoiseSeededFunction.parameters.add('ss', 'vec4');
+      perlin3NoiseSeededFunction.parameters.apply();
+      perlin3NoiseSeededFunction.bodySnippet = new oaWebglSnippet('body', 'vec3 l = floor(pos);\n  vec3 u = ceil(pos);\n  vec3 f = fract(pos);\n  float nnn = rand(l, ds, ss), nnp = rand(vec3(l.xy, u.z), ds, ss);\n  float npn = rand(vec3(l.x, u.y, l.z), ds, ss), npp = rand(vec3(l.x, u.yz), ds, ss);\n  float pnn = rand(vec3(u.x, l.yz), ds, ss), pnp = rand(vec3(u.x, l.y, u.z), ds, ss);\n  float ppn = rand(vec3(u.xy, l.z), ds, ss), ppp = rand(u, ds, ss);\n  float nn = mix5(nnn, nnp, f.z), np = mix5(npn, npp, f.z);\n  float pn = mix5(pnn, pnp, f.z), pp = mix5(ppn, ppp, f.z);\n  float n = mix5(nn, np, f.y), p = mix5(pn, pp, f.y);\n  return mix5(n, p, f.x);');
+    }
+
+    // fractalPerlin3NoiseFunction
+    {
+      var fractalPerlin3NoiseFunction = new oaWebglFunctionSnippet('fperlin', 'float', 'snippet');
+      fractalPerlin3NoiseFunction.parameters.addMultiple([{
+        paramname: 'p',
+        datatype: 'vec3'
+      }, {
+        paramname: 'r',
+        datatype: 'float'
+      }, {
+        paramname: 's',
+        datatype: 'float'
+      }, {
+        paramname: 'l',
+        datatype: 'float'
+      }, {
+        paramname: 'fb',
+        datatype: 'vec3'
+      }, {
+        paramname: 'is',
+        datatype: 'int'
+      }, {
+        paramname: 'ds',
+        datatype: 'mat4'
+      }, {
+        paramname: 'ss',
+        datatype: 'vec4'
+      }]);
+      fractalPerlin3NoiseFunction.parameters.apply();
+      fractalPerlin3NoiseFunction.bodySnippet = new oaWebglSnippet('body', 'float value = 0.0;\nvec4 c = ss;\nfor(int i = 0; i < 10; i++) {\n  if(i < is) {\n    c = rand4(c, ds, ss) * 32109.8765432 + 12345.6789012;\n    value += (perlin(fb * value + vec3(p.xy / r, p.z), ds, c) * 2.0 - 1.0) / s;\n    s = s * l;\n    r = r / l;\n  }\n}\nreturn value * 0.5 + 0.5;');
     }
 
     // perlin2GradientNoiseFunction
@@ -407,7 +457,7 @@ angular.module('oaGLSLNoise', ['oaWebglHelpers']).service('oaNoiseShaderFunction
         datatype: 'vec4'
       }]);
       fractalPerlin2GradientNoiseFunction.parameters.apply();
-      fractalPerlin2GradientNoiseFunction.bodySnippet = new oaWebglSnippet('body', 'float value = 0.0;\n  vec4 c = ss;\n  for(int i = 0; i < 7; i++) {\n      c.xy = rand2(c.xy, ds, ss) * 32109.8765432 + 12345.6789012;\n      value += perlinGradient(p / r, ds, c) / s;\n      s = s * l;\n      r = r / l;\n  }\n  return value * 0.5 + 0.5;');
+      fractalPerlin2GradientNoiseFunction.bodySnippet = new oaWebglSnippet('body', 'float value = 0.0;\nvec4 c = ss;\nfor(int i = 0; i < 7; i++) {\n  c = rand4(c, ds, ss) * 32109.8765432 + 12345.6789012;\n  value += perlinGradient(p / r, ds, c) / s;\n  s = s * l;\n  r = r / l;\n}\nreturn value * 0.5 + 0.5;');
     }
 
     // simplex2NoiseFunction
@@ -428,12 +478,38 @@ angular.module('oaGLSLNoise', ['oaWebglHelpers']).service('oaNoiseShaderFunction
       simplex2NoiseSeededFunction.bodySnippet = new oaWebglSnippet('body', 'mat2 t = mat2(1.0, 0.0, 0.5, sqrt(3.0 / 4.0));\n  mat2 it = mat2(1.0, 0.0, -sqrt(1.0 / 3.0), 2.0 * sqrt(1.0 / 3.0));\n  vec2 op = gl_FragCoord.xy / u_resolution;\n  vec2 ip = it * op;\n  vec2 il = floor(ip);\n  vec2 f = fract(ip);\n  vec2 ol = t * il;\n  vec2 oc, oc1, oc2, oc3;\n  oc = ol + vec2(0.75, sqrt(3.0) / 4.0);\n  oc2 = ol + vec2(1.0, 0.0);\n  oc3 = ol + vec2(0.5, sqrt(3.0 / 4.0));\n  //float y23 = -sqrt(3.0 / 4.0), x32 = -0.5, x13, y13;\n  float y23 = oc2.y - oc3.y, x32 = oc3.x - oc2.x, x13, y13;\n  float x03 = op.x - oc3.x, y03 = op.y - oc3.y;\n  if(f.x + f.y < 1.0) {\n    oc1 = ol;\n    x13 = -0.5;\n    y13 = -sqrt(3.0 / 4.0);\n  }\n  else {\n    oc1 = ol + vec2(1.5, sqrt(3.0 / 4.0));\n    x13 = 1.0;\n    y13 = 0.0;\n  }\n  x13 = oc1.x - oc3.x;\n  y13 = oc1.y - oc3.y;\n  vec3 r = vec3(rand(oc1, ds, ss), rand(oc2, ds, ss), rand(oc3, ds, ss));\n  //r = vec3(0.0, 0.0, 1.0);\n  //vec3 d = vec3(length(op - oc1), length(op - oc2), length(op - oc3));\n  //vec3 w = 1.0 / d;\n  vec3 w = vec3((y23 * x03 + x32 * y03) / (y23 * x13 + x32 * y13), (-y13 * x03 + x13 * y03) / (y23 * x13 + x32 * y13), 0.0);\n  w.z = 1.0 - w.x - w.y;\n  vec3 w3 = w * w * (3.0 - 2.0 * w);\n  vec3 w5 = w * w * w * (6.0 * w * w - 15.0 * w + 10.0);\n  vec3 rv = r * w5;\n  return (rv.x + rv.y + rv.z) / (w5.x + w5.y + w5.z);');
     }
 
+    // fractalSimplex2NoiseFunction
+    {
+      var fractalSimplex2NoiseFunction = new oaWebglFunctionSnippet('fsimplex', 'float', 'snippet');
+      fractalSimplex2NoiseFunction.parameters.addMultiple([{
+        paramname: 'p',
+        datatype: 'vec2'
+      }, {
+        paramname: 'r',
+        datatype: 'float'
+      }, {
+        paramname: 's',
+        datatype: 'float'
+      }, {
+        paramname: 'l',
+        datatype: 'float'
+      }, {
+        paramname: 'ds',
+        datatype: 'mat4'
+      }, {
+        paramname: 'ss',
+        datatype: 'vec4'
+      }]);
+      fractalSimplex2NoiseFunction.parameters.apply();
+      fractalSimplex2NoiseFunction.bodySnippet = new oaWebglSnippet('body', 'float value = 0.0;\nvec4 c = ss;\nfor(float i = 0.0; i < 5.0; i++) {\n  c = rand4(c, ds, ss) * 32109.8765432 + 12345.6789012;\n  value = (simplex(p * pow(2.0, i) / r, ds, c) * 2.0 - 1.0) * pow(0.5, i) / s;\n  //value = simplex(p / r, ds, c) / s;\n}\nreturn value * 0.5 + 0.5;');
+    }
+
     // simplex2GradientNoiseFunction
     {
       var simplex2GradientNoiseFunction = new oaWebglFunctionSnippet('simplexGradient', 'float', 'snippet');
       simplex2GradientNoiseFunction.parameters.add('p', 'vec2');
       simplex2GradientNoiseFunction.parameters.apply();
-      simplex2GradientNoiseFunction.bodySnippet = new oaWebglSnippet('body', 'mat2 t = mat2(1.0, 0.0, 0.5, sqrt(3.0 / 4.0));\n  mat2 it = mat2(1.0, 0.0, -sqrt(1.0 / 3.0), 2.0 * sqrt(1.0 / 3.0));\n  vec2 ip = it * p;\n  vec2 il = floor(ip);\n  vec2 f = fract(ip);\n  vec2 l = t * il;\n  vec2 c, c1, c2, c3;\n  c = l + vec2(0.75, sqrt(3.0) / 4.0);\n  c2 = l + vec2(1.0, 0.0);\n  c3 = l + vec2(0.5, sqrt(3.0 / 4.0));\n  //float y23 = -sqrt(3.0 / 4.0), x32 = -0.5, x13, y13;\n  float y23 = c2.y - c3.y, x32 = c3.x - c2.x, x13, y13;\n  float x03 = p.x - c3.x, y03 = p.y - c3.y;\n  if(f.x + f.y < 1.0) {\n    c1 = l;\n    x13 = -0.5;\n    y13 = -sqrt(3.0 / 4.0);\n  }\n  else {\n    c1 = l + vec2(1.5, sqrt(3.0 / 4.0));\n    x13 = 1.0;\n    y13 = 0.0;\n  }\n  x13 = c1.x - c3.x;\n  y13 = c1.y - c3.y;\n  vec3 r = vec3(dot(rand2Rot(c1), p - c1), dot(rand2Rot(c2), p - c2), dot(rand2Rot(c3), p - c3));\n  //r = vec3(0.0, 0.0, 1.0);\n  //vec3 d = vec3(length(op - oc1), length(op - oc2), length(op - oc3));\n  //vec3 w = 1.0 / d;\n  vec3 w = vec3((y23 * x03 + x32 * y03) / (y23 * x13 + x32 * y13), (-y13 * x03 + x13 * y03) / (y23 * x13 + x32 * y13), 0.0);\n  w.z = 1.0 - w.x - w.y;\n  vec3 w3 = w * w * (3.0 - 2.0 * w);\n  vec3 w5 = w * w * w * (6.0 * w * w - 15.0 * w + 10.0);\n  vec3 rv = r * w5;\n  return (rv.x + rv.y + rv.z) / (w5.x + w5.y + w5.z) * 0.5 + 0.5;');
+      simplex2GradientNoiseFunction.bodySnippet = new oaWebglSnippet('body', 'mat2 t = mat2(1.0, 0.0, 0.5, sqrt(3.0 / 4.0));\n  mat2 it = mat2(1.0, 0.0, -sqrt(1.0 / 3.0), 2.0 * sqrt(1.0 / 3.0));\n  vec2 ip = it * p;\n  vec2 il = floor(ip);\n  vec2 f = fract(ip);\n  vec2 l = t * il;\n  vec2 c, c1, c2, c3;\n  c = l + vec2(0.75, sqrt(3.0) / 4.0);\n  c2 = l + vec2(1.0, 0.0);\n  c3 = l + vec2(0.5, sqrt(3.0 / 4.0));\n  //float y23 = -sqrt(3.0 / 4.0), x32 = -0.5, x13, y13;\n  float y23 = c2.y - c3.y, x32 = c3.x - c2.x, x13, y13;\n  float x03 = p.x - c3.x, y03 = p.y - c3.y;\n  if(f.x + f.y < 1.0) {\n    c1 = l;\n    x13 = -0.5;\n    y13 = -sqrt(3.0 / 4.0);\n  }\n  else {\n    c1 = l + vec2(1.5, sqrt(3.0 / 4.0));\n    x13 = 1.0;\n    y13 = 0.0;\n  }\n  x13 = c1.x - c3.x;\n  y13 = c1.y - c3.y;\n  vec3 r = vec3(dot(rand2Rot(c1), p - c1), dot(rand2Rot(c2), p - c2), dot(rand2Rot(c3), p - c3));\n  //r = vec3(0.0, 0.0, 1.0);\n  //vec3 d = vec3(length(op - oc1), length(op - oc2), length(op - oc3));\n  //vec3 w = 1.0 / d;\n  vec3 w = vec3((y23 * x03 + x32 * y03) / (y23 * x13 + x32 * y13), (-y13 * x03 + x13 * y03) / (y23 * x13 + x32 * y13), 0.0);\n  w.z = 1.0 - w.x - w.y;\n  vec3 w3 = w * w * (3.0 - 2.0 * w);\n  vec3 w5 = w * w * w * (6.0 * w * w - 15.0 * w + 10.0);\n  vec3 rv = r * w5;\n  return (rv.x + rv.y + rv.z) / (w5.x + w5.y + w5.z);');
     }
 
     // simplex2GradientNoiseSeededFunction
@@ -444,6 +520,32 @@ angular.module('oaGLSLNoise', ['oaWebglHelpers']).service('oaNoiseShaderFunction
       simplex2GradientNoiseSeededFunction.parameters.add('ss', 'vec4');
       simplex2GradientNoiseSeededFunction.parameters.apply();
       simplex2GradientNoiseSeededFunction.bodySnippet = new oaWebglSnippet('body', 'mat2 t = mat2(1.0, 0.0, 0.5, sqrt(3.0 / 4.0));\n  mat2 it = mat2(1.0, 0.0, -sqrt(1.0 / 3.0), 2.0 * sqrt(1.0 / 3.0));\n  vec2 ip = it * p;\n  vec2 il = floor(ip);\n  vec2 f = fract(ip);\n  vec2 l = t * il;\n  vec2 c, c1, c2, c3;\n  c = l + vec2(0.75, sqrt(3.0) / 4.0);\n  c2 = l + vec2(1.0, 0.0);\n  c3 = l + vec2(0.5, sqrt(3.0 / 4.0));\n  //float y23 = -sqrt(3.0 / 4.0), x32 = -0.5, x13, y13;\n  float y23 = c2.y - c3.y, x32 = c3.x - c2.x, x13, y13;\n  float x03 = p.x - c3.x, y03 = p.y - c3.y;\n  if(f.x + f.y < 1.0) {\n    c1 = l;\n    x13 = -0.5;\n    y13 = -sqrt(3.0 / 4.0);\n  }\n  else {\n    c1 = l + vec2(1.5, sqrt(3.0 / 4.0));\n    x13 = 1.0;\n    y13 = 0.0;\n  }\n  x13 = c1.x - c3.x;\n  y13 = c1.y - c3.y;\n  vec3 r = vec3(dot(rand2Rot(c1, ds, ss), p - c1), dot(rand2Rot(c2, ds, ss), p - c2), dot(rand2Rot(c3, ds, ss), p - c3));\n  //r = vec3(0.0, 0.0, 1.0);\n  //vec3 d = vec3(length(op - oc1), length(op - oc2), length(op - oc3));\n  //vec3 w = 1.0 / d;\n  vec3 w = vec3((y23 * x03 + x32 * y03) / (y23 * x13 + x32 * y13), (-y13 * x03 + x13 * y03) / (y23 * x13 + x32 * y13), 0.0);\n  w.z = 1.0 - w.x - w.y;\n  vec3 w3 = w * w * (3.0 - 2.0 * w);\n  vec3 w5 = w * w * w * (6.0 * w * w - 15.0 * w + 10.0);\n  vec3 rv = r * w5;\n  return (rv.x + rv.y + rv.z) / (w5.x + w5.y + w5.z) * 0.5 + 0.5;');
+    }
+
+    // fractalSimplex2GradientNoiseFunction
+    {
+      var fractalSimplex2GradientNoiseFunction = new oaWebglFunctionSnippet('fsimplexGradient', 'float', 'snippet');
+      fractalSimplex2GradientNoiseFunction.parameters.addMultiple([{
+        paramname: 'p',
+        datatype: 'vec2'
+      }, {
+        paramname: 'r',
+        datatype: 'float'
+      }, {
+        paramname: 's',
+        datatype: 'float'
+      }, {
+        paramname: 'l',
+        datatype: 'float'
+      }, {
+        paramname: 'ds',
+        datatype: 'mat4'
+      }, {
+        paramname: 'ss',
+        datatype: 'vec4'
+      }]);
+      fractalSimplex2GradientNoiseFunction.parameters.apply();
+      fractalSimplex2GradientNoiseFunction.bodySnippet = new oaWebglSnippet('body', 'float value = 0.0;\nvec4 c = ss;\nfor(int i = 0; i < 7; i++) {\n  c = rand4(c, ds, ss) * 32109.8765432 + 12345.6789012;\n  value += simplexGradient(p / r, ds, c) / s;\n  s = s * l;\n  r = r / l;\n}\nreturn value * 0.5 + 0.5;');
     }
   }
 
@@ -589,7 +691,7 @@ angular.module('oaGLSLNoise', ['oaWebglHelpers']).service('oaNoiseShaderFunction
         vartype: 'uniform'
       }]);
       fractalPerlin2NoiseFragment.variables.apply();
-      fractalPerlin2NoiseFragment.addFunctions([rand11SeededFunction, rand12SeededFunction, rand22SeededFunction, mix1Function, curve5Function, mix5Function, perlin2NoiseSeededFunction, fractalPerlin2NoiseFunction]);
+      fractalPerlin2NoiseFragment.addFunctions([rand11SeededFunction, rand12SeededFunction, rand44SeededFunction, mix1Function, curve5Function, mix5Function, perlin2NoiseSeededFunction, fractalPerlin2NoiseFunction]);
       grayscale = grayscaleSnippet();
       grayscale.addSnippet('value', new oaWebglSnippet('fractalperlinnoise', 'fperlin(gl_FragCoord.xy, u_resolution, 1.0, 2.0, u_dotseed, u_sineseed[0])'));
       grayscale.setParameter('alpha', '1.0');
@@ -597,6 +699,68 @@ angular.module('oaGLSLNoise', ['oaWebglHelpers']).service('oaNoiseShaderFunction
       fractalPerlin2NoiseFragmentBody.source = 'gl_FragColor = ${S("grayscale", "null")};';
       fractalPerlin2NoiseFragmentBody.addSnippet('grayscale', grayscale);
       fractalPerlin2NoiseFragment.mainSnippet = fractalPerlin2NoiseFragmentBody;
+    }
+
+    // perlin3NoiseFragmentShader
+    {
+      var perlin3NoiseFragment = new oaWebglShaderSnippet('perlinNoiseFragment');
+      perlin3NoiseFragment.variables.addMultiple([{
+        varname: 'u_sineseed',
+        datatype: 'mat4',
+        vartype: 'uniform'
+      }, {
+        varname: 'u_dotseed',
+        datatype: 'mat4',
+        vartype: 'uniform'
+      }, {
+        varname: 'u_resolution',
+        datatype: 'float',
+        vartype: 'uniform'
+      }, {
+        varname: 'u_time',
+        datatype: 'float',
+        vartype: 'uniform'
+      }]);
+      perlin3NoiseFragment.variables.apply();
+      perlin3NoiseFragment.addFunctions([rand11Function, rand13Function, mix1Function, curve5Function, mix5Function, perlin3NoiseFunction]);
+      grayscale = grayscaleSnippet();
+      grayscale.addSnippet('value', new oaWebglSnippet('perlinnoise', 'perlin(vec3(gl_FragCoord.xy / u_resolution, u_time))'));
+      grayscale.setParameter('alpha', '1.0');
+      var perlin3NoiseFragmentBody = new oaWebglSnippet('sineNoiseFragmentBody');
+      perlin3NoiseFragmentBody.source = 'gl_FragColor = ${S("grayscale", "null")};';
+      perlin3NoiseFragmentBody.addSnippet('grayscale', grayscale);
+      perlin3NoiseFragment.mainSnippet = perlin3NoiseFragmentBody;
+    }
+
+    // fractalPerlin3NoiseFragmentShader
+    {
+      var fractalPerlin3NoiseFragment = new oaWebglShaderSnippet('fractalPerlinNoiseFragment');
+      fractalPerlin3NoiseFragment.variables.addMultiple([{
+        varname: 'u_sineseed',
+        datatype: 'mat4',
+        vartype: 'uniform'
+      }, {
+        varname: 'u_dotseed',
+        datatype: 'mat4',
+        vartype: 'uniform'
+      }, {
+        varname: 'u_resolution',
+        datatype: 'float',
+        vartype: 'uniform'
+      }, {
+        varname: 'u_time',
+        datatype: 'float',
+        vartype: 'uniform'
+      }]);
+      fractalPerlin3NoiseFragment.variables.apply();
+      fractalPerlin3NoiseFragment.addFunctions([rand11SeededFunction, rand13SeededFunction, rand44SeededFunction, mix1Function, curve5Function, mix5Function, perlin3NoiseSeededFunction, fractalPerlin3NoiseFunction]);
+      grayscale = grayscaleSnippet();
+      grayscale.addSnippet('value', new oaWebglSnippet('fractalperlinnoise', 'fperlin(vec3(gl_FragCoord.xy, u_time), u_resolution, 1.0, 2.0, vec3(0.0), 10, u_dotseed, u_sineseed[0])'));
+      grayscale.setParameter('alpha', '1.0');
+      var fractalPerlin3NoiseFragmentBody = new oaWebglSnippet('sineNoiseFragmentBody');
+      fractalPerlin3NoiseFragmentBody.source = 'gl_FragColor = ${S("grayscale", "null")};';
+      fractalPerlin3NoiseFragmentBody.addSnippet('grayscale', grayscale);
+      fractalPerlin3NoiseFragment.mainSnippet = fractalPerlin3NoiseFragmentBody;
     }
 
     // perlin2GradientNoiseFragmentShader
@@ -643,7 +807,7 @@ angular.module('oaGLSLNoise', ['oaWebglHelpers']).service('oaNoiseShaderFunction
         vartype: 'uniform'
       }]);
       fractalPerlin2GradientNoiseFragment.variables.apply();
-      fractalPerlin2GradientNoiseFragment.addFunctions([rand11SeededFunction, rand22RotSeededFunction, rand22SeededFunction, mix1Function, curve5Function, mix5Function, perlin2GradientNoiseSeededFunction, fractalPerlin2GradientNoiseFunction]);
+      fractalPerlin2GradientNoiseFragment.addFunctions([rand11SeededFunction, rand22RotSeededFunction, rand44SeededFunction, mix1Function, curve5Function, mix5Function, perlin2GradientNoiseSeededFunction, fractalPerlin2GradientNoiseFunction]);
       grayscale = grayscaleSnippet();
       grayscale.addSnippet('value', new oaWebglSnippet('fractalperlinnoise', 'fperlinGradient(gl_FragCoord.xy, u_resolution, 1.0, 2.0, u_dotseed, u_sineseed[0])'));
       grayscale.setParameter('alpha', '1.0');
@@ -651,6 +815,114 @@ angular.module('oaGLSLNoise', ['oaWebglHelpers']).service('oaNoiseShaderFunction
       fractalPerlin2GradientNoiseFragmentBody.source = 'gl_FragColor = ${S("grayscale", "null")};';
       fractalPerlin2GradientNoiseFragmentBody.addSnippet('grayscale', grayscale);
       fractalPerlin2GradientNoiseFragment.mainSnippet = fractalPerlin2GradientNoiseFragmentBody;
+    }
+
+    // simplex2NoiseFragmentShader
+    {
+      var simplex2NoiseFragment = new oaWebglShaderSnippet('simplexNoiseFragment');
+      simplex2NoiseFragment.variables.addMultiple([{
+        varname: 'u_sineseed',
+        datatype: 'mat4',
+        vartype: 'uniform'
+      }, {
+        varname: 'u_dotseed',
+        datatype: 'mat4',
+        vartype: 'uniform'
+      }, {
+        varname: 'u_resolution',
+        datatype: 'float',
+        vartype: 'uniform'
+      }]);
+      simplex2NoiseFragment.variables.apply();
+      simplex2NoiseFragment.addFunctions([rand11Function, rand12Function, mix1Function, curve5Function, mix5Function, simplex2NoiseFunction]);
+      grayscale = grayscaleSnippet();
+      grayscale.addSnippet('value', new oaWebglSnippet('simplexnoise', 'simplex(gl_FragCoord.xy / u_resolution)'));
+      grayscale.setParameter('alpha', '1.0');
+      var simplex2NoiseFragmentBody = new oaWebglSnippet('sineNoiseFragmentBody');
+      simplex2NoiseFragmentBody.source = 'gl_FragColor = ${S("grayscale", "null")};';
+      simplex2NoiseFragmentBody.addSnippet('grayscale', grayscale);
+      simplex2NoiseFragment.mainSnippet = simplex2NoiseFragmentBody;
+    }
+
+    // fractalSimplex2NoiseFragmentShader
+    {
+      var fractalSimplex2NoiseFragment = new oaWebglShaderSnippet('fractalSimplexNoiseFragment');
+      fractalSimplex2NoiseFragment.variables.addMultiple([{
+        varname: 'u_sineseed',
+        datatype: 'mat4',
+        vartype: 'uniform'
+      }, {
+        varname: 'u_dotseed',
+        datatype: 'mat4',
+        vartype: 'uniform'
+      }, {
+        varname: 'u_resolution',
+        datatype: 'float',
+        vartype: 'uniform'
+      }]);
+      fractalSimplex2NoiseFragment.variables.apply();
+      fractalSimplex2NoiseFragment.addFunctions([rand11SeededFunction, rand12SeededFunction, rand44SeededFunction, mix1Function, curve5Function, mix5Function, simplex2NoiseSeededFunction, fractalSimplex2NoiseFunction]);
+      grayscale = grayscaleSnippet();
+      grayscale.addSnippet('value', new oaWebglSnippet('fractalsimplexnoise', 'fsimplex(gl_FragCoord.xy, u_resolution, 1.0, 2.0, u_dotseed, u_sineseed[0])'));
+      grayscale.setParameter('alpha', '1.0');
+      var fractalSimplex2NoiseFragmentBody = new oaWebglSnippet('sineNoiseFragmentBody');
+      fractalSimplex2NoiseFragmentBody.source = 'gl_FragColor = ${S("grayscale", "null")};';
+      fractalSimplex2NoiseFragmentBody.addSnippet('grayscale', grayscale);
+      fractalSimplex2NoiseFragment.mainSnippet = fractalSimplex2NoiseFragmentBody;
+    }
+
+    // simplex2GradientNoiseFragmentShader
+    {
+      var simplex2GradientNoiseFragment = new oaWebglShaderSnippet('simplexNoiseFragment');
+      simplex2GradientNoiseFragment.variables.addMultiple([{
+        varname: 'u_sineseed',
+        datatype: 'mat4',
+        vartype: 'uniform'
+      }, {
+        varname: 'u_dotseed',
+        datatype: 'mat4',
+        vartype: 'uniform'
+      }, {
+        varname: 'u_resolution',
+        datatype: 'float',
+        vartype: 'uniform'
+      }]);
+      simplex2GradientNoiseFragment.variables.apply();
+      simplex2GradientNoiseFragment.addFunctions([rand11Function, rand22RotFunction, mix1Function, curve5Function, mix5Function, simplex2GradientNoiseFunction]);
+      grayscale = grayscaleSnippet();
+      grayscale.addSnippet('value', new oaWebglSnippet('simplexnoise', 'simplexGradient(gl_FragCoord.xy / u_resolution) * 0.5 + 0.5'));
+      grayscale.setParameter('alpha', '1.0');
+      var simplex2GradientNoiseFragmentBody = new oaWebglSnippet('sineNoiseFragmentBody');
+      simplex2GradientNoiseFragmentBody.source = 'gl_FragColor = ${S("grayscale", "null")};';
+      simplex2GradientNoiseFragmentBody.addSnippet('grayscale', grayscale);
+      simplex2GradientNoiseFragment.mainSnippet = simplex2GradientNoiseFragmentBody;
+    }
+
+    // fractalSimplex2GradientNoiseFragmentShader
+    {
+      var fractalSimplex2GradientNoiseFragment = new oaWebglShaderSnippet('fractalSimplexNoiseFragment');
+      fractalSimplex2GradientNoiseFragment.variables.addMultiple([{
+        varname: 'u_sineseed',
+        datatype: 'mat4',
+        vartype: 'uniform'
+      }, {
+        varname: 'u_dotseed',
+        datatype: 'mat4',
+        vartype: 'uniform'
+      }, {
+        varname: 'u_resolution',
+        datatype: 'float',
+        vartype: 'uniform'
+      }]);
+      fractalSimplex2GradientNoiseFragment.variables.apply();
+      fractalSimplex2GradientNoiseFragment.addFunctions([rand11SeededFunction, rand22RotSeededFunction, rand44SeededFunction, mix1Function, curve5Function, mix5Function, simplex2GradientNoiseSeededFunction, fractalSimplex2GradientNoiseFunction]);
+      grayscale = grayscaleSnippet();
+      grayscale.addSnippet('value', new oaWebglSnippet('fractalsimplexnoise', 'fsimplexGradient(gl_FragCoord.xy, u_resolution, 1.0, 2.0, u_dotseed, u_sineseed[0])'));
+      grayscale.setParameter('alpha', '1.0');
+      var fractalSimplex2GradientNoiseFragmentBody = new oaWebglSnippet('sineNoiseFragmentBody');
+      fractalSimplex2GradientNoiseFragmentBody.source = 'gl_FragColor = ${S("grayscale", "null")};';
+      fractalSimplex2GradientNoiseFragmentBody.addSnippet('grayscale', grayscale);
+      fractalSimplex2GradientNoiseFragment.mainSnippet = fractalSimplex2GradientNoiseFragmentBody;
     }
   }
 
@@ -714,8 +986,14 @@ angular.module('oaGLSLNoise', ['oaWebglHelpers']).service('oaNoiseShaderFunction
         sine2RotNoiseFragment: sine2RotNoiseFragment,
         perlin2NoiseFragment: perlin2NoiseFragment,
         fractalPerlin2NoiseFragment: fractalPerlin2NoiseFragment,
+        perlin3NoiseFragment: perlin3NoiseFragment,
+        fractalPerlin3NoiseFragment: fractalPerlin3NoiseFragment,
         perlin2GradientNoiseFragment: perlin2GradientNoiseFragment,
-        fractalPerlin2GradientNoiseFragment: fractalPerlin2GradientNoiseFragment
+        fractalPerlin2GradientNoiseFragment: fractalPerlin2GradientNoiseFragment,
+        simplex2NoiseFragment: simplex2NoiseFragment,
+        fractalSimplex2NoiseFragment: fractalSimplex2NoiseFragment,
+        simplex2GradientNoiseFragment: simplex2GradientNoiseFragment,
+        fractalSimplex2GradientNoiseFragment: fractalSimplex2GradientNoiseFragment
       }
     }
   };
