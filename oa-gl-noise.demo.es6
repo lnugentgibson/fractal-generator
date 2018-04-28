@@ -122,6 +122,7 @@ angular
           };
         }
         var name;
+        var shadersnippet;
         var program;
         var grayscale;
         // sine-noise
@@ -129,9 +130,14 @@ angular
           name = 'sine-noise';
           var $canvas1 = $('#sine-noise');
           var Canvas1 = new oaWebglCanvas(name, $canvas1[0], options);
+          shadersnippet = oaNoiseShaderFunctions.shaders.fragment.sineNoiseFragment;
+          console.log({
+            params: shadersnippet.getParameterNames(),
+            vals: shadersnippet.getParameterValues()
+          });
           var fragmentSource = new oaWebglShaderSource(
             (() => {
-              return oaNoiseShaderFunctions.shaders.fragment.sineNoiseFragment.generate();
+              return shadersnippet.generate();
             })()
           );
           console.log(name);
@@ -231,7 +237,7 @@ gl_FragColor = vec4(grad * 0.5 + vec2(0.5), length(grad), 1.0);`);
             ]);
             grayscale = oaNoiseShaderFunctions.snippets.grayscaleSnippet();
             grayscale.addSnippet('value', new oaWebglSnippet('sinenoise', 'perlin(gl_FragCoord.xy / u_resolution)'));
-            grayscale.setParameter('alpha', '1.0');
+            grayscale.setParameterValue('alpha', '1.0');
             var perlinNoiseFragmentBody = new oaWebglSnippet('sineNoiseFragmentBody');
             perlinNoiseFragmentBody.source = 'gl_FragColor = ${S("grayscale", "null")};';
             perlinNoiseFragmentBody.addSnippet('grayscale', grayscale);
@@ -290,7 +296,7 @@ gl_FragColor = vec4(grad * 0.5 + vec2(0.5), length(grad), 1.0);`);
             ]);
             grayscale = oaNoiseShaderFunctions.snippets.grayscaleSnippet();
             grayscale.addSnippet('value', new oaWebglSnippet('sinenoise', 'perlinGradient(gl_FragCoord.xy / u_resolution)'));
-            grayscale.setParameter('alpha', '1.0');
+            grayscale.setParameterValue('alpha', '1.0');
             var perlinGradientNoiseFragmentBody = new oaWebglSnippet('sineNoiseFragmentBody');
             perlinGradientNoiseFragmentBody.source = 'gl_FragColor = ${S("grayscale", "null")};';
             perlinGradientNoiseFragmentBody.addSnippet('grayscale', grayscale);
@@ -391,7 +397,7 @@ void main() {
             ]);
             grayscale = oaNoiseShaderFunctions.snippets.grayscaleSnippet();
             grayscale.addSnippet('value', new oaWebglSnippet('sinenoise', 'simplex(gl_FragCoord.xy / u_resolution)'));
-            grayscale.setParameter('alpha', '1.0');
+            grayscale.setParameterValue('alpha', '1.0');
             var simplexNoiseFragmentBody = new oaWebglSnippet('sineNoiseFragmentBody');
             simplexNoiseFragmentBody.source = 'gl_FragColor = ${S("grayscale", "null")};';
             simplexNoiseFragmentBody.addSnippet('grayscale', grayscale);
@@ -450,7 +456,7 @@ void main() {
             ]);
             grayscale = oaNoiseShaderFunctions.snippets.grayscaleSnippet();
             grayscale.addSnippet('value', new oaWebglSnippet('sinenoise', 'simplexGradient(gl_FragCoord.xy / u_resolution)'));
-            grayscale.setParameter('alpha', '1.0');
+            grayscale.setParameterValue('alpha', '1.0');
             var simplexGradientNoiseFragmentBody = new oaWebglSnippet('sineNoiseFragmentBody');
             simplexGradientNoiseFragmentBody.source = 'gl_FragColor = ${S("grayscale", "null")};';
             simplexGradientNoiseFragmentBody.addSnippet('grayscale', grayscale);
@@ -685,7 +691,7 @@ void main() {
             ]);
             grayscale = oaNoiseShaderFunctions.snippets.grayscaleSnippet();
             grayscale.addSnippet('value', new oaWebglSnippet('sinenoise', 'value'));
-            grayscale.setParameter('alpha', '1.0');
+            grayscale.setParameterValue('alpha', '1.0');
             var fractalSimplexGradientNoiseFragmentBody = new oaWebglSnippet('sineNoiseFragmentBody');
             fractalSimplexGradientNoiseFragmentBody.source = `float value = mix3(-0.5, 1.5, simplexGradient(gl_FragCoord.xy / 512.0, u_seed)) - 0.5;
 value += (mix3(-0.5, 1.5, simplexGradient(gl_FragCoord.xy / 256.0, u_seed + mat4(vec4(vec2(0.0), 1294.62285, 3843.97555), vec4(0.0), vec4(0.0), vec4(0.0)))) - 0.5) / 2.0;

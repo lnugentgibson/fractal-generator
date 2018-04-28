@@ -4,7 +4,7 @@
 var _window = window,
     angular = _window.angular;
 
-angular.module('oaGLSLNoise', ['oaWebglHelpers']).service('oaNoiseShaderFunctions', ['oaWebglShaderSnippet', 'oaWebglFunctionSnippet', 'oaWebglSnippet', function (oaWebglShaderSnippet, oaWebglFunctionSnippet, oaWebglSnippet) {
+angular.module('oaGLSLNoise', ['oaWebglHelpers']).service('oaNoiseShaderFunctions', ['oaWebglShaderHelpers', 'oaWebglShaderSnippet', 'oaWebglFunctionSnippet', 'oaWebglSnippet', function (oaWebglShaderHelpers, oaWebglShaderSnippet, oaWebglFunctionSnippet, oaWebglSnippet) {
   // standardVertexShader
   {
     var standardVertexShader = new oaWebglShaderSnippet('standardVertexShader');
@@ -597,22 +597,22 @@ angular.module('oaGLSLNoise', ['oaWebglHelpers']).service('oaNoiseShaderFunction
       var sineNoiseFragment = new oaWebglShaderSnippet('sineNoiseFragment');
       sineNoiseFragment.variables.addMultiple([{
         varname: 'u_sineseed',
-        datatype: 'mat4',
+        datatype: oaWebglShaderHelpers.DATATYPE_MAT4,
         vartype: 'uniform'
       }, {
         varname: 'u_dotseed',
-        datatype: 'mat4',
+        datatype: oaWebglShaderHelpers.DATATYPE_MAT4,
         vartype: 'uniform'
       }, {
         varname: 'u_resolution',
-        datatype: 'float',
+        datatype: oaWebglShaderHelpers.DATATYPE_FLOAT,
         vartype: 'uniform'
       }]);
       sineNoiseFragment.variables.apply();
       sineNoiseFragment.addFunctions([rand11Function, rand12Function]);
       var grayscale = grayscaleSnippet();
       grayscale.addSnippet('value', new oaWebglSnippet('sinenoise', 'rand(floor(gl_FragCoord.xy / u_resolution))'));
-      grayscale.setParameter('alpha', '1.0');
+      grayscale.setParameterValue('alpha', '1.0');
       var sineNoiseFragmentBody = new oaWebglSnippet('sineNoiseFragmentBody');
       sineNoiseFragmentBody.source = 'gl_FragColor = ${S("grayscale", "null")};';
       sineNoiseFragmentBody.addSnippet('grayscale', grayscale);
@@ -639,8 +639,8 @@ angular.module('oaGLSLNoise', ['oaWebglHelpers']).service('oaNoiseShaderFunction
       sine2RotNoiseFragment.addFunctions([rand11Function, rand22RotFunction]);
       var direction = direction2Snippet();
       direction.addSnippet('dir', new oaWebglSnippet('sinenoise', 'rand2Rot(floor(gl_FragCoord.xy / u_resolution))'));
-      direction.setParameter('blue', '1.0');
-      direction.setParameter('alpha', '1.0');
+      direction.setParameterValue('blue', '1.0');
+      direction.setParameterValue('alpha', '1.0');
       var sine2RotNoiseFragmentBody = new oaWebglSnippet('sineNoiseFragmentBody');
       sine2RotNoiseFragmentBody.source = 'gl_FragColor = ${S("direction", "null")};';
       sine2RotNoiseFragmentBody.addSnippet('direction', direction);
@@ -667,7 +667,7 @@ angular.module('oaGLSLNoise', ['oaWebglHelpers']).service('oaNoiseShaderFunction
       perlin2NoiseFragment.addFunctions([rand11Function, rand12Function, mix1Function, curve5Function, mix5Function, perlin2NoiseFunction]);
       grayscale = grayscaleSnippet();
       grayscale.addSnippet('value', new oaWebglSnippet('perlinnoise', 'perlin(gl_FragCoord.xy / u_resolution)'));
-      grayscale.setParameter('alpha', '1.0');
+      grayscale.setParameterValue('alpha', '1.0');
       var perlin2NoiseFragmentBody = new oaWebglSnippet('sineNoiseFragmentBody');
       perlin2NoiseFragmentBody.source = 'gl_FragColor = ${S("grayscale", "null")};';
       perlin2NoiseFragmentBody.addSnippet('grayscale', grayscale);
@@ -694,7 +694,7 @@ angular.module('oaGLSLNoise', ['oaWebglHelpers']).service('oaNoiseShaderFunction
       fractalPerlin2NoiseFragment.addFunctions([rand11SeededFunction, rand12SeededFunction, rand44SeededFunction, mix1Function, curve5Function, mix5Function, perlin2NoiseSeededFunction, fractalPerlin2NoiseFunction]);
       grayscale = grayscaleSnippet();
       grayscale.addSnippet('value', new oaWebglSnippet('fractalperlinnoise', 'fperlin(gl_FragCoord.xy, u_resolution, 1.0, 2.0, u_dotseed, u_sineseed[0])'));
-      grayscale.setParameter('alpha', '1.0');
+      grayscale.setParameterValue('alpha', '1.0');
       var fractalPerlin2NoiseFragmentBody = new oaWebglSnippet('sineNoiseFragmentBody');
       fractalPerlin2NoiseFragmentBody.source = 'gl_FragColor = ${S("grayscale", "null")};';
       fractalPerlin2NoiseFragmentBody.addSnippet('grayscale', grayscale);
@@ -725,7 +725,7 @@ angular.module('oaGLSLNoise', ['oaWebglHelpers']).service('oaNoiseShaderFunction
       perlin3NoiseFragment.addFunctions([rand11Function, rand13Function, mix1Function, curve5Function, mix5Function, perlin3NoiseFunction]);
       grayscale = grayscaleSnippet();
       grayscale.addSnippet('value', new oaWebglSnippet('perlinnoise', 'perlin(vec3(gl_FragCoord.xy / u_resolution, u_time))'));
-      grayscale.setParameter('alpha', '1.0');
+      grayscale.setParameterValue('alpha', '1.0');
       var perlin3NoiseFragmentBody = new oaWebglSnippet('sineNoiseFragmentBody');
       perlin3NoiseFragmentBody.source = 'gl_FragColor = ${S("grayscale", "null")};';
       perlin3NoiseFragmentBody.addSnippet('grayscale', grayscale);
@@ -756,7 +756,7 @@ angular.module('oaGLSLNoise', ['oaWebglHelpers']).service('oaNoiseShaderFunction
       fractalPerlin3NoiseFragment.addFunctions([rand11SeededFunction, rand13SeededFunction, rand44SeededFunction, mix1Function, curve5Function, mix5Function, perlin3NoiseSeededFunction, fractalPerlin3NoiseFunction]);
       grayscale = grayscaleSnippet();
       grayscale.addSnippet('value', new oaWebglSnippet('fractalperlinnoise', 'fperlin(vec3(gl_FragCoord.xy, u_time), u_resolution, 1.0, 2.0, vec3(0.0), 10, u_dotseed, u_sineseed[0])'));
-      grayscale.setParameter('alpha', '1.0');
+      grayscale.setParameterValue('alpha', '1.0');
       var fractalPerlin3NoiseFragmentBody = new oaWebglSnippet('sineNoiseFragmentBody');
       fractalPerlin3NoiseFragmentBody.source = 'gl_FragColor = ${S("grayscale", "null")};';
       fractalPerlin3NoiseFragmentBody.addSnippet('grayscale', grayscale);
@@ -783,7 +783,7 @@ angular.module('oaGLSLNoise', ['oaWebglHelpers']).service('oaNoiseShaderFunction
       perlin2GradientNoiseFragment.addFunctions([rand11Function, rand22RotFunction, mix1Function, curve5Function, mix5Function, perlin2GradientNoiseFunction]);
       grayscale = grayscaleSnippet();
       grayscale.addSnippet('value', new oaWebglSnippet('perlinnoise', 'perlinGradient(gl_FragCoord.xy / u_resolution) * 0.5 + 0.5'));
-      grayscale.setParameter('alpha', '1.0');
+      grayscale.setParameterValue('alpha', '1.0');
       var perlin2GradientNoiseFragmentBody = new oaWebglSnippet('sineNoiseFragmentBody');
       perlin2GradientNoiseFragmentBody.source = 'gl_FragColor = ${S("grayscale", "null")};';
       perlin2GradientNoiseFragmentBody.addSnippet('grayscale', grayscale);
@@ -810,7 +810,7 @@ angular.module('oaGLSLNoise', ['oaWebglHelpers']).service('oaNoiseShaderFunction
       fractalPerlin2GradientNoiseFragment.addFunctions([rand11SeededFunction, rand22RotSeededFunction, rand44SeededFunction, mix1Function, curve5Function, mix5Function, perlin2GradientNoiseSeededFunction, fractalPerlin2GradientNoiseFunction]);
       grayscale = grayscaleSnippet();
       grayscale.addSnippet('value', new oaWebglSnippet('fractalperlinnoise', 'fperlinGradient(gl_FragCoord.xy, u_resolution, 1.0, 2.0, u_dotseed, u_sineseed[0])'));
-      grayscale.setParameter('alpha', '1.0');
+      grayscale.setParameterValue('alpha', '1.0');
       var fractalPerlin2GradientNoiseFragmentBody = new oaWebglSnippet('sineNoiseFragmentBody');
       fractalPerlin2GradientNoiseFragmentBody.source = 'gl_FragColor = ${S("grayscale", "null")};';
       fractalPerlin2GradientNoiseFragmentBody.addSnippet('grayscale', grayscale);
@@ -837,7 +837,7 @@ angular.module('oaGLSLNoise', ['oaWebglHelpers']).service('oaNoiseShaderFunction
       simplex2NoiseFragment.addFunctions([rand11Function, rand12Function, mix1Function, curve5Function, mix5Function, simplex2NoiseFunction]);
       grayscale = grayscaleSnippet();
       grayscale.addSnippet('value', new oaWebglSnippet('simplexnoise', 'simplex(gl_FragCoord.xy / u_resolution)'));
-      grayscale.setParameter('alpha', '1.0');
+      grayscale.setParameterValue('alpha', '1.0');
       var simplex2NoiseFragmentBody = new oaWebglSnippet('sineNoiseFragmentBody');
       simplex2NoiseFragmentBody.source = 'gl_FragColor = ${S("grayscale", "null")};';
       simplex2NoiseFragmentBody.addSnippet('grayscale', grayscale);
@@ -864,7 +864,7 @@ angular.module('oaGLSLNoise', ['oaWebglHelpers']).service('oaNoiseShaderFunction
       fractalSimplex2NoiseFragment.addFunctions([rand11SeededFunction, rand12SeededFunction, rand44SeededFunction, mix1Function, curve5Function, mix5Function, simplex2NoiseSeededFunction, fractalSimplex2NoiseFunction]);
       grayscale = grayscaleSnippet();
       grayscale.addSnippet('value', new oaWebglSnippet('fractalsimplexnoise', 'fsimplex(gl_FragCoord.xy, u_resolution, 1.0, 2.0, u_dotseed, u_sineseed[0])'));
-      grayscale.setParameter('alpha', '1.0');
+      grayscale.setParameterValue('alpha', '1.0');
       var fractalSimplex2NoiseFragmentBody = new oaWebglSnippet('sineNoiseFragmentBody');
       fractalSimplex2NoiseFragmentBody.source = 'gl_FragColor = ${S("grayscale", "null")};';
       fractalSimplex2NoiseFragmentBody.addSnippet('grayscale', grayscale);
@@ -891,7 +891,7 @@ angular.module('oaGLSLNoise', ['oaWebglHelpers']).service('oaNoiseShaderFunction
       simplex2GradientNoiseFragment.addFunctions([rand11Function, rand22RotFunction, mix1Function, curve5Function, mix5Function, simplex2GradientNoiseFunction]);
       grayscale = grayscaleSnippet();
       grayscale.addSnippet('value', new oaWebglSnippet('simplexnoise', 'simplexGradient(gl_FragCoord.xy / u_resolution) * 0.5 + 0.5'));
-      grayscale.setParameter('alpha', '1.0');
+      grayscale.setParameterValue('alpha', '1.0');
       var simplex2GradientNoiseFragmentBody = new oaWebglSnippet('sineNoiseFragmentBody');
       simplex2GradientNoiseFragmentBody.source = 'gl_FragColor = ${S("grayscale", "null")};';
       simplex2GradientNoiseFragmentBody.addSnippet('grayscale', grayscale);
@@ -918,7 +918,7 @@ angular.module('oaGLSLNoise', ['oaWebglHelpers']).service('oaNoiseShaderFunction
       fractalSimplex2GradientNoiseFragment.addFunctions([rand11SeededFunction, rand22RotSeededFunction, rand44SeededFunction, mix1Function, curve5Function, mix5Function, simplex2GradientNoiseSeededFunction, fractalSimplex2GradientNoiseFunction]);
       grayscale = grayscaleSnippet();
       grayscale.addSnippet('value', new oaWebglSnippet('fractalsimplexnoise', 'fsimplexGradient(gl_FragCoord.xy, u_resolution, 1.0, 2.0, u_dotseed, u_sineseed[0])'));
-      grayscale.setParameter('alpha', '1.0');
+      grayscale.setParameterValue('alpha', '1.0');
       var fractalSimplex2GradientNoiseFragmentBody = new oaWebglSnippet('sineNoiseFragmentBody');
       fractalSimplex2GradientNoiseFragmentBody.source = 'gl_FragColor = ${S("grayscale", "null")};';
       fractalSimplex2GradientNoiseFragmentBody.addSnippet('grayscale', grayscale);

@@ -89,16 +89,23 @@ angular.module('oaGLSLNoiseCheck', ['oaGLSLNoise']).controller('NoiseCheckCtrl',
   var program;
   var $canvas;
   var Canvas;
+  var shadersnippet;
   var fragmentSource;
-  var printShaders = false;
+  var printShaders = true;
   var update = [];
   // sine-noise
   {
     name = 'sine-noise';
     $canvas = $('#sine-noise');
     Canvas = new oaWebglCanvas(name, $canvas[0], options);
+    shadersnippet = oaNoiseShaderFunctions.shaders.fragment.sineNoiseFragment;
+    console.log({
+      params: shadersnippet.getParameterNames(),
+      vals: shadersnippet.getParameterValues(),
+      snippets: shadersnippet.getSnippetNames()
+    });
     fragmentSource = new oaWebglShaderSource(function () {
-      return oaNoiseShaderFunctions.shaders.fragment.sineNoiseFragment.generate();
+      return shadersnippet.generate();
     }());
     if (printShaders) {
       console.log(name);
